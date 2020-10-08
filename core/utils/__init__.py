@@ -21,5 +21,5 @@ class ReplayBuffer:
         return (state, action, reward, next_state, done)
     
     @property
-    def size(self):
+    def length(self):
         return len(self.buffer)

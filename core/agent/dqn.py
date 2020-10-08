@@ -40,7 +40,7 @@ class DQNAgent:
         return action
 
     def learn(self):
-        if self.memory.size < max(self.batch_size, self.start_train):
+        if self.memory.length < max(self.batch_size, self.start_train):
             return 0
 
         self.epsilon = max(self.epsilon_min, self.epsilon - self.epsilon_decay)

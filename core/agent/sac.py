@@ -60,7 +60,7 @@ class SACAgent:
         return action, log_prob
 
     def learn(self):
-        if self.memory.size < max(self.batch_size, self.start_train):
+        if self.memory.length < max(self.batch_size, self.start_train):
             return 0
 
         state, action, reward, next_state, done = self.memory.sample(self.batch_size)
