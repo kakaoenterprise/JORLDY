@@ -63,6 +63,6 @@ for episode in range(cfg["episode"]):
         agent.remember(state, action, reward, next_state, done)
         state = next_state
 
-        results = agent.learn()
+        history = agent.learn()
 
     print(f"{episode} Episode / Score : {env.score} /")

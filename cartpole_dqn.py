@@ -36,7 +36,6 @@ agent = Agent(cfg["agent"], network=network,
                             )
 
 for episode in range(cfg["episode"]):
-    losses = []
     done = False
     state = env.reset()
     while not done:
@@ -45,9 +44,8 @@ for episode in range(cfg["episode"]):
         agent.remember(state, action, reward, next_state, done)
         state = next_state
 
-        loss = agent.learn()
-        losses.append(loss)
+        history = agent.learn()
 
-    print(f"{episode} Episode / Score : {env.score} / Loss : {sum(losses)/len(losses):.4f} / Epsilon : {agent.epsilon:.4f}")
+    print(f"{episode} Episode / Score : {env.score}")
 
 env.close()
