@@ -11,6 +11,7 @@
 ```
  $ git clone https://github.kakaocorp.com/leonard-q/RL_Algorithms.git  
  $ pip install -r requirements.txt  
+ $ python main.py 
 ```
 
 # Release Note
