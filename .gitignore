@@ -3,3 +3,4 @@
 *.DS_Store
 /_hist/
 /dev/
+/.ipynb_checkpoints/
