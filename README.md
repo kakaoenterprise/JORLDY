@@ -4,7 +4,7 @@
  - [ ] load, save model
  - [ ] write with tensorboard
  - [ ] torch device 
- - [ ] change cfg format
+ - [x] change cfg format
 
 # Install
   
