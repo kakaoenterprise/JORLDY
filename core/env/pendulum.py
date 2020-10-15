@@ -1,7 +1,7 @@
 import gym
 
 class Pendulum:
-    def __init__(self):
+    def __init__(self, mode='continuous'):
         self.env = gym.make('Pendulum-v0')
         self.state_size = self.env.observation_space.shape[0]
         self.action_size = self.env.action_space.shape[0]

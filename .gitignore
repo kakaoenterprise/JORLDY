@@ -1,3 +1,6 @@
 *.pyc
-/.vscode/
 *.DS_Store
+**/.vscode/
+**/_hist/
+**/dev/
+**/.ipynb_checkpoints/

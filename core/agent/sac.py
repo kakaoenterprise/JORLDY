@@ -3,41 +3,50 @@ import torch.nn.functional as F
 from torch.distributions import Normal
 
 from core.utils import ReplayBuffer
+from core.network import Network
+from core.optimizer import Optimizer
 
 class SACAgent:
     def __init__(self,
-                actor,
-                critic,
-                target_critic,
-                actor_optimizer,
-                critic_optimizer,
-                use_dynamic_alpha = False,
-                log_alpha = None,
-                alpha_optimizer = None,
-                gamma=0.99,
-                tau=5e-3,
-                buffer_size=50000,
-                batch_size = 64,
-                start_train=2000,
-                static_log_alpha=-2.0
-                ):
-        self.actor = actor
-        self.critic = critic
-        self.target_critic = target_critic
-        self.use_dynamic_alpha = use_dynamic_alpha
-        self.log_alpha = log_alpha if use_dynamic_alpha else torch.tensor(static_log_alpha)
-        self.alpha = self.log_alpha.exp()
+                 state_size,
+                 action_size,
+                 actor = "sac_actor",
+                 critic = "sac_critic",
+                 actor_optimizer = "adam",
+                 critic_optimizer = "adam",
+                 alpha_optimizer = "adam",
+                 actor_lr = 5e-4,
+                 critic_lr = 1e-3,
+                 alpha_lr = 3e-4,
+                 use_dynamic_alpha = False,
+                 gamma=0.99,
+                 tau=5e-3,
+                 buffer_size=50000,
+                 batch_size = 64,
+                 start_train_step=2000,
+                 static_log_alpha=-2.0,
+                 ):
+        self.actor = Network(actor, state_size, action_size)
+        self.critic = Network(critic, state_size+action_size, action_size)
+        self.target_critic = Network(critic, state_size+action_size, action_size)
+        self.actor_optimizer = Optimizer(actor_optimizer, self.actor.parameters(), lr=actor_lr)
+        self.critic_optimizer = Optimizer(critic_optimizer, self.critic.parameters(), lr=critic_lr)
         
-        self.actor_optimizer = actor_optimizer
-        self.critic_optimizer = critic_optimizer
-        self.alpha_optimizer = alpha_optimizer if use_dynamic_alpha else None
-        self.target_entropy = -torch.prod(torch.Tensor(actor.D_out)).item()
+        self.use_dynamic_alpha = use_dynamic_alpha
+        if use_dynamic_alpha:
+            self.log_alpha = torch.zeros(1, requires_grad=True)
+            self.alpha_optimizer = Optimizer(alpha_optimizer, [self.log_alpha], lr=alpha_lr)
+        else:
+            self.log_alpha = torch.tensor(static_log_alpha)
+            self.alpha_optimizer = None
+        self.alpha = self.log_alpha.exp()
+        self.target_entropy = -torch.prod(torch.Tensor(action_size)).item()
 
         self.gamma = gamma
         self.tau = tau
         self.memory = ReplayBuffer(buffer_size)
         self.batch_size = batch_size
-        self.start_train = start_train
+        self.start_train_step = start_train_step
 
         self.update_target('hard')
 
@@ -60,8 +69,8 @@ class SACAgent:
         return action, log_prob
 
     def learn(self):
-        if self.memory.length < max(self.batch_size, self.start_train):
-            return 0
+        if self.memory.length < max(self.batch_size, self.start_train_step):
+            return None
 
         state, action, reward, next_state, done = self.memory.sample(self.batch_size)
         q1, q2 = self.critic(state, action)
@@ -73,8 +82,7 @@ class SACAgent:
             min_next_target_q = torch.min(next_target_q1, next_target_q2) - self.alpha * next_log_prob
             target_q = reward + (1 - done)*self.gamma*min_next_target_q
         
-        max_Q = torch.mean(torch.max(target_q, axis=0).values).values
-        
+        max_Q = torch.max(target_q, axis=0).values.numpy()[0]
         # Critic
         critic_loss1 = F.mse_loss(q1, target_q)
         critic_loss2 = F.mse_loss(q2, target_q)
@@ -107,7 +115,15 @@ class SACAgent:
 
         self.update_target('soft')
         
-        return critic_loss1.item(), critic_loss2.item(), actor_loss.item(), alpha_loss.item(), max_Q, self.alpha.item()
+        result = {
+            'critic_loss1' : critic_loss1.item(),
+            'critic_loss2' : critic_loss2.item(),
+            'actor_loss' : actor_loss.item(),
+            'alpha_loss' : alpha_loss.item(),
+            'max_Q' : max_Q,
+            'alpha' : self.alpha.item(),
+        }
+        return result
 
     def update_target(self, mode):
         if mode=='hard':  
@@ -115,6 +131,11 @@ class SACAgent:
         elif mode=='soft':
             for t_p, p in zip(self.target_critic.parameters(), self.critic.parameters()):
                 t_p.data.copy_(self.tau*p.data + (1-self.tau)*t_p.data)
-
-    def remember(self, state, action, reward, next_state, done):
-        self.memory.store(state, action, reward, next_state, done)
+    
+    def observe(self, state, action, reward, next_state, done):
+        # Process per step
+        self.memory.store(state, action, reward, next_state, done)        
+        
+        # Process per epi
+        if done :
+            pass
