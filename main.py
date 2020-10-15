@@ -5,30 +5,31 @@ from utils import Manager
 
 env = config.env
 agent = config.agent
-train_episode = config.train_episode
+train_step = config.train_step
 
-step = 0
-test_episode = 100
+episode = 0
+test_step = 10000
 training = True
 manager = Manager()
 
-for e in range(train_episode + test_episode):
-    if e == train_episode:
+state = env.reset()
+for step in range(train_step + test_step):
+    if step == train_step:
         print("### TEST START ###")
         training = False
-    done = False
-    state = env.reset()
-    while not done:
-        step += 1
-        action = agent.act([state], training)
-        next_state, reward, done = env.step(action)
-        if training:
-            agent.observe(state, action, reward, next_state, done)
-            result = agent.learn()
-            if result:
-                manager.append(result)
-        state = next_state
-
-    print(f"{e} Episode / Score : {env.score} / Step : {step} / {manager.get_statistics()}")
+    
+    action = agent.act([state], training)
+    next_state, reward, done = env.step(action)
+    if training:
+        agent.observe(state, action, reward, next_state, done)
+        result = agent.learn()
+        if result:
+            manager.append(result)
+    state = next_state
+    
+    if done:
+        episode += 1
+        print(f"{episode} Episode / Score : {env.score} / Step : {step} / {manager.get_statistics()}")
+        state = env.reset()
 
 env.close()

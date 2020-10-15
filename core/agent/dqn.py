@@ -17,8 +17,8 @@ class DQNAgent:
                 epsilon_init=1.0,
                 epsilon_min=0.1,
                 epsilon_decay=0.0001,
-                train_episode=1000,
-                explore_episode=0.9,
+                train_step=100000,
+                explore_percent=0.9,
                 buffer_size=50000,
                 batch_size=64,
                 start_train_step=2000,
@@ -32,8 +32,8 @@ class DQNAgent:
         self.epsilon = epsilon_init
         self.epsilon_init = epsilon_init
         self.epsilon_min = epsilon_min
-        self.train_episode = train_episode
-        self.explore_episode = explore_episode
+        self.train_step = train_step
+        self.explore_percent = explore_percent
         self.memory = ReplayBuffer(buffer_size)
         self.batch_size = batch_size
         self.start_train_step = start_train_step
@@ -81,14 +81,15 @@ class DQNAgent:
     def observe(self, state, action, reward, next_state, done):
         # Process per step
         self.memory.store(state, action, reward, next_state, done)
+        self.epsilon_decay()
         
         # Process per episode
         if done:
-            self.epsilon_decay()
+            pass
             
     def epsilon_decay(self):
         self.epsilon = max(self.epsilon_min,
-                           self.epsilon - (self.epsilon_init-self.epsilon_min)/(self.train_episode*self.explore_episode))
+                           self.epsilon - (self.epsilon_init-self.epsilon_min)/(self.train_step*self.explore_percent))
         
         
 
