@@ -79,13 +79,13 @@ class DQNAgent:
         self.target_network.load_state_dict(self.network.state_dict())
         
     def observe(self, state, action, reward, next_state, done):
-        self.remember(state, action, reward, next_state, done)
+        # Process per step
+        self.memory.store(state, action, reward, next_state, done)
+        
+        # Process per episode
         if done:
             self.epsilon_decay()
             
-    def remember(self, state, action, reward, next_state, done):
-        self.memory.store(state, action, reward, next_state, done)
-
     def epsilon_decay(self):
         self.epsilon = max(self.epsilon_min,
                            self.epsilon - (self.epsilon_init-self.epsilon_min)/(self.train_episode*self.explore_episode))

@@ -133,7 +133,9 @@ class SACAgent:
                 t_p.data.copy_(self.tau*p.data + (1-self.tau)*t_p.data)
     
     def observe(self, state, action, reward, next_state, done):
-        self.remember(state, action, reward, next_state, done)
+        # Process per step
+        self.memory.store(state, action, reward, next_state, done)        
         
-    def remember(self, state, action, reward, next_state, done):
-        self.memory.store(state, action, reward, next_state, done)
+        # Process per epi
+        if done :
+            pass

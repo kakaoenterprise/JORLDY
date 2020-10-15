@@ -1,6 +1,6 @@
 from core import *
 
-### Cartpole / SAC ###
+### SAC ###
 
 # Config
 env_name = "pendulum"

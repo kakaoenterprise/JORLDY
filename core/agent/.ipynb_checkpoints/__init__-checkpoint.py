@@ -28,4 +28,11 @@ class TemplateAgent:
 
     def learn(self):
         pass
+    
+    def observe(self, state, action, reward, next_state, done)
+        # Process per step
+        
+        # Process per epi
+        if done :
+            pass
 '''

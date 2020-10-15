@@ -1,6 +1,6 @@
 from core import *
 
-### Cartpole / DQN ###
+### DQN ###
 
 # Config
 env_name = "cartpole"

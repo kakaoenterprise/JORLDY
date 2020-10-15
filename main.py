@@ -1,5 +1,7 @@
-from utils import Manager
+# import config.YOUR_CONFIG as config
 import config.dqn as config 
+
+from utils import Manager
 
 env = config.env
 agent = config.agent
