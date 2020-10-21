@@ -32,6 +32,7 @@ class Breakout:
         state = self.img_processor.convert_img(state, self.gray_img, self.img_width, self.img_height)
         
         self.stacked_state = np.tile(state, (self.stack_frame,1,1))
+        self.life = info['ale.lives']
         return self.stacked_state
 
     def step(self, action):
@@ -41,6 +42,7 @@ class Breakout:
             state, _, _, _ = self.env.step(1)
             state = self.img_processor.convert_img(state, self.gray_img, self.img_width, self.img_height)
             self.stacked_state = np.tile(state, (self.stack_frame,1,1))
+            self.life = info['ale.lives']
         else:
             state = self.img_processor.convert_img(state, self.gray_img, self.img_width, self.img_height)
             self.stacked_state = np.concatenate((self.stacked_state[self.num_channel:], state), axis=0)
