@@ -27,12 +27,12 @@ class Breakout:
         self.life = 0
 
     def reset(self):
-        self.score = 0
-        state = self.env.reset()
+        self.env.reset()
+        state, _, _, info = self.env.step(1)
         state = self.img_processor.convert_img(state, self.gray_img, self.img_width, self.img_height)
-        
         self.stacked_state = np.tile(state, (self.stack_frame,1,1))
         self.life = info['ale.lives']
+        self.score = 0
         return self.stacked_state
 
     def step(self, action):
