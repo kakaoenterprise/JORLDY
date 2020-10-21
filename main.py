@@ -1,13 +1,16 @@
-# import config.YOUR_CONFIG as config
-import config.dqn as config 
-
+from core import *
 from utils import Manager
 
-env = config.env
-agent = config.agent
-train_step = config.train_step
+# import config.YOUR_AGENT.YOUR_ENV as config
+import config.dqn.cartpole as config
+
+env = Env(name="cartpole")
+agent = Agent(state_size=env.state_size,
+              action_size=env.action_size,
+              **config.agent)
 
 episode = 0
+train_step = 100000
 test_step = 10000
 training = True
 manager = Manager()

@@ -12,7 +12,8 @@ class DQN(torch.nn.Module):
         self.q = torch.nn.Linear(D_hidden, D_out)
 
     def forward(self, x):
-        x = torch.tensor(x, dtype=torch.float)
+        if type(x) != torch.Tensor:
+            x = torch.tensor(x, dtype=torch.float)
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
         return self.q(x)
