@@ -1,10 +1,11 @@
-from .cartpole import CartPole
-from .pendulum import Pendulum
+from .gym_env import *
+from .atari import *
 
 class Env:
     dictionary = {
     "cartpole": CartPole,
     "pendulum": Pendulum,
+    "breakout": Breakout,
     }
     
     def __new__(self, name, *args, **kwargs):

@@ -1,4 +1,7 @@
-class Manager:
+import cv2 
+import numpy as np 
+
+class LogManager:
     def __init__(self):
         self.initialized = False
         self.history = dict()
@@ -19,4 +22,3 @@ class Manager:
                 ret[key] = 0 if len(item) == 0 else round(sum(item)/len(item), 4)
                 self.history[key].clear()
         return ret
-

@@ -1,9 +1,10 @@
-from .dqn import DQN
+from .dqn import DQN, DQN_CNN
 from .sac import SACActor, SACCritic
 
 class Network:
     dictionary = {
     "dqn": DQN,
+    "dqn_cnn": DQN_CNN,
     "sac_actor": SACActor,
     "sac_critic": SACCritic,
     }

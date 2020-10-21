@@ -41,7 +41,7 @@ if __name__=="__main__":
     import os
     
     mulp = []
-    for id in range(os.cpu_count()//14):
+    for id in range(os.cpu_count()//4):
         env = Env(name="cartpole")
         agent = Agent(state_size=env.state_size,
                      action_size=env.action_size,

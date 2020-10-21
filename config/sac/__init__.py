@@ -17,4 +17,9 @@ agent = {
     "batch_size":64,
     "start_train_step":5000,
     "static_log_alpha":-2.0,
+    "use_img": True,
+    "gray_img": True,
+    "img_width": 80,
+    "img_height": 80,
+    "stack_frame": 4,
 }

@@ -1,13 +1,16 @@
 ### DQN Config ###
-
-env = {
-    "name":"cartpole",
-    "mode":"discrete",
+env ={
+    "name": "breakout",
+    "mode": "discrete",
+    "gray_img": True,
+    "img_width": 80,
+    "img_height": 80,
+    "stack_frame": 4,
 }
 
 agent = {
     "name": "dqn",
-    "network": "dqn",
+    "network": "dqn_cnn",
     "optimizer": "adam",
     "learning_rate": 0.00025,
     "gamma": 0.99,

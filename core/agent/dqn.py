@@ -6,6 +6,10 @@ from core.utils import ReplayBuffer
 from core.network import Network
 from core.optimizer import Optimizer
 
+import time 
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 class DQNAgent:
     def __init__(self,
                 state_size,
@@ -22,9 +26,10 @@ class DQNAgent:
                 start_train_step=2000,
                 target_update_term=500,
                 ):
+        
         self.action_size = action_size
-        self.network = Network(network, state_size, action_size)
-        self.target_network = Network(network, state_size, action_size)
+        self.network = Network(network, state_size, action_size).to(device)
+        self.target_network = Network(network, state_size, action_size).to(device)
         self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate)
         self.gamma = gamma
         self.epsilon = epsilon_init
@@ -43,25 +48,29 @@ class DQNAgent:
             action = random.randint(0, self.action_size-1)
         else:
             self.network.eval()
-            action = torch.argmax(self.network(state)).item()
+            action = torch.argmax(self.network(torch.FloatTensor(state).to(device))).item()
         return action
 
     def learn(self):
         if self.memory.length < max(self.batch_size, self.start_train_step):
             return None
         
+        start_time = time.time()
         state, action, reward, next_state, done = self.memory.sample(self.batch_size)
-
+                
+        print("time1: {}".format(time.time()-start_time))
+        start_time = time.time()
+    
         one_hot_action = torch.eye(self.action_size)[action.view(-1).long()]
-        q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
-        next_q = self.target_network(next_state)
-        target_q = reward + next_q.max(1, keepdims=True).values*self.gamma*(1 - done)
+        q = (self.network(state.to(device)) * one_hot_action.to(device)).sum(1, keepdims=True)
+        next_q = self.target_network(next_state.to(device))
+        target_q = reward.to(device) + next_q.max(1, keepdims=True).values * (self.gamma*(1 - done)).to(device)
         loss = F.smooth_l1_loss(q, target_q).mean()
 
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-
+        
         if self.num_learn % self.target_update_term == 0:
             self.update_target()
         self.num_learn += 1
