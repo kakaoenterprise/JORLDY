@@ -2,7 +2,6 @@
 
 env ={
     "name": "breakout",
-    "mode": "discrete",
     "gray_img": True,
     "img_width": 80,
     "img_height": 80,
