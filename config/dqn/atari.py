@@ -1,4 +1,5 @@
 ### DQN Config ###
+
 env ={
     "name": "breakout",
     "mode": "discrete",

@@ -6,8 +6,6 @@ from core.utils import ReplayBuffer
 from core.network import Network
 from core.optimizer import Optimizer
 
-import time 
-
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class DQNAgent:
@@ -55,15 +53,11 @@ class DQNAgent:
         if self.memory.length < max(self.batch_size, self.start_train_step):
             return None
         
-        start_time = time.time()
         state, action, reward, next_state, done = self.memory.sample(self.batch_size)
-                
-        print("time1: {}".format(time.time()-start_time))
-        start_time = time.time()
     
         one_hot_action = torch.eye(self.action_size)[action.view(-1).long()]
-        q = (self.network(state.to(device)) * one_hot_action.to(device)).sum(1, keepdims=True)
-        next_q = self.target_network(next_state.to(device))
+        q = (self.network(torch.FloatTensor(state).to(device)) * one_hot_action.to(device)).sum(1, keepdims=True)
+        next_q = self.target_network(torch.FloatTensor(next_state).to(device))
         target_q = reward.to(device) + next_q.max(1, keepdims=True).values * (self.gamma*(1 - done)).to(device)
         loss = F.smooth_l1_loss(q, target_q).mean()
 

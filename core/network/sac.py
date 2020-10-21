@@ -13,7 +13,6 @@ class SACActor(torch.nn.Module):
         self.log_std = torch.nn.Linear(D_hidden, D_out)
 
     def forward(self, x):
-        x = torch.tensor(x, dtype=torch.float)
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
         return self.mu(x), self.log_std(x).exp()
@@ -34,7 +33,6 @@ class SACCritic(torch.nn.Module):
         
     def forward(self, x1, x2):
         x = torch.cat([x1, x2], dim=-1)
-        
         x, x_ = F.relu(self.l1(x)), F.relu(self.l1_(x))
         x, x_ = F.relu(self.l2(x)), F.relu(self.l2_(x_))
         return self.q1(x), self.q2(x_)
