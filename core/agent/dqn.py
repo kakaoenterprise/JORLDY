@@ -23,7 +23,6 @@ class DQNAgent:
                 batch_size=64,
                 start_train_step=2000,
                 target_update_term=500,
-                print_episode=5,
                 ):
         
         self.action_size = action_size

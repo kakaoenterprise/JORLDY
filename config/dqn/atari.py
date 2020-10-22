@@ -21,5 +21,4 @@ agent = {
     "batch_size": 32,
     "start_train_step": 50000,
     "target_update_term": 5000,
-    "print_episode": 5,
 }
