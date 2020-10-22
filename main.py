@@ -19,7 +19,7 @@ test_step = 50000
 training = True
 
 log_manager = LogManager()
-board_manager = BoardManager(config.agent["save_path"])
+board_manager = BoardManager(config.agent, config.env)
 
 state = env.reset()
 for step in range(train_step + test_step):

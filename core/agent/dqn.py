@@ -24,7 +24,6 @@ class DQNAgent:
                 start_train_step=2000,
                 target_update_term=500,
                 print_episode=5,
-                save_path='',
                 ):
         
         self.action_size = action_size

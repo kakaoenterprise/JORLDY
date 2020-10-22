@@ -22,5 +22,4 @@ agent = {
     "start_train_step": 50000,
     "target_update_term": 5000,
     "print_episode": 5,
-    "save_path": "./saved_models/"
 }
