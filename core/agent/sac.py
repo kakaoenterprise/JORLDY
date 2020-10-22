@@ -2,9 +2,9 @@ import torch
 import torch.nn.functional as F
 from torch.distributions import Normal
 
-from core.utils import ReplayBuffer
 from core.network import Network
 from core.optimizer import Optimizer
+from .utils import ReplayBuffer
 
 class SACAgent:
     def __init__(self,
