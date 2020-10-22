@@ -1,9 +1,12 @@
+atari-py==0.2.6
 cloudpickle==1.6.0
 future==0.18.2
 gym==0.17.3
 numpy==1.19.2
+opencv-python==4.4.0.44
 Pillow==7.2.0
 pyglet==1.5.0
 scipy==1.5.2
+six==1.15.0
 torch==1.6.0
 torchvision==0.7.0

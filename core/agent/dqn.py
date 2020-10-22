@@ -2,9 +2,9 @@ import torch
 import torch.nn.functional as F
 import random
 
-from core.utils import ReplayBuffer
 from core.network import Network
 from core.optimizer import Optimizer
+from .utils import ReplayBuffer
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
