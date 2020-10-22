@@ -2,8 +2,8 @@
 
 # TODO
  - [ ] load, save model
- - [ ] write with tensorboard
- - [ ] torch device 
+ - [x] write with tensorboard
+ - [x] torch device 
  - [x] change cfg format
 
 # Install
