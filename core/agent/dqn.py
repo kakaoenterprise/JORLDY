@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 import random
+import os
 
 from core.network import Network
 from core.optimizer import Optimizer
@@ -96,6 +97,18 @@ class DQNAgent:
         new_epsilon = self.epsilon - ((self.epsilon_init - self.epsilon_min)/\
                                       (self.explore_step - self.start_train_step))
         self.epsilon = max(self.epsilon_min, new_epsilon)
+
+    def save(self, path):
+        torch.save({
+            "network" : self.network.state_dict(),
+        }, os.path.join(path,"ckpt"))
+
+    def load(self, path):
+        checkpoint = torch.load(os.path.join(path,"ckpt"))
+        self.network.load_state_dict(checkpoint["network"])
+        self.update_target()
+
+
         
         
 

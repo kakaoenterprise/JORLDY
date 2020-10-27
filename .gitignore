@@ -1,5 +1,6 @@
 *.pyc
 *.DS_Store
+/logs/
 **/.vscode/
 **/_hist/
 **/_dev/

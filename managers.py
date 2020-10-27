@@ -21,11 +21,11 @@ class MetricManager:
                 self.metrics[key].clear()
         return ret
     
-class BoardManager:
+class LogManager:
     def __init__(self, env, agent):
         now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        save_path = f"./logs/{env}/{agent}/{now}/"
-        self.writer = SummaryWriter(save_path)
+        self.path = f"./logs/{env}/{agent}/{now}/"
+        self.writer = SummaryWriter(self.path)
         
     def write_scalar(self, scalar_dict, step):
         for key, value in scalar_dict.items():
