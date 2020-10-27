@@ -1,11 +1,13 @@
 from .gym_env import *
 from .atari import *
+from .ml_agent import * 
 
 class Env:
     dictionary = {
     "cartpole": CartPole,
     "pendulum": Pendulum,
     "breakout": Breakout,
+    "pong": Pong
     }
     
     def __new__(self, name, *args, **kwargs):

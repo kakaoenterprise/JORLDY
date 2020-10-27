@@ -14,8 +14,8 @@ episode = 0
 score_sum = 0
 loss_list = []
 
-train_step = 1000000
-test_step = 50000
+train_step = 10000000
+test_step = 500000
 training = True
 
 log_manager = LogManager()
