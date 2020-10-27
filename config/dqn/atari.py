@@ -1,7 +1,7 @@
 ### DQN Config ###
 
 env ={
-    "name": "breakout",
+    "name": "pong",
     "gray_img": True,
     "img_width": 84,
     "img_height": 84,
@@ -16,9 +16,10 @@ agent = {
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,
-    "explore_step": 1000000,
+    "explore_step": 8900000,
     "buffer_size": 100000,
-    "batch_size": 64,
+    "batch_size": 32,
     "start_train_step": 100000,
-    "target_update_term": 100,
+    "target_update_term": 10000,
+    "print_episode": 5,
 }
