@@ -53,12 +53,14 @@ class DQNAgent:
         if self.memory.length < max(self.batch_size, self.start_train_step):
             return None
         
-        state, action, reward, next_state, done = self.memory.sample(self.batch_size)
-    
-        one_hot_action = torch.eye(self.action_size)[action.view(-1).long()]
-        q = (self.network(torch.FloatTensor(state).to(device)) * one_hot_action.to(device)).sum(1, keepdims=True)
-        next_q = self.target_network(torch.FloatTensor(next_state).to(device))
-        target_q = reward.to(device) + next_q.max(1, keepdims=True).values * (self.gamma*(1 - done)).to(device)
+        transitions = self.memory.sample(self.batch_size)
+        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
+        
+        eye = torch.eye(self.action_size).to(device)
+        one_hot_action = eye[action.view(-1).long()]
+        q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
+        next_q = self.target_network(next_state)
+        target_q = reward + next_q.max(1, keepdims=True).values * (self.gamma*(1 - done))
         loss = F.smooth_l1_loss(q, target_q).mean()
 
         self.optimizer.zero_grad()

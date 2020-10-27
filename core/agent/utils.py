@@ -1,6 +1,5 @@
 from collections import deque
 import random
-import torch
 import numpy as np
 
 class ReplayBuffer:
@@ -21,9 +20,8 @@ class ReplayBuffer:
         
         transition = []
         for item in [state, action, reward, next_state, done]:
-            item = torch.tensor(item).float()
             if len(list(item.shape)) == 1:
-                item = torch.unsqueeze(item, 1)
+                item = item[..., np.newaxis]
             transition.append(item)
                 
         return transition

@@ -9,11 +9,12 @@ agent = Agent(state_size=env.state_size,
               action_size=env.action_size,
               **config.agent)
 
-episode = 0
-train_step = 1000000
-test_step = 50000
-print_episode = 5
 training = True
+
+episode = 0
+train_step = 10000000 if training else 0
+test_step = 1000000
+print_episode = 10
 
 metric_manager = MetricManager()
 board_manager = BoardManager(config.env["name"], config.agent["name"])
