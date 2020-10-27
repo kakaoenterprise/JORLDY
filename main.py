@@ -2,23 +2,28 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.dqn.atari as config
+import config.dqn.breakout as config
 
 env = Env(**config.env)
 agent = Agent(state_size=env.state_size,
               action_size=env.action_size,
               **config.agent)
 
-training = True
+training = config.train["training"]
+load_path = config.train["load_path"]
+if load_path:
+    print("...Load Model...")
+    agent.load(load_path)
 
-episode = 0
-train_step = 10000000 if training else 0
-test_step = 1000000
-print_episode = 10
+train_step = config.train["train_step"] if training else 0
+test_step = config.train["test_step"]
+print_term = config.train["print_term"]
+save_term = config.train["save_term"]
 
 metric_manager = MetricManager()
-board_manager = BoardManager(config.env["name"], config.agent["name"])
+log_manager = LogManager(config.env["name"], config.agent["name"])
 
+episode = 0
 state = env.reset()
 for step in range(train_step + test_step):
     if step == train_step:
@@ -40,9 +45,13 @@ for step in range(train_step + test_step):
         metric_manager.append({"score": env.score})
         state = env.reset()
         
-        if episode % print_episode == 0:
+        if episode % print_term == 0:
             statistics = metric_manager.get_statistics()
             print(f"{episode} Episode / Step : {step} / {statistics}")
-            board_manager.write_scalar(statistics, step)
+            log_manager.write_scalar(statistics, step)
+        
+        if training and episode % save_term == 0:
+            print("...Save Model...")
+            agent.save(log_manager.path)
 
 env.close()
