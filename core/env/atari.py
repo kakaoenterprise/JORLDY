@@ -9,7 +9,6 @@ class Breakout:
                  img_height=80,
                  stack_frame=4,
                  ):
-        
         self.img_processor = ImgProcessor()
         
         self.gray_img=gray_img
@@ -18,10 +17,10 @@ class Breakout:
         self.stack_frame=stack_frame
         self.num_channel = 1 if self.gray_img else 3 
         
-        self.stacked_state = np.zeros([self.num_channel*self.stack_frame, self.img_height, self.img_width])
+        self.stacked_state = np.zeros([self.num_channel*stack_frame, img_height, img_width])
         
         self.env = gym.make('Breakout-v0')
-        self.state_size = [img_width, img_height, stack_frame]
+        self.state_size = [stack_frame, img_height, img_width]
         self.action_size = 3
         self.score = 0
         self.life = 0

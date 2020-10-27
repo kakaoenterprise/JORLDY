@@ -2,5 +2,5 @@
 *.DS_Store
 **/.vscode/
 **/_hist/
-**/dev/
+**/_dev/
 **/.ipynb_checkpoints/
