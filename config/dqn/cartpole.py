@@ -19,3 +19,12 @@ agent = {
     "start_train_step": 10000,
     "target_update_term": 1000,
 }
+
+train = {
+    "training" : True,
+    "load_path" : None,
+    "train_step" : 100000,
+    "test_step" : 10000,
+    "print_term" : 10,
+    "save_term" : 100,
+}
