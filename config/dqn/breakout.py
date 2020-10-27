@@ -1,7 +1,7 @@
 ### DQN Config ###
 
-env ={
-    "name": "pong",
+env = {
+    "name": "breakout",
     "gray_img": True,
     "img_width": 84,
     "img_height": 84,
@@ -12,14 +12,22 @@ agent = {
     "name": "dqn",
     "network": "dqn_cnn",
     "optimizer": "adam",
-    "learning_rate": 0.00025,
+    "learning_rate": 5e-4,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,
-    "explore_step": 8900000,
+    "explore_step": 1000000,
     "buffer_size": 100000,
-    "batch_size": 32,
+    "batch_size": 64,
     "start_train_step": 100000,
-    "target_update_term": 10000,
-    "print_episode": 5,
+    "target_update_term": 500,
+}
+
+train = {
+    "training" : True,
+    "load_path" : None,
+    "train_step" : 10000000,
+    "test_step" : 1000000,
+    "print_term" : 10,
+    "save_term" : 100,
 }
