@@ -1,4 +1,4 @@
-### DQN Config ###
+### DQN BreakOut Config ###
 
 env = {
     "name": "breakout",
@@ -25,7 +25,7 @@ agent = {
 
 train = {
     "training" : True,
-    "load_path" : None,
+    "load_path" : None, #"./logs/breakout/dqn/20201027142347/",
     "train_step" : 10000000,
     "test_step" : 1000000,
     "print_term" : 10,
