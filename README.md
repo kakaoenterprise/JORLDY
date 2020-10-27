@@ -1,7 +1,7 @@
 # RL Algorithms
 
 # TODO
- - [ ] load, save model
+ - [x] load, save model
  - [x] write with tensorboard
  - [x] torch device 
  - [x] change cfg format
