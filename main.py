@@ -1,6 +1,5 @@
 from core import *
-from utils import LogManager
-import time 
+from managers import LogManager, BoardManager
 
 # import config.YOUR_AGENT.YOUR_ENV as config
 import config.dqn.atari as config
@@ -11,10 +10,16 @@ agent = Agent(state_size=env.state_size,
               **config.agent)
 
 episode = 0
-train_step = 100000
-test_step = 10000
+
+score_sum = 0
+loss_list = []
+
+train_step = 1000000
+test_step = 50000
 training = True
+
 log_manager = LogManager()
+board_manager = BoardManager(config.agent, config.env)
 
 state = env.reset()
 for step in range(train_step + test_step):
@@ -34,7 +39,13 @@ for step in range(train_step + test_step):
     
     if done:
         episode += 1
-        print(f"{episode} Episode / Score : {env.score} / Step : {step} / {log_manager.get_statistics()}")
+        score_sum += env.score
         state = env.reset()
+        
+        if episode % config.agent['print_episode'] == 0:
+            mean_score = score_sum/config.agent['print_episode']
+            print(f"{episode} Episode / Score : {mean_score} / Step : {step} / {log_manager.get_statistics()}")
+            board_manager.write_scalar(mean_score, step)
+            score_sum = 0
 
 env.close()
