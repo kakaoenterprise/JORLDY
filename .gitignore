@@ -1,7 +1,10 @@
 *.pyc
 *.DS_Store
+UnitySDK.log
 /logs/
 **/.vscode/
 **/_hist/
 **/_dev/
 **/.ipynb_checkpoints/
+**/__MACOSX/
+/Unity_ML_Agents/
