@@ -87,7 +87,6 @@ class Pong:
 
     def step(self, action):
         state, reward, done, info = self.env.step(action)
-        
 #         if self.life != info['ale.lives']:
 #             state, _, _, _ = self.env.step(1)
 #             state = self.img_processor.convert_img(state, self.gray_img, self.img_width, self.img_height)
