@@ -18,7 +18,7 @@ agent = {
     "tau":5e-3,
     "buffer_size":50000,
     "batch_size":128,
-    "start_train_step":5000,
+    "start_train_step":25000,
     "static_log_alpha":-2.0,
 }
 
