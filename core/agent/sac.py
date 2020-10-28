@@ -77,22 +77,17 @@ class SACAgent:
         if self.memory.length < max(self.batch_size, self.start_train_step):
             return None
 
-        state_batch, action_batch, reward_batch, next_state_batch, done_batch = self.memory.sample(self.batch_size)
-        
-        state_batch = torch.FloatTensor(state_batch).to(device)
-        action_batch = torch.FloatTensor(action_batch).to(device)
-        reward_batch = torch.FloatTensor(reward_batch).to(device)
-        next_state_batch = torch.FloatTensor(next_state_batch).to(device)
-        done_batch = torch.FloatTensor(done_batch).to(device)
-        
-        q1, q2 = self.critic(state_batch, action_batch)
+        transitions = self.memory.sample(self.batch_size)
+        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
+
+        q1, q2 = self.critic(state, action)
 
         with torch.no_grad():
-            mu, std = self.actor(next_state_batch)
+            mu, std = self.actor(next_state)
             next_action, next_log_prob = self.sample_action(mu, std)
-            next_target_q1, next_target_q2 = self.target_critic(next_state_batch, next_action)
+            next_target_q1, next_target_q2 = self.target_critic(next_state, next_action)
             min_next_target_q = torch.min(next_target_q1, next_target_q2) - self.alpha * next_log_prob
-            target_q = reward_batch + (1 - done_batch)*self.gamma*min_next_target_q
+            target_q = reward + (1 - done)*self.gamma*min_next_target_q
         
         max_Q = torch.max(target_q, axis=0).values.cpu().numpy()[0]
         
@@ -105,10 +100,10 @@ class SACAgent:
         self.critic_optimizer.step()
 
         # Actor
-        mu, std = self.actor(state_batch)
-        action, log_prob = self.sample_action(mu, std)
+        mu, std = self.actor(state)
+        sample_action, log_prob = self.sample_action(mu, std)
 
-        q1, q2 = self.critic(state_batch, action)
+        q1, q2 = self.critic(state, sample_action)
         min_q = torch.min(q1, q2)
 
         actor_loss = ((self.alpha.to(device) * log_prob) - min_q).mean()

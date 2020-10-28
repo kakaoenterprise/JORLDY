@@ -40,7 +40,9 @@ class DQNAgent:
         self.start_train_step = start_train_step
         self.target_update_term = target_update_term
         self.num_learn = 0
-    
+
+        self.update_target()
+
     def act(self, state, training=True):
         if random.random() < self.epsilon and training:
             self.network.train()
@@ -62,10 +64,9 @@ class DQNAgent:
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
         
         with torch.no_grad():
+            max_Q = torch.max(q).item()
             next_q = self.target_network(next_state)
             target_q = reward + next_q.max(1, keepdims=True).values * (self.gamma*(1 - done))
-        
-        max_Q = torch.max(q).item()
         
         loss = F.smooth_l1_loss(q, target_q)
 
@@ -80,7 +81,7 @@ class DQNAgent:
         result = {
             "loss" : loss.item(),
             "epsilon" : self.epsilon,
-            "max Q": max_Q,
+            "max_Q": max_Q,
         }
         return result
 
