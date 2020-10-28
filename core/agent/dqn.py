@@ -60,9 +60,14 @@ class DQNAgent:
         eye = torch.eye(self.action_size).to(device)
         one_hot_action = eye[action.view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
-        next_q = self.target_network(next_state)
-        target_q = reward + next_q.max(1, keepdims=True).values * (self.gamma*(1 - done))
-        loss = F.smooth_l1_loss(q, target_q).mean()
+        
+        with torch.no_grad():
+            next_q = self.target_network(next_state)
+            target_q = reward + next_q.max(1, keepdims=True).values * (self.gamma*(1 - done))
+        
+        max_Q = torch.max(q).item()
+        
+        loss = F.smooth_l1_loss(q, target_q)
 
         self.optimizer.zero_grad()
         loss.backward()
@@ -75,6 +80,7 @@ class DQNAgent:
         result = {
             "loss" : loss.item(),
             "epsilon" : self.epsilon,
+            "max Q": max_Q,
         }
         return result
 
@@ -94,8 +100,7 @@ class DQNAgent:
             pass
             
     def epsilon_decay(self):
-        new_epsilon = self.epsilon - ((self.epsilon_init - self.epsilon_min)/\
-                                      (self.explore_step - self.start_train_step))
+        new_epsilon = self.epsilon - (self.epsilon_init - self.epsilon_min)/(self.explore_step)
         self.epsilon = max(self.epsilon_min, new_epsilon)
 
     def save(self, path):
