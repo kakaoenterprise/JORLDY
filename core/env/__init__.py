@@ -7,7 +7,9 @@ class Env:
     "cartpole": CartPole,
     "pendulum": Pendulum,
     "breakout": Breakout,
-    "pong": Pong
+    "pong": Pong,
+    "hopper_mlagent": HopperMLAgent,
+    "pong_mlagent": PongMLAgent,
     }
     
     def __new__(self, name, *args, **kwargs):
