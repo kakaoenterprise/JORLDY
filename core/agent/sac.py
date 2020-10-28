@@ -159,7 +159,8 @@ class SACAgent:
         }, os.path.join(path,"ckpt"))
 
     def load(self, path):
-        checkpoint = torch.load(os.path.join(path,"ckpt"))
-        self.network.load_state_dict(checkpoint["network"])
-        self.update_target()
+        checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=device)
+        self.actor.load_state_dict(checkpoint["actor"])
+        self.critic.load_state_dict(checkpoint["critic"])
+        self.update_target('hard')
 

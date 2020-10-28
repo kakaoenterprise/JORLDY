@@ -1,6 +1,6 @@
 env = {
     "name": "hopper_mlagent",
-    "train_mode": True
+    "train_mode": False
 }
 
 agent = {
@@ -24,8 +24,8 @@ agent = {
 
 
 train = {
-    "training" : True,
-    "load_path" : None, #"./logs/breakout/dqn/20201027142347/",
+    "training" : False,
+    "load_path" : "./logs/hopper_mlagent/sac/20201028134406/",
     "train_step" : 1000000,
     "test_step" : 100000,
     "print_term" : 10,

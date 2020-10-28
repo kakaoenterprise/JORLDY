@@ -54,4 +54,6 @@ for step in range(train_step + test_step):
             print("...Save Model...")
             agent.save(log_manager.path)
 
+print("...Save Model...")
+agent.save(log_manager.path)
 env.close()
