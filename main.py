@@ -27,10 +27,11 @@ episode = 0
 state = env.reset()
 for step in range(train_step + test_step):
     if step == train_step:
+        if training:
+            print(f"...Save model to {log_manager.path}...")
+            agent.save(log_manager.path)
         print("### TEST START ###")
         training = False
-        print(f"...Save model to {log_manager.path}...")
-        agent.save(log_manager.path)
 
     action = agent.act([state], training)
     next_state, reward, done = env.step(action)
