@@ -17,7 +17,7 @@ if load_path:
 
 train_step = config.train["train_step"] if training else 0
 test_step = config.train["test_step"]
-print_term = config.train["print_term"]
+print_term = config.train["print_term"] if training else 1
 save_term = config.train["save_term"]
 
 metric_manager = MetricManager()
@@ -29,6 +29,8 @@ for step in range(train_step + test_step):
     if step == train_step:
         print("### TEST START ###")
         training = False
+        print("...Save Model...")
+        agent.save(log_manager.path)
     
     action = agent.act([state], training)
     next_state, reward, done = env.step(action)

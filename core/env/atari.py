@@ -19,7 +19,7 @@ class Breakout:
         
         self.stacked_state = np.zeros([self.num_channel*stack_frame, img_height, img_width])
         
-        self.env = gym.make('Breakout-v0')
+        self.env = gym.make('Breakout-v4')
         self.state_size = [stack_frame, img_height, img_width]
         self.action_size = 3
         self.score = 0
@@ -35,6 +35,7 @@ class Breakout:
         return self.stacked_state
 
     def step(self, action):
+        self.env.render()
         state, reward, done, info = self.env.step(action+1)
         
         if self.life != info['ale.lives']:
