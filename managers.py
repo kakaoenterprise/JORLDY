@@ -23,10 +23,11 @@ class MetricManager:
     
 class LogManager:
     def __init__(self, env, agent):
+        self.agent=agent
         now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         self.path = f"./logs/{env}/{agent}/{now}/"
         self.writer = SummaryWriter(self.path)
         
     def write_scalar(self, scalar_dict, step):
         for key, value in scalar_dict.items():
-            self.writer.add_scalar(key, value, step)    
+            self.writer.add_scalar(f"{self.agent}/"+key, value, step)    
