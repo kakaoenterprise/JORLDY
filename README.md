@@ -26,8 +26,8 @@
 
 ## Pong (DQN)
 
-<img src="./img/pong_mlagent_score.png" alt="pong_mlagent_score" style="height: 280px;"/><img src="./img/pong_result.gif" alt="pong_result" style="height: 280px;"/>
+<img src="./img/pong_mlagent_score.png" alt="pong_mlagent_score" width=40%/>  <img src="./img/pong_result.gif" alt="pong_result" width=40%/>
 
 ## Hopper (SAC)
 
-<img src="./img/hopper_mlagent_score.png" alt="hopper_mlagent_score" style="height: 280px;"/><img src="./img/hopper_result.gif" alt="hopper_result" style="height: 280px;"/>
+<img src="./img/hopper_mlagent_score.png" alt="hopper_mlagent_score" width=40%/>  <img src="./img/hopper_result.gif" alt="hopper_result" width=40%/>

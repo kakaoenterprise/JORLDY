@@ -1,3 +1,6 @@
+import os, sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__))) # for import mlagents
+
 from .gym_env import *
 from .atari import *
 from .ml_agent import * 
