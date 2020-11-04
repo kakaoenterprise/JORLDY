@@ -2,7 +2,7 @@
 
 env = {
     "name": "pong_mlagent",
-    "train_mode": True
+    "train_mode": False
 }
 
 agent = {
@@ -21,8 +21,8 @@ agent = {
 }
 
 train = {
-    "training" : True,
-    "load_path" : None, #"./logs/breakout/dqn/20201027142347/",
+    "training" : False,
+    "load_path" : "./logs/pong_mlagent/dqn/20201028150627/",
     "train_step" : 200000,
     "test_step" : 50000,
     "print_term" : 10,
