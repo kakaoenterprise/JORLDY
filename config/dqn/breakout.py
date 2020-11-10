@@ -2,6 +2,7 @@
 
 env = {
     "name": "breakout",
+    "render": True,
     "gray_img": True,
     "img_width": 84,
     "img_height": 84,
@@ -26,7 +27,7 @@ agent = {
 train = {
     "training" : True,
     "load_path" : None, #"./logs/breakout/dqn/tmp/",
-    "train_step" : 50000000,
+    "train_step" : 20000000,
     "test_step" : 1000000,
     "print_term" : 50,
     "save_term" : 500,

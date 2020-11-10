@@ -4,13 +4,14 @@ from .utils import ImgProcessor
 
 class Breakout:
     def __init__(self, 
+                 render=False,
                  gray_img=True,
                  img_width=80,
                  img_height=80,
                  stack_frame=4,
                  ):
         self.img_processor = ImgProcessor()
-        
+        self.render = render
         self.gray_img=gray_img
         self.img_width=img_width
         self.img_height=img_height
@@ -35,6 +36,8 @@ class Breakout:
         return self.stacked_state
 
     def step(self, action):
+        if self.render:
+            self.env.render()
         state, reward, done, info = self.env.step(action+1)
         
         if self.life != info['ale.lives']:
