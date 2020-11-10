@@ -27,6 +27,10 @@
 
 <img src="./img/pong_mlagent_score.png" alt="pong_mlagent_score" width=40%/>  <img src="./img/pong_result.gif" alt="pong_result" width=40%/>
 
+## BreakOut (DQN)
+
+<img src="./img/breakout_score.png" alt="breakout_score" width=40%/>  <img src="./img/breakout_result.gif" alt="breakout_result" width=40%/>
+
 ## Hopper (SAC)
 
 <img src="./img/hopper_mlagent_score.png" alt="hopper_mlagent_score" width=40%/>  <img src="./img/hopper_result.gif" alt="hopper_result" width=40%/>
