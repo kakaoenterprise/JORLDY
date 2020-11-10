@@ -1,10 +1,12 @@
 from .dqn import DQNAgent
 from .sac import SACAgent
+from .double_dqn import DoubleDQNAgent
 
 class Agent:
     dictionary = {
     "dqn": DQNAgent,
     "sac": SACAgent,
+    "double_dqn": DoubleDQNAgent
     }
     
     def __new__(self, name, *args, **kwargs):
