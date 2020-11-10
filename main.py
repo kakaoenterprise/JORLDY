@@ -21,7 +21,8 @@ print_term = config.train["print_term"]
 save_term = config.train["save_term"]
 
 metric_manager = MetricManager()
-log_manager = LogManager(config.env["name"], config.agent["name"])
+config_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
+log_manager = LogManager(config.env["name"], config_id)
 
 episode = 0
 state = env.reset()
