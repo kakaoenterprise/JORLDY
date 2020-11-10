@@ -1,4 +1,9 @@
-### SAC Config ###
+### SAC CartPole Config ###
+
+env = {
+    "name":"cartpole",
+    "mode":"continuous",
+}
 
 agent = {
     "name":"sac",
@@ -17,9 +22,13 @@ agent = {
     "batch_size":64,
     "start_train_step":5000,
     "static_log_alpha":-2.0,
-    "use_img": True,
-    "gray_img": True,
-    "img_width": 80,
-    "img_height": 80,
-    "stack_frame": 4,
+}
+
+train = {
+    "training" : True,
+    "load_path" : None,
+    "train_step" : 80000,
+    "test_step" : 50000,
+    "print_term" : 10,
+    "save_term" : 100,
 }

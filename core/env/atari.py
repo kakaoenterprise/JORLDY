@@ -19,7 +19,7 @@ class Breakout:
         
         self.stacked_state = np.zeros([self.num_channel*stack_frame, img_height, img_width])
         
-        self.env = gym.make('Breakout-v0')
+        self.env = gym.make('BreakoutDeterministic-v4')
         self.state_size = [stack_frame, img_height, img_width]
         self.action_size = 3
         self.score = 0

@@ -3,7 +3,8 @@ import numpy as np
 
 class HopperMLAgent:
     def __init__(self, train_mode=True):
-        self.env = UnityEnvironment(file_name="./core/env/mlagent_env/Hopper/MAC/Hopper", worker_id=np.random.randint(65535))
+        self.env = UnityEnvironment(file_name="./core/env/mlagents/Hopper/Server/Hopper", worker_id=np.random.randint(65535))
+
         self.state_size = 19*4
         self.action_size = 3
         self.train_mode = train_mode
@@ -37,7 +38,8 @@ class HopperMLAgent:
 
 class PongMLAgent:
     def __init__(self, train_mode=True):
-        self.env = UnityEnvironment(file_name="./core/env/mlagent_env/Pong/MAC/Pong", worker_id=np.random.randint(65535))
+        self.env = UnityEnvironment(file_name="./core/env/mlagents/Pong/Server/Pong", worker_id=np.random.randint(65535))
+
         self.state_size = 8*4
         self.action_size = 3
         self.train_mode = train_mode

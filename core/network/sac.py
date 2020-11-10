@@ -15,7 +15,9 @@ class SACActor(torch.nn.Module):
     def forward(self, x):
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
-        return self.mu(x), self.log_std(x).exp()
+        log_std = self.log_std(x)
+        log_std = torch.clamp(log_std, min=-5.0, max=2.0)
+        return self.mu(x), log_std.exp()
         
 class SACCritic(torch.nn.Module):
     def __init__(self, D_in, D_out, D_hidden=512):

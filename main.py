@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.sac.hopper_mlagent as config
+import config.dqn.breakout as config
 
 env = Env(**config.env)
 agent = Agent(state_size=env.state_size,
@@ -12,7 +12,7 @@ agent = Agent(state_size=env.state_size,
 training = config.train["training"]
 load_path = config.train["load_path"]
 if load_path:
-    print("...Load Model...")
+    print(f"...Load model from {load_path}...")
     agent.load(load_path)
 
 train_step = config.train["train_step"] if training else 0
@@ -27,9 +27,12 @@ episode = 0
 state = env.reset()
 for step in range(train_step + test_step):
     if step == train_step:
+        if training:
+            print(f"...Save model to {log_manager.path}...")
+            agent.save(log_manager.path)
         print("### TEST START ###")
         training = False
-    
+
     action = agent.act([state], training)
     next_state, reward, done = env.step(action)
     
@@ -51,7 +54,7 @@ for step in range(train_step + test_step):
             log_manager.write_scalar(statistics, step)
         
         if training and episode % save_term == 0:
-            print("...Save Model...")
+            print(f"...Save model to {log_manager.path}...")
             agent.save(log_manager.path)
 
 print("...Save Model...")
