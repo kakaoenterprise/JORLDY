@@ -1,7 +1,8 @@
-### DQN BreakOut Config ###
+### DQN Pong Config ###
 
 env = {
     "name": "pong",
+    "render": True,
     "gray_img": True,
     "img_width": 80,
     "img_height": 80,
