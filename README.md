@@ -30,7 +30,7 @@
 
 ## BreakOut (DQN)
 
-<img src="./img/breakout_score.png" alt="breakout_score" width=40%/>  <img src="./img/breakout_result.gif" alt="breakout_result" width=40%/>
+<img src="./img/breakout_score.png" alt="breakout_score" width=40%/>  <img src="./img/breakout_result.gif" alt="breakout_result" height=180/>
 
 ## Hopper (SAC)
 
