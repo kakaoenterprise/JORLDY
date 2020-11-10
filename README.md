@@ -5,9 +5,10 @@
  - [x] write with tensorboard
  - [x] torch device 
  - [x] change cfg format
+ - [x] Add ML-Agents Environments 
 
 # Install
-  
+
 ```
  $ git clone https://github.kakaocorp.com/leonard-q/RL_Algorithms.git  
  $ pip install -r requirements.txt  
