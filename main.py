@@ -21,8 +21,8 @@ print_term = config.train["print_term"]
 save_term = config.train["save_term"]
 
 metric_manager = MetricManager()
-config_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
-log_manager = LogManager(config.env["name"], config_id)
+log_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
+log_manager = LogManager(config.env["name"], log_id)
 
 episode = 0
 state = env.reset()
@@ -33,7 +33,7 @@ for step in range(train_step + test_step):
             agent.save(log_manager.path)
         print("### TEST START ###")
         training = False
-
+    
     action = agent.act([state], training)
     next_state, reward, done = env.step(action)
     
@@ -58,6 +58,4 @@ for step in range(train_step + test_step):
             print(f"...Save model to {log_manager.path}...")
             agent.save(log_manager.path)
 
-print("...Save Model...")
-agent.save(log_manager.path)
 env.close()
