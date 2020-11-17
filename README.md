@@ -34,8 +34,4 @@
 
 ## Hopper (SAC)
 
-<<<<<<< HEAD
 <img src="./img/hopper_mlagent_score.png" alt="hopper_mlagent_score" width=40%/>  <img src="./img/hopper_result.gif" alt="hopper_result" width=40%/>
-=======
-<img src="./img/hopper_mlagent_score.png" alt="hopper_mlagent_score" width=40%/>  <img src="./img/hopper_result.gif" alt="hopper_result" width=40%/>
->>>>>>> 1bf4235a84357d089291ccfc7609413100eccef3
