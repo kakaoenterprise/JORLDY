@@ -74,10 +74,8 @@ class DQNAgent:
         loss.backward()
         self.optimizer.step()
         
-        if self.num_learn % self.target_update_term == 0:
-            self.update_target()
         self.num_learn += 1
-        
+
         result = {
             "loss" : loss.item(),
             "epsilon" : self.epsilon,
@@ -88,17 +86,24 @@ class DQNAgent:
     def update_target(self):
         self.target_network.load_state_dict(self.network.state_dict())
         
-    def observe(self, state, action, reward, next_state, done):
+    def process(self, state, action, reward, next_state, done):
+        result = None
         # Process per step
         self.memory.store(state, action, reward, next_state, done)
-        
+        result = self.learn()
+
         # Process per step if train start
         if self.num_learn > 0:
             self.epsilon_decay()
+
+            if self.num_learn % self.target_update_term == 0:
+                self.update_target()
         
         # Process per episode
         if done:
             pass
+
+        return result
             
     def epsilon_decay(self):
         new_epsilon = self.epsilon - (self.epsilon_init - self.epsilon_min)/(self.explore_step)

@@ -51,6 +51,7 @@ class SACAgent:
         self.memory = ReplayBuffer(buffer_size)
         self.batch_size = batch_size
         self.start_train_step = start_train_step
+        self.num_learn = 0
 
         self.update_target('hard')
 
@@ -120,7 +121,7 @@ class SACAgent:
             alpha_loss.backward()
             self.alpha_optimizer.step()
 
-        self.update_target('soft')
+        self.num_learn += 1
         
         result = {
             'critic_loss1' : critic_loss1.item(),
@@ -139,13 +140,19 @@ class SACAgent:
             for t_p, p in zip(self.target_critic.parameters(), self.critic.parameters()):
                 t_p.data.copy_(self.tau*p.data + (1-self.tau)*t_p.data)
     
-    def observe(self, state, action, reward, next_state, done):
+    def process(self, state, action, reward, next_state, done):
+        result = None
         # Process per step
         self.memory.store(state, action, reward, next_state, done)        
-        
+        result = self.learn()
+        if self.num_learn > 0:
+            self.update_target('soft')
+
         # Process per epi
         if done :
             pass
+
+        return result
 
     def save(self, path):
         torch.save({

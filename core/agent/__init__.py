@@ -26,15 +26,23 @@ class TemplateAgent:
         pass
 
     def act(self, state):
-        pass
+        return action
 
     def learn(self):
-        pass
+        return result
     
-    def observe(self, state, action, reward, next_state, done)
+    def process(self, state, action, reward, next_state, done):
+        result = None
         # Process per step
         
         # Process per epi
         if done :
             pass
+        return result
+
+    def save(self, path):
+        pass
+
+    def load(self, path):
+        pass
 '''

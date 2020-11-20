@@ -37,8 +37,6 @@ class DoubleDQNAgent(DQNAgent):
         loss.backward()
         self.optimizer.step()
         
-        if self.num_learn % self.target_update_term == 0:
-            self.update_target()
         self.num_learn += 1
         
         result = {
