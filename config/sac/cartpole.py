@@ -16,7 +16,7 @@ agent = {
     "actor_lr":5e-4,
     "critic_lr":1e-3,
     "alpha_lr":3e-4,
-    "use_dynamic_alpha":False,
+    "use_dynamic_alpha":True,
     "gamma":0.99,
     "tau":5e-3,
     "buffer_size":50000,
@@ -27,7 +27,7 @@ agent = {
 
 train = {
     "training" : True,
-    "load_path" : None,
+    "load_path" : None, #"./logs/cartpole/sac/20201204202618/",
     "train_step" : 80000,
     "test_step" : 50000,
     "print_term" : 10,

@@ -162,7 +162,7 @@ class SACAgent:
             "critic_optimizer" : self.critic_optimizer.state_dict(),
         }
         if self.use_dynamic_alpha:
-            save_dict['alpha'] = self.alpha.state_dict()
+            save_dict['log_alpha'] = self.log_alpha
             save_dict['alpha_optimizer'] = self.alpha_optimizer.state_dict()
 
         torch.save(save_dict, os.path.join(path,"ckpt"))
@@ -177,8 +177,8 @@ class SACAgent:
         
         self.update_target('hard')
 
-        if self.use_dynamic_alpha and 'alpha' in checkpoint.keys():
-            self.alpha.load_state_dict(checkpoint['alpha'])
+        if self.use_dynamic_alpha and 'log_alpha' in checkpoint.keys():
+            self.log_alpha = checkpoint['log_alpha']
             self.alpha_optimizer.load_state_dict(checkpoint['alpha_optimizer'])
 
 
