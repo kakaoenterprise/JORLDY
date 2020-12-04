@@ -3,6 +3,7 @@
 env = {
     "name":"cartpole",
     "mode":"continuous",
+    "render":False,
 }
 
 agent = {

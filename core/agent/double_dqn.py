@@ -37,8 +37,6 @@ class DoubleDQNAgent(DQNAgent):
         loss.backward()
         self.optimizer.step()
         
-        if self.num_learn % self.target_update_term == 0:
-            self.update_target()
         self.num_learn += 1
         
         result = {
@@ -47,18 +45,3 @@ class DoubleDQNAgent(DQNAgent):
             "max_Q": max_Q,
         }
         return result
-
-        predict_Q = self.model(torch.FloatTensor(state_batch).to(self.device))
-        target_Q = predict_Q.cpu().detach().numpy()
-        target_nextQ = self.target_model(torch.FloatTensor(next_state_batch).to(self.device)).cpu().detach().numpy()
-
-        Q_a = self.model(torch.FloatTensor(next_state_batch).to(self.device)).cpu().detach().numpy()
-        max_Q = np.max(target_Q)
-
-        with torch.no_grad():
-            for i in range(config.batch_size):
-                if done_batch[i]:
-                    target_Q[i, action_batch[i]] = reward_batch[i]
-                else:
-                    action_ind = np.argmax(Q_a[i])
-                    target_Q[i, action_batch[i]] = reward_batch[i] + config.discount_factor * target_nextQ[i][action_ind]

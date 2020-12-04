@@ -51,6 +51,7 @@ class SACAgent:
         self.memory = ReplayBuffer(buffer_size)
         self.batch_size = batch_size
         self.start_train_step = start_train_step
+        self.num_learn = 0
 
         self.update_target('hard')
 
@@ -120,7 +121,7 @@ class SACAgent:
             alpha_loss.backward()
             self.alpha_optimizer.step()
 
-        self.update_target('soft')
+        self.num_learn += 1
         
         result = {
             'critic_loss1' : critic_loss1.item(),
@@ -139,23 +140,45 @@ class SACAgent:
             for t_p, p in zip(self.target_critic.parameters(), self.critic.parameters()):
                 t_p.data.copy_(self.tau*p.data + (1-self.tau)*t_p.data)
     
-    def observe(self, state, action, reward, next_state, done):
+    def process(self, state, action, reward, next_state, done):
+        result = None
         # Process per step
         self.memory.store(state, action, reward, next_state, done)        
-        
+        result = self.learn()
+        if self.num_learn > 0:
+            self.update_target('soft')
+
         # Process per epi
         if done :
             pass
 
+        return result
+
     def save(self, path):
-        torch.save({
+        save_dict = {
             "actor" : self.actor.state_dict(),
-            "critic" : self.critic.state_dict()
-        }, os.path.join(path,"ckpt"))
+            "actor_optimizer" : self.actor_optimizer.state_dict(),
+            "critic" : self.critic.state_dict(),
+            "critic_optimizer" : self.critic_optimizer.state_dict(),
+        }
+        if self.use_dynamic_alpha:
+            save_dict['alpha'] = self.alpha.state_dict()
+            save_dict['alpha_optimizer'] = self.alpha_optimizer.state_dict()
+
+        torch.save(save_dict, os.path.join(path,"ckpt"))
 
     def load(self, path):
         checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=device)
         self.actor.load_state_dict(checkpoint["actor"])
+        self.actor_optimizer.load_state_dict(checkpoint["actor_optimizer"])
+
         self.critic.load_state_dict(checkpoint["critic"])
+        self.critic_optimizer.load_state_dict(checkpoint["critic_optimizer"])
+        
         self.update_target('hard')
+
+        if self.use_dynamic_alpha and 'alpha' in checkpoint.keys():
+            self.alpha.load_state_dict(checkpoint['alpha'])
+            self.alpha_optimizer.load_state_dict(checkpoint['alpha_optimizer'])
+
 

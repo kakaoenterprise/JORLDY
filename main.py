@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.dqn.pong_mlagent as config
+import config.sac.cartpole as config
 
 env = Env(**config.env)
 agent = Agent(state_size=env.state_size,
@@ -38,8 +38,7 @@ for step in range(train_step + test_step):
     next_state, reward, done = env.step(action)
     
     if training:
-        agent.observe(state, action, reward, next_state, done)
-        result = agent.learn()
+        result = agent.process(state, action, reward, next_state, done)
         if result:
             metric_manager.append(result)
     state = next_state
