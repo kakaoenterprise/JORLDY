@@ -112,11 +112,13 @@ class DQNAgent:
     def save(self, path):
         torch.save({
             "network" : self.network.state_dict(),
+            "optimizer" : self.optimizer.state_dict(),
         }, os.path.join(path,"ckpt"))
 
     def load(self, path):
         checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=device)
         self.network.load_state_dict(checkpoint["network"])
+        self.optimizer.load_state_dict(checkpoint["optimizer"])
         self.update_target()
 
 

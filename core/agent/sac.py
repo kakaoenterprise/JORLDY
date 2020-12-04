@@ -155,14 +155,30 @@ class SACAgent:
         return result
 
     def save(self, path):
-        torch.save({
+        save_dict = {
             "actor" : self.actor.state_dict(),
-            "critic" : self.critic.state_dict()
-        }, os.path.join(path,"ckpt"))
+            "actor_optimizer" : self.actor_optimizer.state_dict(),
+            "critic" : self.critic.state_dict(),
+            "critic_optimizer" : self.critic_optimizer.state_dict(),
+        }
+        if self.use_dynamic_alpha:
+            save_dict['alpha'] = self.alpha.state_dict()
+            save_dict['alpha_optimizer'] = self.alpha_optimizer.state_dict()
+
+        torch.save(save_dict, os.path.join(path,"ckpt"))
 
     def load(self, path):
         checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=device)
         self.actor.load_state_dict(checkpoint["actor"])
+        self.actor_optimizer.load_state_dict(checkpoint["actor_optimizer"])
+
         self.critic.load_state_dict(checkpoint["critic"])
+        self.critic_optimizer.load_state_dict(checkpoint["critic_optimizer"])
+        
         self.update_target('hard')
+
+        if self.use_dynamic_alpha and 'alpha' in checkpoint.keys():
+            self.alpha.load_state_dict(checkpoint['alpha'])
+            self.alpha_optimizer.load_state_dict(checkpoint['alpha_optimizer'])
+
 
