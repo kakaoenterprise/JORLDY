@@ -47,7 +47,7 @@ class Pendulum:
     def step(self, action):
         if self.render:
             self.env.render()
-        next_state, reward, done, info = self.env.step([action])
+        next_state, reward, done, info = self.env.step(2*action)
         self.score += reward 
         return (next_state, reward, done)
 
