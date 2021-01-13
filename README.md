@@ -1,11 +1,21 @@
 # RL Algorithms
 
-# TODO
- - [x] load, save model
- - [x] write with tensorboard
- - [x] torch device 
- - [x] change cfg format
- - [x] Add ML-Agents Environments 
+# Implementation List
+### Algorithm
+
+- Deep Q Network (DQN)
+- Double DQN
+- Dueling DQN
+- Soft Actor Critic (SAC)
+
+### Environment 
+
+- Cartpole
+- Pendulum 
+- Atari 
+- ML-Agents 
+
+
 
 # Install
 
@@ -15,12 +25,7 @@
  $ python main.py 
 ```
 
-# Release Note
-## v 0.0.1
-    ADD DQN algorithm
-    ADD SAC algorithme
-    ADD CartPole environment
-    ADD Pendulum environment
+
 
 # Results
 
