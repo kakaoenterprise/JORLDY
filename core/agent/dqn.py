@@ -7,8 +7,6 @@ from core.network import Network
 from core.optimizer import Optimizer
 from .utils import ReplayBuffer
 
-import time 
-
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class DQNAgent:

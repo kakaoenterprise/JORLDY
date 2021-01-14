@@ -1,4 +1,4 @@
-### DQN CratPole Config ###
+### C51 CratPole Config ###
 
 env = {
     "name":"cartpole",
@@ -7,7 +7,7 @@ env = {
 }
 
 agent = {
-    "name": "dqn",
+    "name": "c51",
     "network": "dqn",
     "optimizer": "adam",
     "learning_rate": 1e-4,
@@ -19,6 +19,9 @@ agent = {
     "batch_size": 32,
     "start_train_step": 10000,
     "target_update_term": 200,
+    "v_min": -1,
+    "v_max": 10,
+    "num_support": 51
 }
 
 train = {

@@ -3,7 +3,6 @@ import torch.nn.functional as F
 import random
 import os
 import numpy as np 
-import time 
 
 from .dqn import DQNAgent
 from core.network import Network
@@ -18,7 +17,7 @@ class C51Agent(DQNAgent):
         self.v_max = v_max
         self.num_support = num_support 
         self.delta_z = (self.v_max - self.v_min) / (self.num_support - 1)
-        self.z = np.reshape(np.linspace(self.v_min, self.v_max, self.num_support), [1,self.num_support])
+        self.z = torch.linspace(self.v_min, self.v_max, self.num_support, device=device).view(1, -1)
         
     def act(self, state, training=True):
         if random.random() < self.epsilon and training:
@@ -34,73 +33,50 @@ class C51Agent(DQNAgent):
     def learn(self):        
         if self.memory.length < max(self.batch_size, self.start_train_step):
             return None
-        start_time = time.time()
         
         transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
         
-        p_logit, q_action = self.logits2Q(self.network(state))
+        logit = self.network(state)
+        p_logit, q_action = self.logits2Q(logit)
         
-        action_binary = np.zeros([self.batch_size, self.action_size, self.num_support])
-
-        for i in range(self.batch_size):
-            action_binary[i, int(action[i].item()), :] = 1
-
-        p_current_action = torch.sum(torch.FloatTensor(action_binary).to(device) * p_logit, dim=1) 
+        action_eye = torch.eye(self.action_size, device=device)
+        action_onehot = action_eye[action.view(-1).long()]
+        action_binary = torch.unsqueeze(action_onehot, -1).repeat(1,1,self.num_support)
+        p_action = torch.sum(action_binary * p_logit, 1) 
         
-        z = torch.FloatTensor(self.z)
-        
-        target_dist = torch.zeros(self.batch_size, self.num_support, requires_grad=False)
-        
+        target_dist = torch.zeros(self.batch_size, self.num_support, device=device, requires_grad=False)
+    
         with torch.no_grad():
-            p_logit_target, q_action_target = self.logits2Q(self.target_network(next_state))
-            for i in range(self.batch_size):
-                action_max = torch.argmax(q_action_target[i, :]).item()
-                reward_ = reward[i].item()
-                if done[i]:
-                    Tz = reward_
-
-                    # Bounding Tz
-                    if Tz >= self.v_max:
-                        Tz = self.v_max
-                    elif Tz <= self.v_min:
-                        Tz = self.v_min
-
-                    b = (Tz - self.v_min) / self.delta_z
-                    l = np.int32(np.floor(b))
-                    u = np.int32(np.ceil(b))
-
-                    target_dist[i, l] += (u - b)
-                    target_dist[i, u] += (b - l)
-
-                    if l==u:
-                        target_dist[i,l] = 1
-                else:
-                    for j in range(self.num_support):
-                        Tz = reward_ + self.gamma * self.z[0,j]
-
-                        # Bounding Tz
-                        if Tz >= self.v_max:
-                            Tz = self.v_max
-                        elif Tz <= self.v_min:
-                            Tz = self.v_min
-                        
-                        b = (Tz - self.v_min) / self.delta_z
-                        l = np.int32(np.floor(b))
-                        u = np.int32(np.ceil(b))
-
-                        target_dist[i, l] += p_logit_target[i, action_max, j].item() * (u - b)
-                        target_dist[i, u] += p_logit_target[i, action_max, j].item() * (b - l)
-
-                    sum_target_dist = torch.sum(target_dist[i,:])
-                    for j in range(self.num_support):
-                        target_dist[i, j] = target_dist[i, j] / sum_target_dist
+            target_p_logit, target_q_action = self.logits2Q(self.target_network(next_state))
+            
+            target_action = torch.argmax(target_q_action, -1, keepdims=True)
+            target_action_onehot = action_eye[target_action.view(-1).long()]
+            target_action_binary = torch.unsqueeze(target_action_onehot, -1).repeat(1,1,self.num_support)
+            target_p_action = torch.sum(target_action_binary * target_p_logit, 1)
+            
+            Tz = reward.expand(-1,self.num_support) + (1-done)*self.gamma*self.z
+            
+            b = torch.clamp(Tz - self.v_min, 0, self.v_max - self.v_min)/ self.delta_z
+            l = torch.floor(b).long()
+            u = torch.ceil(b).long()
+            
+            support_eye = torch.eye(self.num_support, device=device)
+            l_support_onehot = support_eye[l]
+            u_support_onehot = support_eye[u]
+            
+            l_support_binary = torch.unsqueeze(u-b, -1).repeat(1,1,self.num_support)
+            u_support_binary = torch.unsqueeze(b-l, -1).repeat(1,1,self.num_support)
+            
+            target_dist = torch.sum(l_support_onehot * l_support_binary + u_support_onehot * u_support_binary, 1)
+            target_dist += done * torch.mean(l_support_onehot * u_support_onehot, 1)
+            target_dist += (1 - done)*(target_p_action - 1)*target_dist
+            target_dist /= torch.clamp(done + (1 - done) * torch.sum(target_dist, 1, keepdim=True), min=1e-4)
         
         max_Q = torch.max(q_action).item()
-
-        target_dist_gpu = target_dist.to(device)
-        loss = -(target_dist_gpu * p_current_action.log()).sum(-1)
-        loss = loss.mean()
+        max_logit = torch.max(logit).item()
+        min_logit = torch.min(logit).item()
+        loss = -(target_dist*p_action.log()).sum(-1).mean()
 
         self.optimizer.zero_grad()
         loss.backward()
@@ -112,19 +88,17 @@ class C51Agent(DQNAgent):
             "loss" : loss.item(),
             "epsilon" : self.epsilon,
             "max_Q": max_Q,
+            "max_logit": max_logit,
+            "min_logit": min_logit,
         }
-#         print(time.time()-start_time)
         return result
     
     def logits2Q(self, logits):
-        logits_reshape = torch.reshape(logits, (-1, self.action_size, self.num_support))
-        p_logit = F.softmax(logits_reshape, dim=-1)
+        _logits = logits.view(-1, self.action_size, self.num_support)
+        _logits_clip = torch.clamp(_logits, -10., 10.)
+        p_logit = F.softmax(_logits_clip, dim=-1)
 
-        z = torch.FloatTensor(self.z)
-
-        z_action = z.repeat(p_logit.shape[0]*self.action_size,1)
-        z_action = torch.reshape(z_action, (-1, self.action_size, self.num_support)).to(device)
-        
+        z_action = self.z.expand(p_logit.shape[0], self.action_size, self.num_support)
         q_action = torch.sum(z_action * p_logit, dim=-1)
         
         return p_logit, q_action 

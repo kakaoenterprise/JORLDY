@@ -1,4 +1,4 @@
-### DQN Pong_ML-Agents Config ###
+### C51 Pong_ML-Agents Config ###
 
 env = {
     "name": "pong_mlagent",
@@ -6,10 +6,10 @@ env = {
 }
 
 agent = {
-    "name": "dqn",
-    "network": "dueling",
+    "name": "c51",
+    "network": "dqn",
     "optimizer": "adam",
-    "learning_rate": 0.00025,
+    "learning_rate": 1e-4,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,
@@ -18,6 +18,9 @@ agent = {
     "batch_size": 64,
     "start_train_step": 25000,
     "target_update_term": 1000,
+    "v_min": -1,
+    "v_max": 10,
+    "num_support": 11
 }
 
 train = {
@@ -27,5 +30,4 @@ train = {
     "test_step" : 50000,
     "print_term" : 10,
     "save_term" : 500,
-    "id": "ddqn"
 }

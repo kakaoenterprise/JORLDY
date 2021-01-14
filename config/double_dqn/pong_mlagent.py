@@ -1,4 +1,4 @@
-### DQN Pong_ML-Agents Config ###
+### Double_DQN BreakOut Config ###
 
 env = {
     "name": "pong_mlagent",
@@ -6,7 +6,7 @@ env = {
 }
 
 agent = {
-    "name": "dqn",
+    "name": "double_dqn",
     "network": "dueling",
     "optimizer": "adam",
     "learning_rate": 0.00025,
@@ -27,5 +27,5 @@ train = {
     "test_step" : 50000,
     "print_term" : 10,
     "save_term" : 500,
-    "id": "ddqn"
+    "id": "dddqn"
 }
