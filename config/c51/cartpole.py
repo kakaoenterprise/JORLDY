@@ -21,7 +21,7 @@ agent = {
     "target_update_term": 200,
     "v_min": -1,
     "v_max": 10,
-    "num_support": 11
+    "num_support": 51
 }
 
 train = {

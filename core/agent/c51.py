@@ -33,11 +33,12 @@ class C51Agent(DQNAgent):
     def learn(self):        
         if self.memory.length < max(self.batch_size, self.start_train_step):
             return None
-
+        
         transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
         
-        p_logit, q_action = self.logits2Q(self.network(state))
+        logit = self.network(state)
+        p_logit, q_action = self.logits2Q(logit)
         
         action_eye = torch.eye(self.action_size, device=device)
         action_onehot = action_eye[action.view(-1).long()]
@@ -70,10 +71,11 @@ class C51Agent(DQNAgent):
             target_dist = torch.sum(l_support_onehot * l_support_binary + u_support_onehot * u_support_binary, 1)
             target_dist += done * torch.mean(l_support_onehot * u_support_onehot, 1)
             target_dist += (1 - done)*(target_p_action - 1)*target_dist
-            target_dist /= done + (1 - done) * torch.sum(target_dist, 1, keepdim=True)
+            target_dist /= torch.clamp(done + (1 - done) * torch.sum(target_dist, 1, keepdim=True), min=1e-4)
         
         max_Q = torch.max(q_action).item()
-
+        max_logit = torch.max(logit).item()
+        min_logit = torch.min(logit).item()
         loss = -(target_dist*p_action.log()).sum(-1).mean()
 
         self.optimizer.zero_grad()
@@ -86,12 +88,15 @@ class C51Agent(DQNAgent):
             "loss" : loss.item(),
             "epsilon" : self.epsilon,
             "max_Q": max_Q,
+            "max_logit": max_logit,
+            "min_logit": min_logit,
         }
         return result
     
     def logits2Q(self, logits):
         _logits = logits.view(-1, self.action_size, self.num_support)
-        p_logit = F.softmax(_logits, dim=-1)
+        _logits_clip = torch.clamp(_logits, -10., 10.)
+        p_logit = F.softmax(_logits_clip, dim=-1)
 
         z_action = self.z.expand(p_logit.shape[0], self.action_size, self.num_support)
         q_action = torch.sum(z_action * p_logit, dim=-1)
