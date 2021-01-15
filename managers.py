@@ -1,16 +1,15 @@
 import numpy as np 
 import datetime
+from collections import defaultdict
 
 from torch.utils.tensorboard import SummaryWriter
 
 class MetricManager:
     def __init__(self):
-        self.metrics = dict()
+        self.metrics = defaultdict(list)
         
     def append(self, result):
         for key, value in result.items():
-            if not key in self.metrics:
-                self.metrics[key] = []
             self.metrics[key].append(value)
     
     def get_statistics(self, mode='mean'):
