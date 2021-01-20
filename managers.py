@@ -29,4 +29,5 @@ class LogManager:
         
     def write_scalar(self, scalar_dict, step):
         for key, value in scalar_dict.items():
-            self.writer.add_scalar(f"{self.id}/"+key, value, step)    
+            self.writer.add_scalar(f"{self.id}/"+key, value, step)
+            self.writer.add_scalar("all/"+key, value, step)
