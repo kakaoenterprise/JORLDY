@@ -31,10 +31,10 @@ for step in range(train_step + test_step):
         if training:
             print(f"...Save model to {log_manager.path}...")
             agent.save(log_manager.path)
+            training = False
         print("### TEST START ###")
-        training = False
     
-    action = agent.act([state], training)
+    action = agent.act(state, training)
     next_state, reward, done = env.step(action)
     
     if training:

@@ -1,4 +1,5 @@
 import gym
+import numpy as np
 
 class CartPole:
     def __init__(self,
@@ -14,16 +15,20 @@ class CartPole:
     def reset(self):
         self.score = 0
         state = self.env.reset()
+        state = np.expand_dims(state, 0) # for (1, state_size)
         return state
 
     def step(self, action):
         if self.render:
             self.env.render()
+        action = np.asscalar(action)
         if self.mode == 'continuous':
              action = 0 if action < 0 else 1
         next_state, reward, done, info = self.env.step(action)
         self.score += reward 
         reward = -1 if done else 0.1
+
+        next_state, reward, done = map(lambda x: np.expand_dims(x, 0), [next_state, [reward], [done]]) # for (1, ?)
         return (next_state, reward, done)
 
     def close(self):
@@ -42,14 +47,17 @@ class Pendulum:
     def reset(self):
         self.score = 0
         state = self.env.reset()
+        state = np.expand_dims(state, 0) # for (1, state_size)
         return state
 
     def step(self, action):
         if self.render:
             self.env.render()
-        state, reward, done, info = self.env.step(2*action)
+        next_state, reward, done, info = self.env.step(2*action[0])
         self.score += reward 
-        return (state, reward, done)
+
+        next_state, reward, done = map(lambda x: np.expand_dims(x, 0), [next_state, [reward], [done]]) # for (1, ?)
+        return (next_state, reward, done)
 
     def close(self):
         self.env.close()

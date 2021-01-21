@@ -2,7 +2,7 @@
 
 env = {
     "name": "pong",
-    "render": True,
+    "render": False,
     "gray_img": True,
     "img_width": 80,
     "img_height": 80,

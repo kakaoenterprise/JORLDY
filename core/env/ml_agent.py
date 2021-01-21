@@ -19,18 +19,20 @@ class HopperMLAgent:
     def reset(self):
         self.score = 0
         self.env_info = self.env.reset(train_mode=self.train_mode)[self.default_brain]
-        state = np.array(self.env_info.vector_observations[0])
+        state = self.env_info.vector_observations
+
         return state
 
     def step(self, action):
         self.env_info = self.env.step(action)[self.default_brain]
         
-        next_state = np.array(self.env_info.vector_observations[0])
-        reward = self.env_info.rewards[0]
-        done = self.env_info.local_done[0]
+        next_state = self.env_info.vector_observations
+        reward = self.env_info.rewards
+        done = self.env_info.local_done
         
-        self.score += reward 
+        self.score += reward[0] 
 
+        reward, done = map(np.array, [reward, done])
         return (next_state, reward, done)
 
     def close(self):
@@ -54,18 +56,19 @@ class PongMLAgent:
     def reset(self):
         self.score = 0
         self.env_info = self.env.reset(train_mode=self.train_mode)[self.default_brain]
-        state = np.array(self.env_info.vector_observations[0])
+        state = self.env_info.vector_observations
         return state
 
     def step(self, action):
         self.env_info = self.env.step(action)[self.default_brain]
         
-        next_state = np.array(self.env_info.vector_observations[0])
-        reward = self.env_info.rewards[0]
-        done = self.env_info.local_done[0]
+        next_state = self.env_info.vector_observations
+        reward = self.env_info.rewards
+        done = self.env_info.local_done
         
-        self.score += reward 
-
+        self.score += reward[0]
+        
+        reward, done = map(np.array, [reward, done])
         return (next_state, reward, done)
 
     def close(self):
