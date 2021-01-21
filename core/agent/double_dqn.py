@@ -11,7 +11,7 @@ class DoubleDQNAgent(DQNAgent):
         super(DoubleDQNAgent, self).__init__(**kwargs)
 
     def learn(self):        
-        if self.memory.length < max(self.batch_size, self.start_train_step):
+        if self.memory.size < max(self.batch_size, self.start_train_step):
             return None
         
         transitions = self.memory.sample(self.batch_size)

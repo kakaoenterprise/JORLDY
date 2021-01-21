@@ -56,12 +56,17 @@ class SACAgent:
         self.update_target('hard')
 
     def act(self, state, training=True):
+        if training:
+            self.actor.train()
+        else:
+            self.actor.eval()
+            
         mu, std = self.actor(torch.FloatTensor(state).to(device))
         std = std if training else 0
         m = Normal(mu, std)
-        z = m.rsample()
+        z = m.sample()
         action = torch.tanh(z)
-        action = action[0].data.cpu().detach().numpy()
+        action = action.data.cpu().numpy()
         return action
 
     def sample_action(self, mu, std):
@@ -75,7 +80,7 @@ class SACAgent:
         return action, log_prob
 
     def learn(self):
-        if self.memory.length < max(self.batch_size, self.start_train_step):
+        if self.memory.size < max(self.batch_size, self.start_train_step):
             return None
 
         transitions = self.memory.sample(self.batch_size)

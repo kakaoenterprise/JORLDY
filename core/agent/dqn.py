@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-import random
+import numpy as np
 import os
 
 from core.network import Network
@@ -54,15 +54,14 @@ class DQNAgent:
             self.network.eval()
             epsilon = self.epsilon_eval
             
-        if random.random() < epsilon:
-            action = random.randint(0, self.action_size-1)
+        if np.random.random() < epsilon:
+            action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            action = torch.argmax(self.network(torch.FloatTensor(state).to(device))).item()
-            
+            action = torch.argmax(self.network(torch.FloatTensor(state).to(device)), -1, keepdim=True).data.cpu().numpy()
         return action
 
     def learn(self):
-        if self.memory.length < max(self.batch_size, self.start_train_step):
+        if self.memory.size < max(self.batch_size, self.start_train_step):
             return None
         
         transitions = self.memory.sample(self.batch_size)

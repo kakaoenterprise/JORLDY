@@ -1,6 +1,5 @@
 import torch
 import torch.nn.functional as F
-import random
 import os
 import numpy as np 
 
@@ -11,8 +10,8 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class C51Agent(DQNAgent):
     def __init__(self, state_size, action_size, v_min, v_max, num_support , **kwargs):
         super(C51Agent, self).__init__(state_size, action_size*num_support, **kwargs)  
+
         self.action_size = action_size 
-        
         self.v_min = v_min
         self.v_max = v_max
         self.num_support = num_support 
@@ -27,17 +26,16 @@ class C51Agent(DQNAgent):
             self.network.eval()
             epsilon = self.epsilon_eval
             
-        if random.random() < epsilon:
-            action = random.randint(0, self.action_size-1)
+        if np.random.random() < epsilon:
+            action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
             logits = self.network(torch.FloatTensor(state).to(device))
             _, q_action = self.logits2Q(logits)
-            action = torch.argmax(q_action).item()
-            
+            action = torch.argmax(q_action, -1, keepdim=True).data.cpu().numpy()
         return action
     
     def learn(self):        
-        if self.memory.length < max(self.batch_size, self.start_train_step):
+        if self.memory.size < max(self.batch_size, self.start_train_step):
             return None
         
         transitions = self.memory.sample(self.batch_size)
@@ -98,11 +96,11 @@ class C51Agent(DQNAgent):
         return result
     
     def logits2Q(self, logits):
-        _logits = logits.view(-1, self.action_size, self.num_support)
+        _logits = logits.view(logits.shape[0], self.action_size, self.num_support)
         _logits_max = torch.max(_logits, -1, keepdim=True).values
         p_logit = F.softmax(_logits - _logits_max, dim=-1)
 
         z_action = self.z.expand(p_logit.shape[0], self.action_size, self.num_support)
         q_action = torch.sum(z_action * p_logit, dim=-1)
         
-        return p_logit, q_action 
+        return p_logit, q_action

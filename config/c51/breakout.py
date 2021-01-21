@@ -13,7 +13,8 @@ agent = {
     "name": "c51",
     "network": "dqn_cnn",
     "optimizer": "adam",
-    "learning_rate": 1e-2,
+    "opt_eps": 1e-2/32,
+    "learning_rate": 0.00025,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,
@@ -22,8 +23,8 @@ agent = {
     "batch_size": 32,
     "start_train_step": 100000,
     "target_update_term": 10000,
-    "v_min": -10,
-    "v_max": 10,
+    "v_min": -5,
+    "v_max": 5,
     "num_support": 51
 }
 
