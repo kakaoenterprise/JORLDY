@@ -154,7 +154,7 @@ class SACAgent:
             self.update_target('soft')
 
         # Process per epi
-        if done :
+        if done.all() :
             pass
 
         return result
