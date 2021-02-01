@@ -74,12 +74,12 @@ class C51Agent(DQNAgent):
             lluu = l_support_onehot * l_support_binary + u_support_onehot * u_support_binary
             target_dist += done * torch.mean(l_support_onehot * u_support_onehot + lluu, 1)
             target_dist += (1 - done)* torch.sum(target_p_action_binary * lluu, 1)
-            target_dist /= torch.clamp(torch.sum(target_dist, 1, keepdim=True), min=1e-6)
+            target_dist /= torch.clamp(torch.sum(target_dist, 1, keepdim=True), min=1e-8)
 
         max_Q = torch.max(q_action).item()
         max_logit = torch.max(logit).item()
         min_logit = torch.min(logit).item()
-        loss = -(target_dist*torch.clamp(p_action, min=1e-6).log()).sum(-1).mean()
+        loss = -(target_dist*torch.clamp(p_action, min=1e-8).log()).sum(-1).mean()
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
