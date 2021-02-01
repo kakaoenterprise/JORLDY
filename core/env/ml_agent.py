@@ -32,7 +32,7 @@ class HopperMLAgent:
         
         self.score += reward[0] 
 
-        reward, done = map(np.array, [reward, done])
+        reward, done = map(lambda x: np.expand_dims(x, 0), [reward, done])
         return (next_state, reward, done)
 
     def close(self):
@@ -68,7 +68,7 @@ class PongMLAgent:
         
         self.score += reward[0]
         
-        reward, done = map(np.array, [reward, done])
+        reward, done = map(lambda x: np.expand_dims(x, 0), [reward, done])
         return (next_state, reward, done)
 
     def close(self):

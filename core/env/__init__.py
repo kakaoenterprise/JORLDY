@@ -11,6 +11,7 @@ class Env:
     "pendulum": Pendulum,
     "breakout": Breakout,
     "pong": Pong,
+    "asterix": Asterix,
     "hopper_mlagent": HopperMLAgent,
     "pong_mlagent": PongMLAgent,
     }

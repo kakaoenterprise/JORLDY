@@ -1,7 +1,7 @@
-### C51 BreakOut Config ###
+### C51 Asterix Config ###
 
 env = {
-    "name": "breakout",
+    "name": "asterix",
     "render": False,
     "gray_img": True,
     "img_width": 84,

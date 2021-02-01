@@ -108,7 +108,7 @@ class DQNAgent:
                 self.update_target()
         
         # Process per episode
-        if done:
+        if done.all():
             pass
 
         return result
