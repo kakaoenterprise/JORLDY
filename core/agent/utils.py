@@ -7,6 +7,16 @@ class ReplayBuffer:
         self.buffer = deque(maxlen=buffer_size)
     
     def store(self, state, action, reward, next_state, done):
+        if len(self.buffer) == 0:
+            print("########################################")
+            print("You should check dimension of transition")
+            print("state:", state.shape)
+            print("action:", action.shape)
+            print("reward:", reward.shape)
+            print("next_state:", next_state.shape)
+            print("done:", done.shape)
+            print("########################################")
+            
         for s, a, r, ns, d in zip(state, action, reward, next_state, done):
             self.buffer.append((s, a, r, ns, d))
 
