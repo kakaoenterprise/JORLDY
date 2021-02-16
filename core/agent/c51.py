@@ -49,8 +49,8 @@ class C51Agent(DQNAgent):
         with torch.no_grad():
             target_p_logit, target_q_action = self.logits2Q(self.target_network(next_state))
             
-            target_action = torch.argmax(target_q_action, -1, keepdims=True)
-            target_action_onehot = action_eye[target_action.view(-1).long()]
+            target_action = torch.argmax(target_q_action, -1)
+            target_action_onehot = action_eye[target_action.long()]
             target_action_binary = torch.unsqueeze(target_action_onehot, -1).repeat(1,1,self.num_support)
             target_p_action = torch.sum(target_action_binary * target_p_logit, 1)
             
