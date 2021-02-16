@@ -19,12 +19,8 @@ class C51Agent(DQNAgent):
         self.z = torch.linspace(self.v_min, self.v_max, self.num_support, device=device).view(1, -1)
         
     def act(self, state, training=True):
-        if training:
-            self.network.train()
-            epsilon = self.epsilon
-        else:
-            self.network.eval()
-            epsilon = self.epsilon_eval
+        self.network.train(training)
+        epsilon = self.epsilon if training else self.epsilon_eval
             
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
