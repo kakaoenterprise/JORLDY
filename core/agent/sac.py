@@ -56,10 +56,7 @@ class SACAgent:
         self.update_target('hard')
 
     def act(self, state, training=True):
-        if training:
-            self.actor.train()
-        else:
-            self.actor.eval()
+        self.actor.train(training)
             
         mu, std = self.actor(torch.FloatTensor(state).to(device))
         std = std if training else 0

@@ -15,12 +15,8 @@ class QRDQNAgent(DQNAgent):
         self.num_support = num_support 
         
     def act(self, state, training=True):
-        if training:
-            self.network.train()
-            epsilon = self.epsilon
-        else:
-            self.network.eval()
-            epsilon = self.epsilon_eval
+        self.network.train(training)
+        epsilon = self.epsilon if training else self.epsilon_eval
             
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
@@ -30,7 +26,7 @@ class QRDQNAgent(DQNAgent):
             action = torch.argmax(q_action, -1, keepdim=True).data.cpu().numpy()
         return action
     
-    def learn(self):        
+    def learn(self):
         if self.memory.size < max(self.batch_size, self.start_train_step):
             return None
         
@@ -46,23 +42,21 @@ class QRDQNAgent(DQNAgent):
         action_binary = torch.unsqueeze(action_onehot, -1).repeat(1,1,self.num_support)
         
         theta_pred = torch.unsqueeze(torch.sum(logits * action_binary, 1), 1).repeat(1,self.num_support,1)
-        
-        # Get Theta Target 
-        logit_next = self.network(next_state)
-        _, q_next = self.logits2Q(logit_next)
-                
-        theta_target = torch.zeros(self.batch_size, self.num_support, device=device, requires_grad=False)
-        
         with torch.no_grad():
+            # Get Theta Target 
+            logit_next = self.network(next_state)
+            _, q_next = self.logits2Q(logit_next)
+
             logit_target = self.target_network(next_state)
             logits_target, q_target = self.logits2Q(logit_target)
             
-            for i in range(self.batch_size):
-                max_a = torch.argmax(q_next[i])
-                theta_target[i] = reward[i] + logits_target[i,max_a,:] * (self.gamma*(1 - done[i]))
+            max_a = torch.argmax(q_next, axis=-1)
+            max_a_onehot = action_eye[max_a.long()]
+            max_a_binary = torch.unsqueeze(max_a_onehot, -1).repeat(1,1,self.num_support)
             
-            theta_target = torch.unsqueeze(theta_target, -1).repeat(1,1,self.num_support)
-        
+            theta_target = reward + torch.sum(logits_target * max_a_binary, 1) * (self.gamma * (1 - done))
+            theta_target = torch.unsqueeze(theta_target, 1).repeat(1,self.num_support,1)
+            
         error_loss = theta_target - theta_pred 
 
         huber_loss = F.smooth_l1_loss(theta_target, theta_pred)

@@ -19,12 +19,8 @@ class C51Agent(DQNAgent):
         self.z = torch.linspace(self.v_min, self.v_max, self.num_support, device=device).view(1, -1)
         
     def act(self, state, training=True):
-        if training:
-            self.network.train()
-            epsilon = self.epsilon
-        else:
-            self.network.eval()
-            epsilon = self.epsilon_eval
+        self.network.train(training)
+        epsilon = self.epsilon if training else self.epsilon_eval
             
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
@@ -53,8 +49,8 @@ class C51Agent(DQNAgent):
         with torch.no_grad():
             target_p_logit, target_q_action = self.logits2Q(self.target_network(next_state))
             
-            target_action = torch.argmax(target_q_action, -1, keepdims=True)
-            target_action_onehot = action_eye[target_action.view(-1).long()]
+            target_action = torch.argmax(target_q_action, -1)
+            target_action_onehot = action_eye[target_action.long()]
             target_action_binary = torch.unsqueeze(target_action_onehot, -1).repeat(1,1,self.num_support)
             target_p_action = torch.sum(target_action_binary * target_p_logit, 1)
             
