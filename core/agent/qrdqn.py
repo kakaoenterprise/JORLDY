@@ -55,8 +55,7 @@ class QRDQNAgent(DQNAgent):
             max_a_binary = torch.unsqueeze(max_a_onehot, -1).repeat(1,1,self.num_support)
             
             theta_target = reward + torch.sum(logits_target * max_a_binary, 1) * (self.gamma * (1 - done))
-            theta_target = torch.unsqueeze(theta_target, 1).repeat(1,self.num_support,1)
-            
+            theta_target = torch.unsqueeze(theta_target, 2).repeat(1,1,self.num_support)
         error_loss = theta_target - theta_pred 
 
         huber_loss = F.smooth_l1_loss(theta_target, theta_pred)
