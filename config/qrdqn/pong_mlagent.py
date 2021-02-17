@@ -19,7 +19,7 @@ agent = {
     "batch_size": 32,
     "start_train_step": 25000,
     "target_update_term": 1000,
-    "num_support": 51
+    "num_support": 200
 }
 
 train = {
