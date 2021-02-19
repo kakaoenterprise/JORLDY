@@ -42,6 +42,7 @@ class QRDQNAgent(DQNAgent):
         action_binary = torch.unsqueeze(action_onehot, -1).repeat(1,1,self.num_support)
         
         theta_pred = torch.unsqueeze(torch.sum(logits * action_binary, 1), 1).repeat(1,self.num_support,1)
+        
         with torch.no_grad():
             # Get Theta Target 
             logit_next = self.network(next_state)
@@ -55,16 +56,16 @@ class QRDQNAgent(DQNAgent):
             max_a_binary = torch.unsqueeze(max_a_onehot, -1).repeat(1,1,self.num_support)
             
             theta_target = reward + torch.sum(logits_target * max_a_binary, 1) * (self.gamma * (1 - done))
-            theta_target = torch.unsqueeze(theta_target, 2).repeat(1,1,self.num_support)
+            theta_target = torch.unsqueeze(theta_target, -1).repeat(1,1,self.num_support)
+            
         error_loss = theta_target - theta_pred 
-
-        huber_loss = F.smooth_l1_loss(theta_target, theta_pred)
+        huber_loss = F.smooth_l1_loss(theta_target, theta_pred, reduction='none')
 
         # Get tau
         min_tau = 1/(2*self.num_support)
         max_tau = (2*self.num_support+1)/(2*self.num_support)
         tau = torch.reshape(torch.arange(min_tau, max_tau, 1/self.num_support), (1, self.num_support)).to(device)
-        inv_tau = 1.0 - tau 
+        inv_tau = 1.0 - tau
 
         # Get Loss
         loss = torch.where(error_loss< 0.0, inv_tau * huber_loss, tau * huber_loss)
