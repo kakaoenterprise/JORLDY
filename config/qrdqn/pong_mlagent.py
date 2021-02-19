@@ -1,4 +1,4 @@
-### C51 Pong_ML-Agents Config ###
+### QRDQN Pong_ML-Agents Config ###
 
 env = {
     "name": "pong_mlagent",
