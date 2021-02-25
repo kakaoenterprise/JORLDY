@@ -28,4 +28,5 @@ train = {
     "print_term" : 10,
     "save_term" : 500,
     "id": "dddqn"
+    "test_iteration": 10,
 }

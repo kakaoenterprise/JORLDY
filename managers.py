@@ -1,5 +1,6 @@
 import numpy as np 
 import datetime
+import copy
 from collections import defaultdict
 
 from torch.utils.tensorboard import SummaryWriter
@@ -31,3 +32,31 @@ class LogManager:
         for key, value in scalar_dict.items():
             self.writer.add_scalar(f"{self.id}/"+key, value, step)
             self.writer.add_scalar("all/"+key, value, step)
+            
+            
+class TestManager:
+    def __init__(self):
+        pass
+    
+    def test(self, agent, env, iteration=10):
+        env = copy.deepcopy(env)
+        
+        if not iteration > 0:
+            print("Error!!! test iteration is not > 0")
+            return 0
+        
+        scores = []
+        for i in range(iteration):
+            done = False
+            state = env.reset()
+            while not done:
+                action = agent.act(state, training=False)
+                state, reward, done = env.step(action)
+            scores.append(env.score)
+            
+        return np.mean(scores)
+        
+                
+        
+        
+        

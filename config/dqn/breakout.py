@@ -13,7 +13,7 @@ agent = {
     "name": "dqn",
     "network": "dqn_cnn",
     "optimizer": "adam",
-    "learning_rate": 1e-4,
+    "learning_rate": 0.00025,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
@@ -31,4 +31,5 @@ train = {
     "test_step" : 1000000,
     "print_term" : 50,
     "save_term" : 500,
+    "test_iteration": 5,
 }
