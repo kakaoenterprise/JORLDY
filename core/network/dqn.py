@@ -117,3 +117,65 @@ class Dueling_CNN(torch.nn.Module):
         out = x_a + x_v # [bs, num_action]
         return out
     
+class IQN(torch.nn.Module):
+    def __init__(self, D_in, D_out, D_em, N_sample, D_hidden=512):
+        super(IQN, self).__init__()
+        self.D_in = D_in
+        self.D_out = D_out * N_sample
+        self.D_em = D_em 
+        self.N_sample = N_sample
+        
+        self.state_embed = torch.nn.Linear(self.D_in, D_hidden)
+        self.sample_embed = torch.nn.Linear(self.D_em, D_hidden)
+        
+        self.l1 = torch.nn.Linear(D_hidden, D_hidden)
+        self.l2 = torch.nn.Linear(D_hidden, D_hidden)
+        self.q = torch.nn.Linear(D_hidden, D_out)
+
+    def forward(self, x, x_embed):               
+        state_embed = F.relu(self.state_embed(x))
+        state_embed_tile = state_embed.repeat(self.N_sample, 1)
+        
+        sample_embed_out = F.relu(self.sample_embed(x_embed))  
+
+        embed_out = state_embed_tile * sample_embed_out
+        
+        x = F.relu(self.l1(embed_out))
+        x = F.relu(self.l2(x))
+        return self.q(x)
+    
+class IQN_CNN(torch.nn.Module):
+    def __init__(self, D_in, D_out, D_em, N_sample):
+        super(IQN_CNN, self).__init__()
+        self.D_in = D_in
+        self.D_out = D_out * N_sample
+        self.D_em = D_em 
+        self.N_sample = N_sample
+        
+        self.conv1 = torch.nn.Conv2d(in_channels=self.D_in[0], out_channels=32, kernel_size=8, stride=4)
+        dim1 = ((self.D_in[1] - 8)//4 + 1, (self.D_in[2] - 8)//4 + 1)
+        self.conv2 = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
+        dim2 = ((dim1[0] - 4)//2 + 1, (dim1[1] - 4)//2 + 1)
+        self.conv3 = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+        dim3 = ((dim2[0] - 3)//1 + 1, (dim2[1] - 3)//1 + 1)
+        
+        self.fc_embed = torch.nn.Linear(self.D_em, 64*dim3[0]*dim3[1])
+        
+        self.fc1 = torch.nn.Linear(64*dim3[0]*dim3[1], 512)
+        self.fc2 = torch.nn.Linear(512, self.D_out)
+        
+    def forward(self, x, x_embed):
+        x = (x-(255.0/2))/(255.0/2)
+        
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        
+        h_flat = x.view(x.size(0), -1)
+        h_flat_tile = x_flat.repeat(self.N_sample, 1)
+        h_flat_embedding = h_flat_tile * x_embed
+                           
+        x = F.relu(self.fc1(h_flat_embedding))
+        x = self.fc2(x)
+        
+        return x
