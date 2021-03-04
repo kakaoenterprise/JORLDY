@@ -5,7 +5,8 @@ import numpy as np
 
 from .dqn import DQNAgent
 from core.network import Network
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class QRDQNAgent(DQNAgent):
     def __init__(self, state_size, action_size, num_support , **kwargs):

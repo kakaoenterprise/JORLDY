@@ -7,8 +7,9 @@ from core.optimizer import Optimizer
 from .utils import ReplayBuffer
 
 import os 
+import copy
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class SACAgent:
     def __init__(self,
@@ -32,7 +33,7 @@ class SACAgent:
                  ):
         self.actor = Network(actor, state_size, action_size).to(device)
         self.critic = Network(critic, state_size+action_size, action_size).to(device)
-        self.target_critic = Network(critic, state_size+action_size, action_size).to(device)
+        self.target_critic = copy.deepcopy(self.critic)
         self.actor_optimizer = Optimizer(actor_optimizer, self.actor.parameters(), lr=actor_lr)
         self.critic_optimizer = Optimizer(critic_optimizer, self.critic.parameters(), lr=critic_lr)
         
@@ -52,8 +53,6 @@ class SACAgent:
         self.batch_size = batch_size
         self.start_train_step = start_train_step
         self.num_learn = 0
-
-        self.update_target('hard')
 
     def act(self, state, training=True):
         self.actor.train(training)
@@ -135,12 +134,9 @@ class SACAgent:
         }
         return result
 
-    def update_target(self, mode):
-        if mode=='hard':  
-            self.target_critic.load_state_dict(self.critic.state_dict())
-        elif mode=='soft':
-            for t_p, p in zip(self.target_critic.parameters(), self.critic.parameters()):
-                t_p.data.copy_(self.tau*p.data + (1-self.tau)*t_p.data)
+    def update_target_soft(self):
+        for t_p, p in zip(self.target_critic.parameters(), self.critic.parameters()):
+            t_p.data.copy_(self.tau*p.data + (1-self.tau)*t_p.data)
     
     def process(self, state, action, reward, next_state, done):
         result = None
@@ -148,7 +144,7 @@ class SACAgent:
         self.memory.store(state, action, reward, next_state, done)        
         result = self.learn()
         if self.num_learn > 0:
-            self.update_target('soft')
+            self.update_target_soft()
 
         # Process per epi
         if done.all() :
@@ -157,6 +153,7 @@ class SACAgent:
         return result
 
     def save(self, path):
+        print(f"...Save model to {path}...")
         save_dict = {
             "actor" : self.actor.state_dict(),
             "actor_optimizer" : self.actor_optimizer.state_dict(),
@@ -170,14 +167,15 @@ class SACAgent:
         torch.save(save_dict, os.path.join(path,"ckpt"))
 
     def load(self, path):
+        print(f"...Load model from {path}...")
         checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=device)
         self.actor.load_state_dict(checkpoint["actor"])
         self.actor_optimizer.load_state_dict(checkpoint["actor_optimizer"])
 
         self.critic.load_state_dict(checkpoint["critic"])
+        self.target_critic = copy.deepcopy(self.critic)
         self.critic_optimizer.load_state_dict(checkpoint["critic_optimizer"])
         
-        self.update_target('hard')
 
         if self.use_dynamic_alpha and 'log_alpha' in checkpoint.keys():
             self.log_alpha = checkpoint['log_alpha']

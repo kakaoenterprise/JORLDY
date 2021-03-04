@@ -28,8 +28,9 @@ agent = {
 train = {
     "training" : True,
     "load_path" : None, #"./logs/cartpole/sac/20201204202618/",
-    "train_step" : 80000,
-    "test_step" : 50000,
+    "train_step" : 50000,
+    "test_step" : 10000,
     "print_term" : 10,
     "save_term" : 100,
+    "test_iteration": 10,
 }
