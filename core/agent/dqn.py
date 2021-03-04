@@ -2,12 +2,13 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 import os
+import copy
 
 from core.network import Network
 from core.optimizer import Optimizer
 from .utils import ReplayBuffer
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class DQNAgent:
     def __init__(self,
@@ -30,7 +31,7 @@ class DQNAgent:
         
         self.action_size = action_size
         self.network = Network(network, state_size, action_size).to(device)
-        self.target_network = Network(network, state_size, action_size).to(device)
+        self.target_network = copy.deepcopy(self.network)
         self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
         self.gamma = gamma
         self.epsilon = epsilon_init
@@ -43,8 +44,7 @@ class DQNAgent:
         self.start_train_step = start_train_step
         self.target_update_term = target_update_term
         self.num_learn = 0
-        
-        self.update_target()
+
 
     def act(self, state, training=True):
         self.network.train(training)
@@ -114,16 +114,19 @@ class DQNAgent:
         self.epsilon = max(self.epsilon_min, new_epsilon)
 
     def save(self, path):
+        print(f"...Save model to {path}...")
         torch.save({
             "network" : self.network.state_dict(),
             "optimizer" : self.optimizer.state_dict(),
         }, os.path.join(path,"ckpt"))
+        
 
     def load(self, path):
+        print(f"...Load model from {path}...")
         checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=device)
         self.network.load_state_dict(checkpoint["network"])
+        self.target_network = copy.deepcopy(self.network)
         self.optimizer.load_state_dict(checkpoint["optimizer"])
-        self.update_target()
 
 
         

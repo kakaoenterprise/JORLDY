@@ -28,6 +28,7 @@
 #     "print_term" : 10,
 #     "save_term" : 500,
 #     "id": "ddqn"
+#     "test_iteration": 10,
 # }
 
 ### DQN Pong_ML-Agents Config ###
@@ -59,4 +60,5 @@ train = {
     "test_step" : 50000,
     "print_term" : 10,
     "save_term" : 500,
+    "test_iteration": 10,
 }

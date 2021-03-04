@@ -30,4 +30,5 @@ train = {
     "test_step" : 10000,
     "print_term" : 5,
     "save_term" : 1000,
-}
+    "test_iteration": 10,
+}s
