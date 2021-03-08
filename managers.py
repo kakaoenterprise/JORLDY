@@ -39,8 +39,6 @@ class TestManager:
         pass
     
     def test(self, agent, env, iteration=10):
-        env = copy.deepcopy(env)
-        
         if not iteration > 0:
             print("Error!!! test iteration is not > 0")
             return 0

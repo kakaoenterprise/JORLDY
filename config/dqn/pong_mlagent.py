@@ -48,7 +48,7 @@ agent = {
     "epsilon_min": 0.1,
     "explore_step": 450000,
     "buffer_size": 50000,
-    "batch_size": 64,
+    "batch_size": 32,
     "start_train_step": 25000,
     "target_update_term": 1000,
 }
