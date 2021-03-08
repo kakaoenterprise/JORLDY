@@ -7,6 +7,8 @@ class Network:
     "dqn_cnn": DQN_CNN,
     "dueling": Dueling,
     "dueling_cnn": Dueling_CNN,
+    "iqn": IQN,
+    "iqn_CNN": IQN_CNN,
     "sac_actor": SACActor,
     "sac_critic": SACCritic,
     }

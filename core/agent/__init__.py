@@ -3,6 +3,7 @@ from .sac import SACAgent
 from .double_dqn import DoubleDQNAgent
 from .c51 import C51Agent
 from .qrdqn import QRDQNAgent
+from .iqn import IQNAgent 
 
 class Agent:
     dictionary = {
@@ -10,7 +11,8 @@ class Agent:
     "sac": SACAgent,
     "double_dqn": DoubleDQNAgent,
     "c51": C51Agent,
-    "qrdqn": QRDQNAgent
+    "qrdqn": QRDQNAgent,
+    "iqn": IQNAgent
     }
     
     def __new__(self, name, *args, **kwargs):
