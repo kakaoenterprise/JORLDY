@@ -6,6 +6,8 @@
 - Deep Q Network (DQN)
 - Double DQN
 - Dueling DQN
+- C51
+- QR-DQN
 - Soft Actor Critic (SAC)
 
 ### Environment 

@@ -45,6 +45,7 @@ class DQNAgent:
         self.target_update_term = target_update_term
         self.num_learn = 0
 
+
     def act(self, state, training=True):
         self.network.train(training)
         epsilon = self.epsilon if training else self.epsilon_eval
