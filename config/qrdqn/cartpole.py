@@ -1,4 +1,4 @@
-### C51 CratPole Config ###
+### QRDQN CratPole Config ###
 
 env = {
     "name":"cartpole",
@@ -31,4 +31,4 @@ train = {
     "print_term" : 5,
     "save_term" : 1000,
     "test_iteration": 10,
-}s
+}

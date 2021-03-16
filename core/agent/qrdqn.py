@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 import os
 import numpy as np 
+import time
 
 from .dqn import DQNAgent
 from core.network import Network
@@ -14,6 +15,12 @@ class QRDQNAgent(DQNAgent):
 
         self.action_size = action_size 
         self.num_support = num_support 
+        
+        # Get tau
+        min_tau = 1/(2*self.num_support)
+        max_tau = (2*self.num_support+1)/(2*self.num_support)
+        self.tau = torch.arange(min_tau, max_tau, 1/self.num_support, device=device).view(1, self.num_support)
+        self.inv_tau = 1 - self.tau
         
     def act(self, state, training=True):
         self.network.train(training)
@@ -37,12 +44,10 @@ class QRDQNAgent(DQNAgent):
         # Get Theta Pred
         logit = self.network(state)
         logits, q_action = self.logits2Q(logit)
-        
         action_eye = torch.eye(self.action_size, device=device)
-        action_onehot = action_eye[action.view(-1).long()]
-        action_binary = torch.unsqueeze(action_onehot, -1).repeat(1,1,self.num_support)
+        action_onehot = action_eye[action.long()]
         
-        theta_pred = torch.unsqueeze(torch.sum(logits * action_binary, 1), 1).repeat(1,self.num_support,1)
+        theta_pred = torch.matmul(action_onehot, logits)
         
         with torch.no_grad():
             # Get Theta Target 
@@ -50,27 +55,20 @@ class QRDQNAgent(DQNAgent):
             _, q_next = self.logits2Q(logit_next)
 
             logit_target = self.target_network(next_state)
-            logits_target, q_target = self.logits2Q(logit_target)
+            logits_target, _ = self.logits2Q(logit_target)
             
-            max_a = torch.argmax(q_next, axis=-1)
+            max_a = torch.argmax(q_next, axis=-1, keepdim=True)
             max_a_onehot = action_eye[max_a.long()]
-            max_a_binary = torch.unsqueeze(max_a_onehot, -1).repeat(1,1,self.num_support)
-            
-            theta_target = reward + torch.sum(logits_target * max_a_binary, 1) * (self.gamma * (1 - done))
-            theta_target = torch.unsqueeze(theta_target, -1).repeat(1,1,self.num_support)
-            
+
+            theta_target = reward + (1-done) * self.gamma * torch.squeeze(torch.matmul(max_a_onehot, logits_target), 1)
+            theta_target = torch.unsqueeze(theta_target, 2)
+        
         error_loss = theta_target - theta_pred 
         huber_loss = F.smooth_l1_loss(theta_target, theta_pred, reduction='none')
 
-        # Get tau
-        min_tau = 1/(2*self.num_support)
-        max_tau = (2*self.num_support+1)/(2*self.num_support)
-        tau = torch.reshape(torch.arange(min_tau, max_tau, 1/self.num_support), (1, self.num_support)).to(device)
-        inv_tau = 1.0 - tau
-
         # Get Loss
-        loss = torch.where(error_loss< 0.0, inv_tau * huber_loss, tau * huber_loss)
-        loss = torch.mean(torch.sum(torch.mean(loss, axis = 2), axis = 1))                
+        loss = torch.where(error_loss < 0.0, self.inv_tau, self.tau) * huber_loss
+        loss = torch.mean(torch.sum(loss, axis = 2))
         
         max_Q = torch.max(q_action).item()
         max_logit = torch.max(logit).item()
@@ -81,7 +79,7 @@ class QRDQNAgent(DQNAgent):
         self.optimizer.step()
         
         self.num_learn += 1
-        
+
         result = {
             "loss" : loss.item(),
             "epsilon" : self.epsilon,
@@ -93,6 +91,5 @@ class QRDQNAgent(DQNAgent):
     
     def logits2Q(self, logits):
         _logits = logits.view(logits.shape[0], self.action_size, self.num_support)
-        q_action = torch.sum(1/self.num_support * _logits, dim=-1)
-        
+        q_action = torch.mean(_logits, dim=-1)
         return _logits, q_action

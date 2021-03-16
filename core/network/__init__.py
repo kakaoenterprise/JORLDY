@@ -1,4 +1,6 @@
 from .dqn import *
+from .dueling import *
+from .iqn import *
 from .sac import *
 
 class Network:
@@ -8,7 +10,7 @@ class Network:
     "dueling": Dueling,
     "dueling_cnn": Dueling_CNN,
     "iqn": IQN,
-    "iqn_CNN": IQN_CNN,
+    "iqn_cnn": IQN_CNN,
     "sac_actor": SACActor,
     "sac_critic": SACCritic,
     }

@@ -41,18 +41,16 @@ class C51Agent(DQNAgent):
         p_logit, q_action = self.logits2Q(logit)
         
         action_eye = torch.eye(self.action_size, device=device)
-        action_onehot = action_eye[action.view(-1).long()]
-        action_binary = torch.unsqueeze(action_onehot, -1).repeat(1,1,self.num_support)
-        p_action = torch.sum(action_binary * p_logit, 1) 
-        
+        action_onehot = action_eye[action.long()]
+        p_action = torch.squeeze(torch.matmul(action_onehot, p_logit), 1)
+
         target_dist = torch.zeros(self.batch_size, self.num_support, device=device, requires_grad=False)
         with torch.no_grad():
             target_p_logit, target_q_action = self.logits2Q(self.target_network(next_state))
             
-            target_action = torch.argmax(target_q_action, -1)
+            target_action = torch.argmax(target_q_action, -1, keepdim=True)
             target_action_onehot = action_eye[target_action.long()]
-            target_action_binary = torch.unsqueeze(target_action_onehot, -1).repeat(1,1,self.num_support)
-            target_p_action = torch.sum(target_action_binary * target_p_logit, 1)
+            target_p_action = torch.squeeze(torch.matmul(target_action_onehot, target_p_logit), 1)
             
             Tz = reward.expand(-1,self.num_support) + (1-done)*self.gamma*self.z
             b = torch.clamp(Tz - self.v_min, 0, self.v_max - self.v_min)/ self.delta_z
@@ -62,10 +60,10 @@ class C51Agent(DQNAgent):
             support_eye = torch.eye(self.num_support, device=device)
             l_support_onehot = support_eye[l]
             u_support_onehot = support_eye[u]
-            
-            l_support_binary = torch.unsqueeze(u-b, -1).repeat(1,1,self.num_support)
-            u_support_binary = torch.unsqueeze(b-l, -1).repeat(1,1,self.num_support)
-            target_p_action_binary = torch.unsqueeze(target_p_action, -1).repeat(1,1,self.num_support)
+
+            l_support_binary = torch.unsqueeze(u-b, -1)
+            u_support_binary = torch.unsqueeze(b-l, -1)
+            target_p_action_binary = torch.unsqueeze(target_p_action, -1)
             
             lluu = l_support_onehot * l_support_binary + u_support_onehot * u_support_binary
             target_dist += done * torch.mean(l_support_onehot * u_support_onehot + lluu, 1)

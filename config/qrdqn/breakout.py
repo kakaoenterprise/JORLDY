@@ -14,7 +14,7 @@ agent = {
     "network": "dqn_cnn",
     "optimizer": "adam",
     "opt_eps": 1e-2/32,
-    "learning_rate": 1e-4,#0.00005,
+    "learning_rate": 1e-4,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
