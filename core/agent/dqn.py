@@ -66,12 +66,11 @@ class DQNAgent:
         eye = torch.eye(self.action_size).to(device)
         one_hot_action = eye[action.view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
-        
         with torch.no_grad():
             max_Q = torch.max(q).item()
             next_q = self.target_network(next_state)
-            target_q = reward + next_q.max(1, keepdims=True).values * (self.gamma*(1 - done))
-        
+            target_q = reward + (1 - done) * self.gamma * next_q.max(1, keepdims=True).values
+            
         loss = F.smooth_l1_loss(q, target_q)
 
         self.optimizer.zero_grad()

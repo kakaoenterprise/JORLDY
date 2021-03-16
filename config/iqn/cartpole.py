@@ -21,7 +21,7 @@ agent = {
     "start_train_step": 10000,
     "target_update_term": 500,
     
-    "num_sample": 32,
+    "num_sample": 64,
     "embedding_dim": 64,
     "sample_min": 0.0,
     "sample_max": 1.0
@@ -34,4 +34,5 @@ train = {
     "test_step" : 10000,
     "print_term" : 5,
     "save_term" : 1000,
+    "test_iteration" : 10,
 }
