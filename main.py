@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.qrdqn.breakout as config
+import config.iqn.breakout as config
 
 env = Env(**config.env)
 agent = Agent(state_size=env.state_size,
@@ -12,7 +12,6 @@ agent = Agent(state_size=env.state_size,
 training = config.train["training"]
 load_path = config.train["load_path"]
 if load_path:
-    print(f"...Load model from {load_path}...")
     agent.load(load_path)
 
 train_step = config.train["train_step"] if training else 0

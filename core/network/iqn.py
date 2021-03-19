@@ -20,7 +20,7 @@ class IQN(torch.nn.Module):
 
     def forward(self, x, tau_min=0, tau_max=1):               
         state_embed = F.relu(self.state_embed(x))
-        
+
         x_embed = self.make_embed(x, tau_min, tau_max)
         sample_embed_out = F.relu(self.sample_embed(x_embed))
 

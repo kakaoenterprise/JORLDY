@@ -66,11 +66,13 @@ class IQNAgent(QRDQNAgent):
     def act(self, state, training=True):
         self.network.train(training)
         epsilon = self.epsilon if training else self.epsilon_eval
-            
+        sample_min = 0 if training else self.sample_min
+        sample_max = 0 if training else self.sample_max
+        
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            logits = self.network(torch.FloatTensor(state).to(device), self.sample_min, self.sample_max)
+            logits = self.network(torch.FloatTensor(state).to(device), sample_min, sample_max)
             _, q_action = self.logits2Q(logits)
             action = torch.argmax(q_action, -1, keepdim=True).data.cpu().numpy()
         return action
