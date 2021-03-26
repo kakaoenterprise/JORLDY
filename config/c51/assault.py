@@ -1,7 +1,7 @@
-### IQN BreakOut Config ###
+### C51 Assualt Config ###
 
 env = {
-    "name": "breakout",
+    "name": "assault",
     "render": False,
     "gray_img": True,
     "img_width": 84,
@@ -10,11 +10,11 @@ env = {
 }
 
 agent = {
-    "name": "iqn",
-    "network": "iqn_cnn",
+    "name": "c51",
+    "network": "dqn_cnn",
     "optimizer": "adam",
     "opt_eps": 1e-2/32,
-    "learning_rate": 0.00005,
+    "learning_rate": 1e-4,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
@@ -23,11 +23,9 @@ agent = {
     "batch_size": 32,
     "start_train_step": 100000,
     "target_update_term": 10000,
-    
-    "num_sample": 64,
-    "embedding_dim": 64,
-    "sample_min": 0.0,
-    "sample_max": 1.0,
+    "v_min": -1,
+    "v_max": 10,
+    "num_support": 51
 }
 
 train = {

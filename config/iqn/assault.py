@@ -1,7 +1,7 @@
-### IQN BreakOut Config ###
+### IQN Assualt Config ###
 
 env = {
-    "name": "breakout",
+    "name": "assault",
     "render": False,
     "gray_img": True,
     "img_width": 84,
@@ -23,7 +23,7 @@ agent = {
     "batch_size": 32,
     "start_train_step": 100000,
     "target_update_term": 10000,
-    
+
     "num_sample": 64,
     "embedding_dim": 64,
     "sample_min": 0.0,
