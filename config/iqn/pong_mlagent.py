@@ -22,15 +22,15 @@ agent = {
     
     "num_sample": 64,
     "embedding_dim": 64,
-    "sample_min": 0.0,
+    "sample_min": 0.75, #0,
     "sample_max": 1.0
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
+    "training" : False, #True,
+    "load_path" : "logs/pong_mlagent/iqn/20210322152835",#None,
     "train_step" : 500000,
-    "test_step" : 50000,
+    "test_step" : 500000,
     "print_term" : 10,
     "save_term" : 500,
     "test_iteration": 10,

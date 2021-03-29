@@ -61,16 +61,20 @@ class Atari:
 
 class Breakout(Atari):
     def __init__(self, **kwargs):
-        super(Breakout, self).__init__('BreakoutDeterministic-v4')
+        super(Breakout, self).__init__('BreakoutDeterministic-v4', **kwargs)
 
 class Pong(Atari):
     def __init__(self, **kwargs):
-        super(Pong, self).__init__('Pong-v0')
+        super(Pong, self).__init__('Pong-v0', **kwargs)
 
 class Asterix(Atari):
     def __init__(self, **kwargs):
-        super(Asterix, self).__init__('Asterix-v0')
+        super(Asterix, self).__init__('Asterix-v0', **kwargs)
 
+class Assault(Atari):
+    def __init__(self, **kwargs):
+        super(Assault, self).__init__('AssaultDeterministic-v4', **kwargs)
+        
         
 # class Breakout:
 #     def __init__(self, 

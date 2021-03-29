@@ -12,7 +12,6 @@ agent = Agent(state_size=env.state_size,
 training = config.train["training"]
 load_path = config.train["load_path"]
 if load_path:
-    print(f"...Load model from {load_path}...")
     agent.load(load_path)
 
 run_step = config.train["run_step"]

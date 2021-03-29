@@ -12,6 +12,7 @@ class Env:
     "breakout": Breakout,
     "pong": Pong,
     "asterix": Asterix,
+    "assault": Assault,
     "hopper_mlagent": HopperMLAgent,
     "pong_mlagent": PongMLAgent,
     }
