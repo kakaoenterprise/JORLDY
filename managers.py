@@ -1,7 +1,13 @@
+import os
+for proxy in ['https_proxy', 'http_proxy']:
+    if os.environ.get(proxy): 
+        del os.environ[proxy]
+import ray
 import numpy as np 
 import datetime
 import copy
 from collections import defaultdict
+from functools import reduce
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -33,7 +39,6 @@ class LogManager:
             self.writer.add_scalar(f"{self.id}/"+key, value, step)
             self.writer.add_scalar("all/"+key, value, step)
             
-            
 class TestManager:
     def __init__(self):
         pass
@@ -53,8 +58,41 @@ class TestManager:
             scores.append(env.score)
             
         return np.mean(scores)
+
+class DistributedManager:
+    def __init__(self, env, agent, num_worker):
+        ray.init()        
+        agent = copy.deepcopy(agent).cpu()
+        env, agent = map(ray.put, [env, agent])
+        self.actors = [Actor.remote(env, agent) for _ in range(num_worker)]
+
+    def run(self, step=1):
+        transitions = reduce(lambda x,y: x+y, 
+                             ray.get([actor.run.remote(step) for actor in self.actors]))
+        return transitions
+
+    def sync(self, agent):
+        agent = copy.deepcopy(agent).cpu()
+        agent = ray.put(agent)
+        ray.get([actor.sync.remote(agent) for actor in self.actors])
+    
+@ray.remote
+class Actor:
+    def __init__(self, env, agent):
+        self.env = env
+        self.agent = agent
         
-                
-        
-        
+        self.state = self.env.reset()
+    
+    def run(self, step):
+        transitions = []
+        for t in range(step):
+            action = self.agent.act(self.state)
+            next_state, reward, done = self.env.step(action)
+            transitions.append((self.state, action, reward, next_state, done))
+            self.state = next_state if not done else self.env.reset()
+        return transitions
+    
+    def sync(self, agent):
+        self.agent = agent
         

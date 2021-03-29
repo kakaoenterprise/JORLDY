@@ -11,6 +11,9 @@ class CartPole:
         self.action_size = self.env.action_space.n if mode=='discrete' else 1
         self.score = 0
         self.render = render
+    
+    def get_size(self):
+        return self.state_size, self.action_size
 
     def reset(self):
         self.score = 0

@@ -8,8 +8,6 @@ from core.network import Network
 from core.optimizer import Optimizer
 from .utils import ReplayBuffer
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 class DQNAgent:
     def __init__(self,
                 state_size,
@@ -28,9 +26,9 @@ class DQNAgent:
                 start_train_step=2000,
                 target_update_term=500,
                 ):
-        
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size
-        self.network = Network(network, state_size, action_size).to(device)
+        self.network = Network(network, state_size, action_size).to(self.device)
         self.target_network = copy.deepcopy(self.network)
         self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
         self.gamma = gamma
@@ -45,7 +43,6 @@ class DQNAgent:
         self.target_update_term = target_update_term
         self.num_learn = 0
 
-
     def act(self, state, training=True):
         self.network.train(training)
         epsilon = self.epsilon if training else self.epsilon_eval
@@ -53,7 +50,7 @@ class DQNAgent:
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            action = torch.argmax(self.network(torch.FloatTensor(state).to(device)), -1, keepdim=True).data.cpu().numpy()
+            action = torch.argmax(self.network(torch.FloatTensor(state).to(self.device)), -1, keepdim=True).data.cpu().numpy()
         return action
 
     def learn(self):
@@ -61,9 +58,9 @@ class DQNAgent:
             return None
         
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
-        eye = torch.eye(self.action_size).to(device)
+        eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action.view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
         with torch.no_grad():
@@ -89,23 +86,21 @@ class DQNAgent:
     def update_target(self):
         self.target_network.load_state_dict(self.network.state_dict())
         
-    def process(self, state, action, reward, next_state, done):
+    def process(self, transitions):
         result = None
         # Process per step
-        self.memory.store(state, action, reward, next_state, done)
-        result = self.learn()
-
-        # Process per step if train start
-        if self.num_learn > 0:
-            self.epsilon_decay()
-
-            if self.num_learn % self.target_update_term == 0:
-                self.update_target()
+        self.memory.store(transitions)
         
-        # Process per episode
-        if done.all():
-            pass
+        for _ in range(len(transitions)):
+            result = self.learn()
 
+            # Process per step if train start
+            if self.num_learn > 0:
+                self.epsilon_decay()
+
+                if self.num_learn % self.target_update_term == 0:
+                    self.update_target()
+                    
         return result
             
     def epsilon_decay(self):
@@ -122,12 +117,16 @@ class DQNAgent:
 
     def load(self, path):
         print(f"...Load model from {path}...")
-        checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=device)
+        checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=self.device)
         self.network.load_state_dict(checkpoint["network"])
         self.target_network = copy.deepcopy(self.network)
         self.optimizer.load_state_dict(checkpoint["optimizer"])
-
-
-        
-        
-
+    
+    def cpu(self):
+        self.device = torch.device("cpu")
+        self.network.cpu()
+        self.target_network.cpu()
+        self.optimizer.zero_grad()
+        self.optimizer.state.clear()
+        self.memory.clear()
+        return self

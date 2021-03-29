@@ -6,37 +6,37 @@ class ReplayBuffer:
     def __init__(self, buffer_size):
         self.buffer = deque(maxlen=buffer_size)
     
-    def store(self, state, action, reward, next_state, done):
+    def store(self, transitions):
         if len(self.buffer) == 0:
             print("########################################")
             print("You should check dimension of transition")
-            print("state:", state.shape)
-            print("action:", action.shape)
-            print("reward:", reward.shape)
-            print("next_state:", next_state.shape)
-            print("done:", done.shape)
+            print("state:",      transitions[0][0].shape)
+            print("action:",     transitions[0][1].shape)
+            print("reward:",     transitions[0][2].shape)
+            print("next_state:", transitions[0][3].shape)
+            print("done:",       transitions[0][4].shape)
             print("########################################")
             
-        for s, a, r, ns, d in zip(state, action, reward, next_state, done):
-            self.buffer.append((s, a, r, ns, d))
+        self.buffer += transitions
 
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
         
-        state       = np.stack([b[0] for b in batch], axis=0)
-        action      = np.stack([b[1] for b in batch], axis=0)
-        reward      = np.stack([b[2] for b in batch], axis=0)
-        next_state  = np.stack([b[3] for b in batch], axis=0)
-        done        = np.stack([b[4] for b in batch], axis=0)
+        state       = np.concatenate([b[0] for b in batch], axis=0)
+        action      = np.concatenate([b[1] for b in batch], axis=0)
+        reward      = np.concatenate([b[2] for b in batch], axis=0)
+        next_state  = np.concatenate([b[3] for b in batch], axis=0)
+        done        = np.concatenate([b[4] for b in batch], axis=0)
         
         return (state, action, reward, next_state, done)
+    
+    def clear(self):
+        self.buffer.clear()
     
     @property
     def size(self):
         return len(self.buffer)
     
-# import numpy as np
-
 # class ReplayBuffer:
 #     def __init__(self, state_dim, action_dim, buffer_size):
 #         self.buffer_size = buffer_size
