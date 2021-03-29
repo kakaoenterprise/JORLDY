@@ -20,20 +20,20 @@ class IQN(torch.nn.Module):
 
     def forward(self, x, tau_min=0, tau_max=1):               
         state_embed = F.relu(self.state_embed(x))
-        
-        x_embed = self.make_embed(x, tau_min, tau_max)
-        sample_embed_out = F.relu(self.sample_embed(x_embed))
 
-        embed_out = torch.unsqueeze(state_embed, 1) * sample_embed_out
+        cos_term, tau = self.make_embed(x, tau_min, tau_max)
+        tau_embed = F.relu(self.sample_embed(cos_term))
+
+        embed = torch.unsqueeze(state_embed, 1) * tau_embed
         
-        x = F.relu(self.l1(embed_out))
+        x = F.relu(self.l1(embed))
         x = F.relu(self.l2(x))
-        return self.q(x)
+        return self.q(x), tau
     
     def make_embed(self, x, tau_min, tau_max):
-        sample = torch.FloatTensor(x.size(0), self.N_sample, 1).uniform_(tau_min, tau_max).to(x.device)
-        embed = torch.cos(sample * self.i_pi.to(x.device))
-        return embed
+        tau = torch.FloatTensor(x.size(0), self.N_sample, 1).uniform_(tau_min, tau_max).to(x.device)
+        embed = torch.cos(tau * self.i_pi.to(x.device))
+        return embed, tau
     
 class IQN_CNN(torch.nn.Module):
     def __init__(self, D_in, D_out, D_em, N_sample):
@@ -65,15 +65,15 @@ class IQN_CNN(torch.nn.Module):
         
         state_embed = x.view(x.size(0), -1)
         
-        x_embed = self.make_embed(x, tau_min, tau_max)
-        sample_embed_out = F.relu(self.sample_embed(x_embed))
+        cos_term, tau = self.make_embed(x, tau_min, tau_max)
+        tau_embed = F.relu(self.sample_embed(cos_term))
 
-        embed_out = torch.unsqueeze(state_embed, 1) * sample_embed_out
+        embed = torch.unsqueeze(state_embed, 1) * tau_embed
         
-        x = F.relu(self.fc1(embed_out))
-        return self.fc2(x)
+        x = F.relu(self.fc1(embed))
+        return self.fc2(x), tau
     
     def make_embed(self, x, tau_min, tau_max):
-        sample = torch.FloatTensor(x.size(0), self.N_sample, 1).uniform_(tau_min, tau_max).to(x.device)
-        embed = torch.cos(sample * self.i_pi.to(x.device))
-        return embed
+        tau = torch.FloatTensor(x.size(0), self.N_sample, 1).uniform_(tau_min, tau_max).to(x.device)
+        embed = torch.cos(tau * self.i_pi.to(x.device))
+        return embed, tau

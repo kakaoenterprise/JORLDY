@@ -42,7 +42,7 @@ class C51Agent(DQNAgent):
         
         action_eye = torch.eye(self.action_size, device=device)
         action_onehot = action_eye[action.long()]
-        p_action = torch.squeeze(torch.matmul(action_onehot, p_logit), 1)
+        p_action = torch.squeeze(action_onehot @ p_logit, 1)
 
         target_dist = torch.zeros(self.batch_size, self.num_support, device=device, requires_grad=False)
         with torch.no_grad():
@@ -50,7 +50,7 @@ class C51Agent(DQNAgent):
             
             target_action = torch.argmax(target_q_action, -1, keepdim=True)
             target_action_onehot = action_eye[target_action.long()]
-            target_p_action = torch.squeeze(torch.matmul(target_action_onehot, target_p_logit), 1)
+            target_p_action = torch.squeeze(target_action_onehot @ target_p_logit, 1)
             
             Tz = reward.expand(-1,self.num_support) + (1-done)*self.gamma*self.z
             b = torch.clamp(Tz - self.v_min, 0, self.v_max - self.v_min)/ self.delta_z

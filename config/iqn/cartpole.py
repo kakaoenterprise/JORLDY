@@ -31,7 +31,7 @@ train = {
     "training" : True,
     "load_path" : None,
     "train_step" : 50000,
-    "test_step" : 10000,
+    "test_step" : 20000,
     "print_term" : 5,
     "save_term" : 1000,
     "test_iteration" : 10,

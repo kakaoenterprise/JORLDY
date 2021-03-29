@@ -47,7 +47,7 @@ class QRDQNAgent(DQNAgent):
         action_eye = torch.eye(self.action_size, device=device)
         action_onehot = action_eye[action.long()]
         
-        theta_pred = torch.matmul(action_onehot, logits)
+        theta_pred = action_onehot @ logits
         
         with torch.no_grad():
             # Get Theta Target 
@@ -60,7 +60,7 @@ class QRDQNAgent(DQNAgent):
             max_a = torch.argmax(q_next, axis=-1, keepdim=True)
             max_a_onehot = action_eye[max_a.long()]
 
-            theta_target = reward + (1-done) * self.gamma * torch.squeeze(torch.matmul(max_a_onehot, logits_target), 1)
+            theta_target = reward + (1-done) * self.gamma * torch.squeeze(max_a_onehot @ logits_target, 1)
             theta_target = torch.unsqueeze(theta_target, 2)
         
         error_loss = theta_target - theta_pred 
