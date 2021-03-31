@@ -22,10 +22,10 @@ class MetricManager:
         return ret
     
 class LogManager:
-    def __init__(self, env, id):
+    def __init__(self, env, id, purpose=None):
         self.id=id
         now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        self.path = f"./logs/{env}/{id}/{now}/"
+        self.path = f"./logs/{env}/{id}/{now}/" if purpose is None else f"./logs/{env}/{purpose}/{id}/{now}/"
         self.writer = SummaryWriter(self.path)
         
     def write_scalar(self, scalar_dict, step):
