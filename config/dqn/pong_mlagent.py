@@ -56,9 +56,11 @@ agent = {
 train = {
     "training" : True,
     "load_path" : None,
-    "train_step" : 500000,
-    "test_step" : 50000,
-    "print_term" : 10,
-    "save_term" : 500,
+    "run_step" : 500000,
+    "print_term" : 1000,
+    "save_term" : 10000,
     "test_iteration": 10,
+    "update_term" : 10,
+    "test_iteration": 5,
+    "num_worker" : 8,
 }

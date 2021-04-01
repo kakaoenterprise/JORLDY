@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import numpy as np
 import os
 import copy
+from collections import OrderedDict
 
 from core.network import Network
 from core.optimizer import Optimizer
@@ -91,16 +92,15 @@ class DQNAgent:
         # Process per step
         self.memory.store(transitions)
         
-        for _ in range(len(transitions)):
-            result = self.learn()
+        result = self.learn()
 
-            # Process per step if train start
-            if self.num_learn > 0:
-                self.epsilon_decay()
+        # Process per step if train start
+        if self.num_learn > 0:
+            self.epsilon_decay()
 
-                if self.num_learn % self.target_update_term == 0:
-                    self.update_target()
-                    
+            if self.num_learn % self.target_update_term == 0:
+                self.update_target()
+
         return result
             
     def epsilon_decay(self):
@@ -126,7 +126,21 @@ class DQNAgent:
         self.device = torch.device("cpu")
         self.network.cpu()
         self.target_network.cpu()
-        self.optimizer.zero_grad()
         self.optimizer.state.clear()
         self.memory.clear()
         return self
+    
+    def sync_out(self, device="cpu"):
+        weights = OrderedDict([(k, v.to(device)) for k, v in self.network.state_dict().items()])
+        sync_item ={
+            "weights": weights,
+            "epsilon": self.epsilon,
+        }
+        return sync_item
+    
+    def sync_in(self, weights, epsilon):
+        self.network.load_state_dict(weights)
+        self.epsilon = epsilon
+    
+    def set_distributed(self, id):
+        pass

@@ -3,8 +3,10 @@ for proxy in ['https_proxy', 'http_proxy']:
     if os.environ.get(proxy): 
         del os.environ[proxy]
 import ray
+import torch
 import numpy as np 
 import datetime
+import time
 import copy
 from collections import defaultdict
 from functools import reduce
@@ -30,14 +32,19 @@ class MetricManager:
 class LogManager:
     def __init__(self, env, id):
         self.id=id
-        now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        self.path = f"./logs/{env}/{id}/{now}/"
+        self.now = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        self.path = f"./logs/{env}/{id}/{self.now}/"
         self.writer = SummaryWriter(self.path)
+        self.stamp = time.time()
         
     def write_scalar(self, scalar_dict, step):
         for key, value in scalar_dict.items():
             self.writer.add_scalar(f"{self.id}/"+key, value, step)
             self.writer.add_scalar("all/"+key, value, step)
+            if "score" in key:
+                time_delta = int(time.time() - self.stamp)
+                self.writer.add_scalar(f"{self.id}/{key}_per_time", value, time_delta)
+                self.writer.add_scalar(f"all/{key}_per_time", value, time_delta)
             
 class TestManager:
     def __init__(self):
@@ -61,10 +68,10 @@ class TestManager:
 
 class DistributedManager:
     def __init__(self, env, agent, num_worker):
-        ray.init()        
+        ray.init()
         agent = copy.deepcopy(agent).cpu()
         env, agent = map(ray.put, [env, agent])
-        self.actors = [Actor.remote(env, agent) for _ in range(num_worker)]
+        self.actors = [Actor.remote(env, agent, i/(num_worker - 1)) for i in range(num_worker)]
 
     def run(self, step=1):
         transitions = reduce(lambda x,y: x+y, 
@@ -72,16 +79,16 @@ class DistributedManager:
         return transitions
 
     def sync(self, agent):
-        agent = copy.deepcopy(agent).cpu()
-        agent = ray.put(agent)
-        ray.get([actor.sync.remote(agent) for actor in self.actors])
+        sync_item = agent.sync_out()
+        sync_item = ray.put(sync_item)
+        ray.get([actor.sync.remote(sync_item) for actor in self.actors])
     
 @ray.remote
 class Actor:
-    def __init__(self, env, agent):
+    def __init__(self, env, agent, id):
         self.env = env
         self.agent = agent
-        
+        self.agent.set_distributed(id)
         self.state = self.env.reset()
     
     def run(self, step):
@@ -93,6 +100,6 @@ class Actor:
             self.state = next_state if not done else self.env.reset()
         return transitions
     
-    def sync(self, agent):
-        self.agent = agent
-        
+    def sync(self, sync_item):
+        self.agent.sync_in(**sync_item)
+

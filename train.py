@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.dqn.breakout as config
+import config.dqn.cartpole as config
 
 env = Env(**config.env)
 agent = Agent(state_size=env.state_size,
@@ -26,7 +26,7 @@ distributed_manager = DistributedManager(env, agent, config.train["num_worker"])
 
 step = 0
 while step < run_step:
-    step += update_term * config.train["num_worker"]
+    step += update_term
     transitions = distributed_manager.run(update_term)
     result = agent.process(transitions)
     
