@@ -59,8 +59,7 @@ train = {
     "run_step" : 500000,
     "print_term" : 1000,
     "save_term" : 10000,
-    "test_iteration": 10,
-    "update_term" : 10,
     "test_iteration": 5,
-    "num_worker" : 8,
+    "update_term" : 1,
+    "num_worker" : 16,
 }

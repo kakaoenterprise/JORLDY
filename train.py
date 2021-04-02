@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.dqn.cartpole as config
+import config.dqn.pong_mlagent as config
 
 env = Env(**config.env)
 agent = Agent(state_size=env.state_size,
@@ -22,7 +22,7 @@ test_manager = TestManager()
 metric_manager = MetricManager()
 log_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
 log_manager = LogManager(config.env["name"], log_id)
-distributed_manager = DistributedManager(env, agent, config.train["num_worker"])
+distributed_manager = DistributedManager(Env, config.env, agent, config.train["num_worker"])
 
 step = 0
 while step < run_step:
