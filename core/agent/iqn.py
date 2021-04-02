@@ -32,7 +32,8 @@ class IQNAgent(QRDQNAgent):
                 num_sample=64,
                 embedding_dim=64,
                 sample_min=0.0,
-                sample_max=1.0
+                sample_max=1.0,
+                **kwargs,
                 ):
         
         self.action_size = action_size

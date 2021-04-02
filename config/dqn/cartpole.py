@@ -29,5 +29,5 @@ train = {
     "save_term" : 10000,
     "test_iteration": 5,
     "update_term" : 1,
-    "num_worker" : 8,
+    "num_worker" : 16,
 }

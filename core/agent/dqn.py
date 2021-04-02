@@ -26,7 +26,9 @@ class DQNAgent:
                 batch_size=64,
                 start_train_step=2000,
                 target_update_term=500,
+                **kwargs,
                 ):
+        
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size
         self.network = Network(network, state_size, action_size).to(self.device)
@@ -143,4 +145,4 @@ class DQNAgent:
         self.epsilon = epsilon
     
     def set_distributed(self, id):
-        pass
+        return self

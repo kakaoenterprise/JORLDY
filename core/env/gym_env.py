@@ -4,7 +4,9 @@ import numpy as np
 class CartPole:
     def __init__(self,
                 render=False,
-                mode='discrete'):
+                mode='discrete',
+                **kwargs,
+                ):
         self.env = gym.make('CartPole-v1')
         self.mode = mode
         self.state_size = self.env.observation_space.shape[0]
@@ -40,7 +42,8 @@ class CartPole:
 class Pendulum:
     def __init__(self,
                 render=False,
-                mode='continuous'):
+                **kwargs,
+                ):
         self.env = gym.make('Pendulum-v0')
         self.state_size = self.env.observation_space.shape[0]
         self.action_size = self.env.action_space.shape[0]

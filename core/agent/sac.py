@@ -30,6 +30,7 @@ class SACAgent:
                  batch_size = 64,
                  start_train_step=2000,
                  static_log_alpha=-2.0,
+                 **kwargs,
                  ):
         self.actor = Network(actor, state_size, action_size).to(device)
         self.critic = Network(critic, state_size+action_size, action_size).to(device)

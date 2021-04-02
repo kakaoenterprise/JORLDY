@@ -67,11 +67,11 @@ class TestManager:
         return np.mean(scores)
 
 class DistributedManager:
-    def __init__(self, env, agent, num_worker):
+    def __init__(self, Env, env_config, agent, num_worker):
         ray.init()
         agent = copy.deepcopy(agent).cpu()
-        env, agent = map(ray.put, [env, agent])
-        self.actors = [Actor.remote(env, agent, i/(num_worker - 1)) for i in range(num_worker)]
+        Env, env_config, agent = map(ray.put, [Env, env_config, agent])
+        self.actors = [Actor.remote(Env, env_config, agent, i) for i in range(num_worker)]
 
     def run(self, step=1):
         transitions = reduce(lambda x,y: x+y, 
@@ -85,10 +85,9 @@ class DistributedManager:
     
 @ray.remote
 class Actor:
-    def __init__(self, env, agent, id):
-        self.env = env
-        self.agent = agent
-        self.agent.set_distributed(id)
+    def __init__(self, Env, env_config, agent, id):
+        self.env = Env(id=id+1, **env_config)
+        self.agent = agent.set_distributed(id)
         self.state = self.env.reset()
     
     def run(self, step):
