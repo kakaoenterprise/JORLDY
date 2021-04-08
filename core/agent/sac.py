@@ -60,19 +60,13 @@ class SACAgent:
         mu, std = self.actor(torch.FloatTensor(state).to(device))
         std = std if training else 0
         m = Normal(mu, std)
-        z = m.sample()
-        action = torch.tanh(z)
-        action = action.data.cpu().numpy()
+        action = m.sample().data.cpu().numpy()
         return action
 
     def sample_action(self, mu, std):
         m = Normal(mu, std)
-        z = m.rsample()
-        action = torch.tanh(z)
-        log_prob = m.log_prob(z)
-        # Enforcing Action Bounds
-        log_prob -= torch.log(1 - action.pow(2) + 1e-6)
-        log_prob = log_prob.sum(1, keepdim=True)
+        action = m.rsample()
+        log_prob = m.log_prob(action)
         return action, log_prob
 
     def learn(self):

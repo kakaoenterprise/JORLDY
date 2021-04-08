@@ -9,6 +9,7 @@ class Env:
     dictionary = {
     "cartpole": CartPole,
     "pendulum": Pendulum,
+    "mountaincar": MountainCar,
     "breakout": Breakout,
     "pong": Pong,
     "asterix": Asterix,
