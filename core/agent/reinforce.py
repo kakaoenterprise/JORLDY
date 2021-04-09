@@ -1,5 +1,5 @@
 import torch
-from torch.distributions import Normal
+from torch.distributions import Normal, Categorical
 import numpy as np
 import os
 
@@ -38,10 +38,8 @@ class REINFORCEAgent:
             action = m.sample().data.cpu().numpy()
         else:
             pi = self.network(torch.FloatTensor(state).to(device))
-            pi = pi.data.cpu().numpy()
-            random_choice = lambda x: np.random.choice(pi.shape[-1], p=x, size=(1))
-            action = np.array(list(map(random_choice, pi))) if training \
-                        else np.argmax(pi, axis= -1)[..., np.newaxis]
+            m = Categorical(pi)
+            action = m.sample().data.cpu().numpy()[..., np.newaxis]
         return action
 
     def learn(self):
