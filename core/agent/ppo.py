@@ -58,7 +58,7 @@ class PPOAgent(REINFORCEAgent):
             target_value = reward + (1 - done) * self.gamma * next_value
             advantage = target_value - value
             for t in reversed(range(len(advantage))):
-                if t > 0 and t % (self.n_step - 1) == 0:
+                if t > 0 and (t + 1) % self.n_step == 0:
                     continue
                 advantage[t] += self.gamma * self._lambda * advantage[t+1]
             
