@@ -9,12 +9,15 @@
 - [C51](https://arxiv.org/abs/1707.06887)
 - [QR-DQN](https://arxiv.org/abs/1710.10044)
 - [IQN](https://arxiv.org/abs/1806.06923)
-- [Soft Actor Critic (SAC)](https://arxiv.org/abs/1801.01290)
+- REINFORCE (Discrete, Continuous)
+- [[PPO] Proximal Policy Optimization (Discrete, Continuous)](https://arxiv.org/abs/1707.06347)
+- [[SAC] Soft Actor Critic (Continuous)](https://arxiv.org/abs/1801.01290)
 
 ### Environment 
 
 - Cartpole
-- Pendulum 
+- Pendulum
+- Mountain Car
 - Atari 
 - ML-Agents 
 
