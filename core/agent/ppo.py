@@ -38,7 +38,9 @@ class PPOAgent(REINFORCEAgent):
             mu, std, _ = self.network(torch.FloatTensor(state).to(device))
             std = std if training else 0
             m = Normal(mu, std)
-            action = m.sample().data.cpu().numpy()
+            z = m.sample()
+            action = torch.tanh(z)
+            action = action.data.cpu().numpy()
         else:
             pi, _ = self.network(torch.FloatTensor(state).to(device))
             m = Categorical(pi)
@@ -59,46 +61,56 @@ class PPOAgent(REINFORCEAgent):
                 if t > 0 and (t + 1) % self.n_step == 0:
                     continue
                 advantage[t] += self.gamma * self._lambda * advantage[t+1]
+            advantage = (advantage - advantage.mean()) / (advantage.std() + 1e-8)
             
             if self.action_type == "continuous":
                 mu, std, _ = self.network(state)
                 m = Normal(mu, std)
-                log_pi = m.log_prob(action)
+                z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
+                log_pi = m.log_prob(z)
+                log_pi -= torch.log(1 - action.pow(2) + 1e-7)
             else:
                 pi, _ = self.network(state)
                 log_pi = torch.log(pi.gather(1, action.long()))
             log_pi_old = log_pi
         
         # start train iteration
+        idxs = np.arange(len(reward))
         for _ in range(self.n_epoch):
-            idx = torch.randint(0, self.n_step - 1, (self.batch_size, ))
-            _state, _action, _reward, _next_state, _done, _advantage, _log_pi_old =\
-                map(lambda x: x[idx], [state, action, reward, next_state, done, advantage, log_pi_old])
+            np.random.shuffle(idxs)
+            for start in range(0, len(reward), self.batch_size):
+                end = start + self.batch_size
+                idx = idxs[start:end]
+                
+                _state, _action, _reward, _next_state, _done, _advantage, _log_pi_old =\
+                    map(lambda x: x[idx], [state, action, reward, next_state, done, advantage, log_pi_old])
 
-            with torch.no_grad():
-                next_value = self.network(_next_state)[-1]
-                target_value = _reward + (1 - _done) * self.gamma * next_value
-            value = self.network(_state)[-1]
-            critic_loss = F.mse_loss(value, target_value).mean()
-            
-            if self.action_type == "continuous":
-                mu, std, _ = self.network(_state)
-                m = Normal(mu, std)
-                log_pi = m.log_prob(_action)
-            else:
-                pi, _ = self.network(_state)
-                log_pi = torch.log(pi.gather(1, _action.long()))
-            
-            ratio = torch.exp(log_pi - _log_pi_old)
-            surr1 = ratio * _advantage
-            surr2 = torch.clamp(ratio, min=1-self.epsilon_clip, max=1+self.epsilon_clip) * _advantage
-            actor_loss = -torch.min(surr1, surr2).mean()
-            
-            loss = actor_loss + critic_loss
+                with torch.no_grad():
+                    next_value = self.network(_next_state)[-1]
+                    target_value = _reward + (1 - _done) * self.gamma * next_value
+                value = self.network(_state)[-1]
+                critic_loss = F.mse_loss(value, target_value).mean()
 
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
+                if self.action_type == "continuous":
+                    mu, std, _ = self.network(_state)
+                    m = Normal(mu, std)
+                    z = torch.atanh(torch.clamp(_action, -1+1e-7, 1-1e-7))
+                    log_pi = m.log_prob(z)
+                    log_pi -= torch.log(1 - _action.pow(2) + 1e-7)
+                else:
+                    pi, _ = self.network(_state)
+                    log_pi = torch.log(pi.gather(1, _action.long()))
+
+                ratio = torch.exp(log_pi - _log_pi_old)
+                surr1 = ratio * _advantage
+                surr2 = torch.clamp(ratio, min=1-self.epsilon_clip, max=1+self.epsilon_clip) * _advantage
+                actor_loss = -torch.min(surr1, surr2).mean() 
+
+                loss = actor_loss + critic_loss
+
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
 
         result = {
             'actor_loss' : actor_loss.item(),
