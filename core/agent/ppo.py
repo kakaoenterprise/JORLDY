@@ -60,8 +60,8 @@ class PPOAgent(REINFORCEAgent):
             for t in reversed(range(len(advantage))):
                 if t > 0 and (t + 1) % self.n_step == 0:
                     continue
-                advantage[t] += self.gamma * self._lambda * advantage[t+1]
-            advantage = (advantage - advantage.mean()) / (advantage.std() + 1e-8)
+                advantage[t] += (1 - done[t]) * self.gamma * self._lambda * advantage[t+1]
+            advantage = (advantage - advantage.mean()) / (advantage.std() + 1e-7)
             
             if self.action_type == "continuous":
                 mu, std, _ = self.network(state)
