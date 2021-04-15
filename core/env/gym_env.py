@@ -25,8 +25,7 @@ class Gym:
         if self.render:
             self.env.render()
         if self.mode=="continuous":
-            sigmoid = lambda x: 1 / (1 +np.exp(-x))
-            action = sigmoid(action) * (self.env.action_space.high - self.env.action_space.low) + self.env.action_space.low
+            action = ((action + 1.)/2.) * (self.env.action_space.high - self.env.action_space.low) + self.env.action_space.low
             action = np.reshape(action, self.env.action_space.shape)
         else:
             action = np.asscalar(action)

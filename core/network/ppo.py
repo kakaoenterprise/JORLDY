@@ -17,9 +17,10 @@ class ContinuousPiV(torch.nn.Module):
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
         
+        mu = torch.clamp(self.mu(x), min=-8., max=8.)
         log_std = self.log_std(x)
         log_std = torch.clamp(log_std, min=-5., max=2.)
-        return self.mu(x), log_std.exp(), self.v(x)
+        return mu, log_std.exp(), self.v(x)
     
     
 class DiscretePiV(torch.nn.Module):
