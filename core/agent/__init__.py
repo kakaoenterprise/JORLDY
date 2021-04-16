@@ -4,6 +4,8 @@ from .double_dqn import DoubleDQNAgent
 from .c51 import C51Agent
 from .qrdqn import QRDQNAgent
 from .iqn import IQNAgent 
+from .reinforce import REINFORCEAgent
+from .ppo import PPOAgent
 
 class Agent:
     dictionary = {
@@ -12,7 +14,9 @@ class Agent:
     "double_dqn": DoubleDQNAgent,
     "c51": C51Agent,
     "qrdqn": QRDQNAgent,
-    "iqn": IQNAgent
+    "iqn": IQNAgent,
+    "reinforce": REINFORCEAgent,
+    "ppo": PPOAgent,
     }
     
     def __new__(self, name, *args, **kwargs):

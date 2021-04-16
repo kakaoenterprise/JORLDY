@@ -3,11 +3,12 @@ import random
 import numpy as np
 
 class ReplayBuffer:
-    def __init__(self, buffer_size):
-        self.buffer = deque(maxlen=buffer_size)
+    def __init__(self, buffer_size=None):
+        self.buffer = list() if buffer_size is None else deque(maxlen=buffer_size)
+        self.first_store = True
     
     def store(self, transitions):
-        if len(self.buffer) == 0:
+        if self.first_store:
             print("########################################")
             print("You should check dimension of transition")
             print("state:",      transitions[0][0].shape)
@@ -16,6 +17,7 @@ class ReplayBuffer:
             print("next_state:", transitions[0][3].shape)
             print("done:",       transitions[0][4].shape)
             print("########################################")
+            self.first_store = False
             
         self.buffer += transitions
 
@@ -30,6 +32,17 @@ class ReplayBuffer:
         
         return (state, action, reward, next_state, done)
     
+    def rollout(self):
+        state       = np.concatenate([b[0] for b in self.buffer], axis=0)
+        action      = np.concatenate([b[1] for b in self.buffer], axis=0)
+        reward      = np.concatenate([b[2] for b in self.buffer], axis=0)
+        next_state  = np.concatenate([b[3] for b in self.buffer], axis=0)
+        done        = np.concatenate([b[4] for b in self.buffer], axis=0)
+        
+        self.clear()
+        
+        return (state, action, reward, next_state, done)
+   
     def clear(self):
         self.buffer.clear()
     

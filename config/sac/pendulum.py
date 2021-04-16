@@ -2,7 +2,6 @@
 
 env = {
     "name":"pendulum",
-    "mode":"continuous",
     "render":False,
 }
 
