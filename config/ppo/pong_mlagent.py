@@ -9,13 +9,13 @@ agent = {
     "name": "ppo",
     "network": "discrete_pi_v",
     "optimizer": "adam",
-    "learning_rate": 5e-5,
+    "learning_rate": 5e-4,
     "gamma": 0.99,
     "batch_size":64,
     "n_step": 200,
     "n_epoch": 3,
     "_lambda": 0.95,
-    "epsilon_clip": 0.2,
+    "epsilon_clip": 0.1,
     "vf_coef": 0.5,
     "ent_coef": 0.0,
 }
@@ -28,5 +28,5 @@ train = {
     "save_term" : 10000,
     "test_iteration": 5,
     "update_term" : agent["n_step"],
-    "num_worker" : 8,
+    "num_worker" : 16,
 }

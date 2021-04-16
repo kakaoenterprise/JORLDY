@@ -10,7 +10,7 @@ agent = {
     "name":"ppo",
     "network":"discrete_pi_v",
     "optimizer":"adam",
-    "learning_rate": 5e-5,
+    "learning_rate": 3e-4,
     "gamma":0.99,
     "batch_size":64,
     "n_step": 200,
@@ -24,7 +24,7 @@ agent = {
 train = {
     "training" : True,
     "load_path" : None,
-    "run_step" : 80000,
+    "run_step" : 100000,
     "print_term" : 1000,
     "save_term" : 10000,
     "test_iteration": 5,

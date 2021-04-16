@@ -5,6 +5,7 @@ from managers import *
 import config.ppo.pong_mlagent as config
 
 env = Env(**config.env)
+config.agent["batch_size"] *= config.train["num_worker"]
 agent = Agent(state_size=env.state_size,
               action_size=env.action_size,
               **config.agent)
