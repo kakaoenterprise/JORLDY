@@ -45,7 +45,7 @@ class SACAgent:
             self.log_alpha = torch.tensor(static_log_alpha).to(device)
             self.alpha_optimizer = None
         self.alpha = self.log_alpha.exp()
-        self.target_entropy = -torch.prod(torch.Tensor(action_size)).to(device).item()
+        self.target_entropy = -1.0
 
         self.gamma = gamma
         self.tau = tau
@@ -56,17 +56,21 @@ class SACAgent:
 
     def act(self, state, training=True):
         self.actor.train(training)
-            
         mu, std = self.actor(torch.FloatTensor(state).to(device))
         std = std if training else 0
         m = Normal(mu, std)
-        action = m.sample().data.cpu().numpy()
+        z = m.sample()
+        action = torch.tanh(z)
+        action = action.data.cpu().numpy()
         return action
 
     def sample_action(self, mu, std):
         m = Normal(mu, std)
-        action = m.rsample()
-        log_prob = m.log_prob(action)
+        z = m.rsample()
+        action = torch.tanh(z)
+        log_prob = m.log_prob(z)
+        # Enforcing Action Bounds
+        log_prob -= torch.log(1 - action.pow(2) + 1e-7)
         return action, log_prob
 
     def learn(self):
@@ -81,9 +85,9 @@ class SACAgent:
         with torch.no_grad():
             mu, std = self.actor(next_state)
             next_action, next_log_prob = self.sample_action(mu, std)
-            next_target_q1, next_target_q2 = self.target_critic(next_state, next_action)
-            min_next_target_q = torch.min(next_target_q1, next_target_q2) - self.alpha * next_log_prob
-            target_q = reward + (1 - done)*self.gamma*min_next_target_q
+            next_q1, next_q2 = self.target_critic(next_state, next_action)
+            min_next_q = torch.min(next_q1, next_q2)
+            target_q = reward + (1 - done)*self.gamma*(min_next_q - self.alpha*next_log_prob)
         
         max_Q = torch.max(target_q, axis=0).values.cpu().numpy()[0]
         
@@ -170,9 +174,6 @@ class SACAgent:
         self.target_critic = copy.deepcopy(self.critic)
         self.critic_optimizer.load_state_dict(checkpoint["critic_optimizer"])
         
-
         if self.use_dynamic_alpha and 'log_alpha' in checkpoint.keys():
             self.log_alpha = checkpoint['log_alpha']
             self.alpha_optimizer.load_state_dict(checkpoint['alpha_optimizer'])
-
-

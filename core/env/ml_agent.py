@@ -31,7 +31,6 @@ class HopperMLAgent:
         done = self.env_info.local_done
         
         self.score += reward[0] 
-
         reward, done = map(lambda x: np.expand_dims(x, 0), [reward, done])
         return (next_state, reward, done)
 

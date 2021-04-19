@@ -12,10 +12,12 @@ agent = {
     "learning_rate": 3e-4,
     "gamma": 0.99,
     "batch_size":64,
-    "n_step": 100,
+    "n_step": 500,
     "n_epoch": 3,
     "_lambda": 0.95,
-    "epsilon_clip": 0.1,
+    "epsilon_clip": 0.2,
+    "vf_coef": 0.5,
+    "ent_coef": 0.0,
 }
 
 train = {
