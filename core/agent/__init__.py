@@ -6,12 +6,14 @@ from .qrdqn import QRDQNAgent
 from .iqn import IQNAgent 
 from .reinforce import REINFORCEAgent
 from .ppo import PPOAgent
+from .multistep_dqn import MultistepDQNAgent
 
 class Agent:
     dictionary = {
     "dqn": DQNAgent,
     "sac": SACAgent,
     "double_dqn": DoubleDQNAgent,
+    "multistep_dqn": MultistepDQNAgent,
     "c51": C51Agent,
     "qrdqn": QRDQNAgent,
     "iqn": IQNAgent,
