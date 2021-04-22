@@ -1,6 +1,7 @@
 from collections import deque
 import random
 import numpy as np
+import itertools
 
 class ReplayBuffer:
     def __init__(self, buffer_size=None):
@@ -17,10 +18,21 @@ class ReplayBuffer:
             print("next_state:", next_state.shape)
             print("done:", done.shape)
             print("########################################")
+            
             self.first_store = False
             
         for s, a, r, ns, d in zip(state, action, reward, next_state, done):
             self.buffer.append((s, a, r, ns, d))
+            
+            
+    def separate_stack(self, batch):
+        state       = np.stack([b[0] for b in batch], axis=0)
+        action      = np.stack([b[1] for b in batch], axis=0)
+        reward      = np.stack([b[2] for b in batch], axis=0)
+        next_state  = np.stack([b[3] for b in batch], axis=0)
+        done        = np.stack([b[4] for b in batch], axis=0)
+        
+        return (state, action, reward, next_state, done)
 
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
@@ -32,6 +44,20 @@ class ReplayBuffer:
         done        = np.stack([b[4] for b in batch], axis=0)
         
         return (state, action, reward, next_state, done)
+    
+    def rollout_nstep(self, idx, n_step):
+        assert idx >= 0 and idx + n_step <= len(self.buffer)
+        batch = list(itertools.islice(self.buffer, idx, idx+n_step))
+        
+        return self.separate_stack(batch)
+    
+    def sample_nstep(self, batch_size, n_step):
+        l_idxs = list(range(self.size - n_step + 1))
+        idxs_sample = random.sample(l_idxs, batch_size)
+        
+        batch = [self.rollout_nstep(idx, n_step) for idx in idxs_sample]
+        
+        return self.separate_stack(batch)
     
     def rollout(self):
         state       = np.stack([b[0] for b in self.buffer], axis=0)
