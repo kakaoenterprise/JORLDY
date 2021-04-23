@@ -26,7 +26,7 @@ train = {
     "run_step" : 500000,
     "print_term" : 1000,
     "save_term" : 10000,
-    "test_iteration": 5,
+    "test_iteration": 3,
     "update_term" : agent["n_step"],
     "num_worker" : 16,
 }

@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.ppo.pong_mlagent as config
+import config.ppo.cartpole as config
 
 env = Env(**config.env)
 agent = Agent(state_size=env.state_size,
@@ -18,7 +18,7 @@ run_step = config.train["run_step"]
 print_term = config.train["print_term"]
 save_term = config.train["save_term"]
 
-test_manager = TestManager()
+test_manager = TestManager(config.train["test_iteration"])
 metric_manager = MetricManager()
 log_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
 purpose = None if "purpose" not in config.train.keys() else config.train["purpose"]
@@ -41,7 +41,7 @@ for step in range(run_step):
         state = env.reset()
             
     if step % print_term == 0:
-        score = test_manager.test(agent, env, config.train["test_iteration"])
+        score = test_manager.test(agent, env)
         metric_manager.append({"score": score})
         statistics = metric_manager.get_statistics()
         print(f"{episode} Episode / Step : {step} / {statistics}")

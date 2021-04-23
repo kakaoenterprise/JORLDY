@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.ppo.pong_mlagent as config
+import config.ppo.cartpole as config
 
 env = Env(**config.env)
 config.agent["batch_size"] *= config.train["num_worker"]
@@ -19,11 +19,11 @@ print_term = config.train["print_term"]
 save_term = config.train["save_term"]
 update_term = config.train["update_term"]
 
-test_manager = TestManager()
+test_manager = TestManager(config.train["test_iteration"])
 metric_manager = MetricManager()
 log_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
 log_manager = LogManager(config.env["name"], log_id)
-distributed_manager = DistributedManager(Env, config.env, agent, config.train["num_worker"])
+distributed_manager = DistributedManager(Env, config.env, agent.cpu(), config.train["num_worker"])
 
 step = 0
 while step < run_step:
@@ -33,10 +33,10 @@ while step < run_step:
     
     if result:
         metric_manager.append(result)
-        distributed_manager.sync(agent)
+        distributed_manager.sync(agent.sync_out())
     
     if step % print_term == 0:
-        score = test_manager.test(agent, env, config.train["test_iteration"])
+        score = test_manager.test(agent, env)
         metric_manager.append({"score": score})
         statistics = metric_manager.get_statistics()
         print(f"Step : {step} / {statistics}")

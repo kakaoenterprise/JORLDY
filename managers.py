@@ -47,16 +47,13 @@ class LogManager:
                 self.writer.add_scalar(f"all/{key}_per_time", value, time_delta)
             
 class TestManager:
-    def __init__(self):
-        pass
+    def __init__(self, iteration=10):
+        assert iteration > 0
+        self.iteration = iteration
     
-    def test(self, agent, env, iteration=10):
-        if not iteration > 0:
-            print("Error!!! test iteration is not > 0")
-            return 0
-        
+    def test(self, agent, env):
         scores = []
-        for i in range(iteration):
+        for i in range(self.iteration):
             done = False
             state = env.reset()
             while not done:
@@ -69,7 +66,6 @@ class TestManager:
 class DistributedManager:
     def __init__(self, Env, env_config, agent, num_worker):
         ray.init()
-        agent = copy.deepcopy(agent).cpu()
         Env, env_config, agent = map(ray.put, [Env, env_config, agent])
         self.actors = [Actor.remote(Env, env_config, agent, i) for i in range(num_worker)]
 
@@ -78,10 +74,12 @@ class DistributedManager:
                              ray.get([actor.run.remote(step) for actor in self.actors]))
         return transitions
 
-    def sync(self, agent):
-        sync_item = agent.sync_out()
+    def sync(self, sync_item):
         sync_item = ray.put(sync_item)
         ray.get([actor.sync.remote(sync_item) for actor in self.actors])
+        
+    def terminate(self):
+        ray.shutdown()
     
 @ray.remote
 class Actor:

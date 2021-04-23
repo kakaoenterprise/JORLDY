@@ -2,6 +2,7 @@ import torch
 from torch.distributions import Normal, Categorical
 import numpy as np
 import os
+import copy
 from collections import OrderedDict
 
 from core.network import Network
@@ -99,11 +100,12 @@ class REINFORCEAgent:
         self.optimizer.load_state_dict(checkpoint["optimizer"])
         
     def cpu(self):
-        self.device = torch.device("cpu")
-        self.network.cpu()
-        self.optimizer.state.clear()
-        self.memory.clear()
-        return self
+        clone = copy.deepcopy(self)
+        clone.device = torch.device("cpu")
+        clone.network.cpu()
+        clone.optimizer.state.clear()
+        clone.memory.clear()
+        return clone
     
     def sync_out(self, device="cpu"):
         weights = OrderedDict([(k, v.to(device)) for k, v in self.network.state_dict().items()])
