@@ -170,3 +170,6 @@ class PERBuffer(ReplayBuffer):
         self.min_priority = min(self.min_priority, priority)
         self.max_priority = max(self.max_priority, priority)
         
+    @property
+    def size(self):
+        return len(self.buffer)

@@ -35,7 +35,9 @@ class REINFORCEAgent:
             mu, std = self.network(torch.FloatTensor(state).to(device))
             std = std if training else 0
             m = Normal(mu, std)
-            action = m.sample().data.cpu().numpy()
+            z = m.sample()
+            action = torch.tanh(z)
+            action = action.data.cpu().numpy()
         else:
             pi = self.network(torch.FloatTensor(state).to(device))
             m = Categorical(pi)
@@ -44,19 +46,23 @@ class REINFORCEAgent:
 
     def learn(self):
         state, action, reward = self.memory.rollout()[:3]
-
-        for t in reversed(range(len(reward)-1)):
-            reward[t] += self.gamma * reward[t+1]
         
-        state, action, reward = map(lambda x: torch.FloatTensor(x).to(device), [state, action, reward])
+        ret = np.copy(reward)
+        for t in reversed(range(len(ret)-1)):
+            ret[t] += self.gamma * ret[t+1]
+        
+        state, action, ret = map(lambda x: torch.FloatTensor(x).to(device), [state, action, ret])
         
         if self.action_type == "continuous":
             mu, std = self.network(state)
             m = Normal(mu, std)
-            loss = -(m.log_prob(action)*reward).mean()
+            z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
+            log_prob = m.log_prob(z)
+            log_prob -= torch.log(1 - action.pow(2) + 1e-7)
+            loss = -(log_prob*ret).mean()
         else:
             pi = self.network(state)
-            loss = -(torch.log(pi.gather(1, action.long()))*reward).mean()
+            loss = -(torch.log(pi.gather(1, action.long()))*ret).mean()
 
         self.optimizer.zero_grad()
         loss.backward()
