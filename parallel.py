@@ -5,9 +5,9 @@ from managers import *
 import config.ppo.cartpole as config
 import torch.multiprocessing as mp
 
-# Actor
-def actor_process(DistributedManager, distributed_manager_config,
-                 trans_queue, sync_queue, run_step, update_term):
+# Interact
+def interact_process(DistributedManager, distributed_manager_config,
+                     trans_queue, sync_queue, run_step, update_term):
     distributed_manager = DistributedManager(*distributed_manager_config)
     step = 0
     try:
@@ -19,11 +19,11 @@ def actor_process(DistributedManager, distributed_manager_config,
         print(e)
         distributed_manager.terminate()
         
-# Tester
-def test_process(agent, env, result_queue, sync_queue,
-                 run_step, print_term, save_term, MetricManager,
-                 TestManager, test_manager_config,
-                 LogManager, log_manager_config):
+# Manage
+def manage_process(agent, env, result_queue, sync_queue,
+                   run_step, print_term, save_term, MetricManager,
+                   TestManager, test_manager_config,
+                   LogManager, log_manager_config):
     test_manager = TestManager(*test_manager_config)
     metric_manager = MetricManager()
     log_manager = LogManager(*log_manager_config)
@@ -72,17 +72,17 @@ if __name__ == '__main__':
     test_manager_config = (config.train["test_iteration"],)
     log_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
     log_manager_config = (config.env["name"], log_id)
-    tp = mp.Process(target=test_process,
-                    args=(agent.cpu(), env, result_queue, test_sync_queue,
-                          run_step, print_term, save_term, MetricManager,
-                          TestManager, test_manager_config,
-                          LogManager, log_manager_config))
-    tp.start()
+    manage = mp.Process(target=manage_process,
+                        args=(agent.cpu(), env, result_queue, test_sync_queue,
+                              run_step, print_term, save_term, MetricManager,
+                              TestManager, test_manager_config,
+                              LogManager, log_manager_config))
     distributed_manager_config = (Env, config.env, agent.cpu(), config.train["num_worker"])
-    ap = mp.Process(target=actor_process,
-                    args=(DistributedManager, distributed_manager_config,
-                          trans_queue, actor_sync_queue, run_step, update_term))
-    ap.start()
+    interact = mp.Process(target=interact_process,
+                            args=(DistributedManager, distributed_manager_config,
+                                  trans_queue, actor_sync_queue, run_step, update_term))
+    manage.start()
+    interact.start()
     try:
         step = 0
         while step < run_step:
@@ -98,8 +98,8 @@ if __name__ == '__main__':
                 if test_sync_queue.full():
                     test_sync_queue.get()
                 test_sync_queue.put(agent.sync_out())
-        ap.join()
-        tp.join()
+        interact.join()
+        manage.join()
     except Exception as e:
         print(e)
         trans_queue.close()
