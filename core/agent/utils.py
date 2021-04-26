@@ -52,7 +52,7 @@ class ReplayBuffer:
         return len(self.buffer)
 
 # Reference: https://github.com/LeejwUniverse/following_deepmid/tree/master/jungwoolee_pytorch/100%20Algorithm_For_RL/01%20sum_tree
-class PERBuffer:
+class PERBuffer(ReplayBuffer):
     def __init__(self, batch_size, buffer_size):
         self.buffer = [0 for i in range(buffer_size)] # define replay buffer
         self.sum_tree = [0 for i in range((buffer_size * 2) - 1)] # define sum tree
@@ -66,6 +66,7 @@ class PERBuffer:
         self.first_store = True
         
         self.max_priority = 1.0
+        self.min_priority = self.max_priority
         
     def store(self, state, action, reward, next_state, done):
         if self.first_store:
@@ -79,32 +80,27 @@ class PERBuffer:
             print("########################################")
             self.first_store = False
         
-        if self.buffer_index == self.buffer_size:
-            self.buffer_index = 0
-            
         for s, a, r, ns, d in zip(state, action, reward, next_state, done):
             self.buffer[self.buffer_index] = (s, a, r, ns, d)
         
-        self.add_tree_data(self.max_priority)
+            self.add_tree_data()
+
+            self.buffer_index += 1
+            self.buffer_counter += 1
+
+            self.buffer_counter = min(self.buffer_counter, self.buffer_size)
+            self.buffer_index = self.buffer_index % self.buffer_size
         
-        self.buffer_index += 1
-        self.buffer_counter += 1
-        
-        if self.buffer_counter >= self.buffer_size:
-            self.buffer_counter = self.buffer_size
-        
-    def add_tree_data(self, priority):
+    def add_tree_data(self):
         if self.tree_index == (self.buffer_size * 2) - 1: # if sum tree index achive last index.
             self.tree_index = self.buffer_size - 1 # change frist leaf node index.
-
-        self.sum_tree[self.tree_index] = priority # append priority at current sum_tree leaf node index.
-        self.update_tree(self.tree_index) # update sum_tree node. propagate from leaf node to root node.
-
+        
+        self.update_priority(self.max_priority, self.tree_index)
         self.tree_index += 1 # count current sum_tree index
 
     def update_tree(self, index):
         # index is a starting leaf node point.
-        while True:
+        while True: 
             index = (index - 1)//2 # parent node index.
             left = (index * 2) + 1 # left child node inex.
             right = (index * 2) + 2 # right child node index
@@ -125,29 +121,26 @@ class PERBuffer:
                 num -= self.sum_tree[left] # if child left node is under current value.
                 index = right               # go to the right direction.
             
-            if index >= self.buffer_counter -1:
+            if index >= self.buffer_size -1:
                 break
 
         priority = self.sum_tree[index]
         tree_idx = index 
-        buffer_idx = index - (self.buffer_counter - 1)
+        buffer_idx = index - (self.buffer_size - 1)
         
         return priority, tree_idx, buffer_idx
     
     def sample(self, beta):
         batch = []
         idx_batch = []
-        w_batch = []
+        w_batch = np.zeros(self.batch_size)
         
         sum_p = self.sum_tree[0] 
-        
-        min_priority = np.min(self.sum_tree[self.buffer_size - 1:self.buffer_size - 1 + self.buffer_counter])
-        min_p = min_priority/sum_p
-        
+        min_p = self.min_priority/sum_p
         max_w = pow(self.buffer_size * min_p, -beta)
         
         seg_size = sum_p/self.batch_size
-                
+
         for i in range(self.batch_size):
             seg1 = seg_size * i
             seg2 = seg_size * (i + 1)
@@ -160,24 +153,20 @@ class PERBuffer:
             
             p_i = priority/sum_p
             w_i = pow((self.buffer_size * p_i), -beta)
-            w_batch.append(w_i/max_w)
-        
+            w_batch[i] = w_i/max_w
+    
         state       = np.stack([b[0] for b in batch], axis=0)
         action      = np.stack([b[1] for b in batch], axis=0)
         reward      = np.stack([b[2] for b in batch], axis=0)
         next_state  = np.stack([b[3] for b in batch], axis=0)
         done        = np.stack([b[4] for b in batch], axis=0)
         
-        return (state, action, reward, next_state, done), np.array(w_batch), idx_batch
+        return (state, action, reward, next_state, done), w_batch, idx_batch
     
     def update_priority(self, priority, index):
         self.sum_tree[index] = priority
         self.update_tree(index)
-    
-    def update_max_priority(self, priority):
+        
+        self.min_priority = min(self.min_priority, priority)
         self.max_priority = max(self.max_priority, priority)
         
-    @property
-    def size(self):
-        return len(self.buffer)
-    

@@ -1,4 +1,4 @@
-### Double_DQN BreakOut Config ###
+### Double_DQN Pong MLAgent Config ###
 
 env = {
     "name": "pong_mlagent",
@@ -7,7 +7,7 @@ env = {
 
 agent = {
     "name": "double_dqn",
-    "network": "dueling",
+    "network": "dqn",
     "optimizer": "adam",
     "learning_rate": 0.00025,
     "gamma": 0.99,

@@ -1,4 +1,4 @@
-### DQN Pong_ML-Agents Config ###
+### PER Pong_ML-Agents Config ###
 
 env = {
     "name": "pong_mlagent",
