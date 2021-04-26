@@ -15,7 +15,7 @@ class Env:
     "asterix": Asterix,
     "assault": Assault,
     "spaceinvaders": Spaceinvaders,
-    "Seaquest": Seaquest,
+    "seaquest": Seaquest,
     "hopper_mlagent": HopperMLAgent,
     "pong_mlagent": PongMLAgent,
     }
