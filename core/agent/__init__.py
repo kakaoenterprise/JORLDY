@@ -8,6 +8,11 @@ from .reinforce import REINFORCEAgent
 from .ppo import PPOAgent
 from .multistep_dqn import MultistepDQNAgent
 
+import sys, os
+
+sys.path.append(os.path.abspath('../../'))
+
+
 class Agent:
     dictionary = {
     "dqn": DQNAgent,

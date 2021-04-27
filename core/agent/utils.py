@@ -51,11 +51,25 @@ class ReplayBuffer:
         
         return self.separate_stack(batch)
     
+    def rollout_nstep2(self, idx, n_step):
+        assert idx >= 0 and idx + n_step <= len(self.buffer)
+        batch = list(itertools.islice(self.buffer, idx, idx+n_step))
+        
+        state = self.buffer[idx][0]
+        next_state = self.buffer[idx+n_step-1][3]
+        
+        action = np.stack([b[1] for b in batch], axis = 0)
+        reward = np.stack([b[2] for b in batch], axis = 0)
+        done = np.stack([b[4] for b in batch], axis = 0)
+        
+        return (state, action, reward, next_state, done)
+
     def sample_nstep(self, batch_size, n_step):
         l_idxs = list(range(self.size - n_step + 1))
         idxs_sample = random.sample(l_idxs, batch_size)
         
-        batch = [self.rollout_nstep(idx, n_step) for idx in idxs_sample]
+#         batch = [self.rollout_nstep(idx, n_step) for idx in idxs_sample]
+        batch = [self.rollout_nstep2(idx, n_step) for idx in idxs_sample]
         
         return self.separate_stack(batch)
     

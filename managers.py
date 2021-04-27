@@ -1,7 +1,7 @@
 import numpy as np 
-import datetime
+import datetime, time
 import copy
-from collections import defaultdict
+from collections import defaultdict, deque
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -32,7 +32,36 @@ class LogManager:
         for key, value in scalar_dict.items():
             self.writer.add_scalar(f"{self.id}/"+key, value, step)
             self.writer.add_scalar("all/"+key, value, step)
+
+class TimeManager:
+    def __init__(self, n_mean = 20):
+        self.n_mean = n_mean
+        self.timedic = dict()
+    
+    def start(self, keyword):
+        if keyword not in self.timedic:
+            self.timedic[keyword] = {
+                'start_timestamp': time.time(),
+                'deque': deque(maxlen=self.n_mean),
+                'mean': -1,
+                'last_time': -1,
+            }
+        else:
+            self.timedic[keyword]['start_timestamp'] = time.time()
+    
+    def end(self, keyword):
+        if keyword in self.timedic:
+            time_current = time.time() - self.timedic[keyword]['start_timestamp']
+            self.timedic[keyword]['last_time'] = time_current
+            self.timedic[keyword]['deque'].append(time_current)
+            self.timedic[keyword]['start_timestamp'] = -1
+            self.timedic[keyword]['mean'] = sum(self.timedic[keyword]['deque']) / len(self.timedic[keyword]['deque'])
             
+            return self.timedic[keyword]['last_time'], self.timedic[keyword]['mean']
+        
+    def get_statistics(self):
+        return {k: self.timedic[k]['mean'] for k in self.timedic}
+        
             
 class TestManager:
     def __init__(self):
