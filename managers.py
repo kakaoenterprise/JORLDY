@@ -36,6 +36,9 @@ class LogManager:
 class TimeManager:
     def __init__(self, n_mean = 20):
         self.n_mean = n_mean
+        self.reset()
+    
+    def reset(self):
         self.timedic = dict()
     
     def start(self, keyword):

@@ -11,7 +11,7 @@ agent = {
     "network": "dqn",
     "optimizer": "adam",
     "learning_rate": 0.00025,
-    "n_step": 1,
+    "n_step": 4,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,

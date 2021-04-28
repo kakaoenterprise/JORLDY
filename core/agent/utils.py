@@ -2,11 +2,15 @@ from collections import deque
 import random
 import numpy as np
 import itertools
+from managers import TimeManager
 
 class ReplayBuffer:
-    def __init__(self, buffer_size=None):
+    def __init__(self, buffer_size=None, use_multistep = False, n_step = 1):
         self.buffer = list() if buffer_size is None else deque(maxlen=buffer_size)
+        self.use_multistep = use_multistep
+        if self.use_multistep: self.buffer_nstep = deque(maxlen=n_step)
         self.first_store = True
+        self.time_manager = TimeManager(20)
     
     def store(self, state, action, reward, next_state, done):
         if self.first_store:
@@ -20,18 +24,26 @@ class ReplayBuffer:
             print("########################################")
             
             self.first_store = False
-            
-        for s, a, r, ns, d in zip(state, action, reward, next_state, done):
-            self.buffer.append((s, a, r, ns, d))
-            
-            
-    def separate_stack(self, batch):
-        state       = np.stack([b[0] for b in batch], axis=0)
-        action      = np.stack([b[1] for b in batch], axis=0)
-        reward      = np.stack([b[2] for b in batch], axis=0)
-        next_state  = np.stack([b[3] for b in batch], axis=0)
-        done        = np.stack([b[4] for b in batch], axis=0)
         
+        if self.use_multistep:
+            for s, a, r, ns, d in zip(state, action, reward, next_state, done):
+                self.buffer_nstep.append((s, a, r, ns, d))
+                if len(self.buffer_nstep) == self.buffer_nstep.maxlen:
+                    self.buffer.append(self.prepare_nstep(self.buffer_nstep))
+                
+        else:
+            for s, a, r, ns, d in zip(state, action, reward, next_state, done):
+                self.buffer.append((s, a, r, ns, d))
+                
+    def prepare_nstep(self, batch):
+
+        state = batch[0][0]
+        next_state = batch[-1][3]
+    
+        action = np.stack([b[1] for b in batch], axis = 0)
+        reward = np.stack([b[2] for b in batch], axis = 0)
+        done = np.stack([b[4] for b in batch], axis = 0)
+
         return (state, action, reward, next_state, done)
 
     def sample(self, batch_size):
@@ -44,34 +56,6 @@ class ReplayBuffer:
         done        = np.stack([b[4] for b in batch], axis=0)
         
         return (state, action, reward, next_state, done)
-    
-    def rollout_nstep(self, idx, n_step):
-        assert idx >= 0 and idx + n_step <= len(self.buffer)
-        batch = list(itertools.islice(self.buffer, idx, idx+n_step))
-        
-        return self.separate_stack(batch)
-    
-    def rollout_nstep2(self, idx, n_step):
-        assert idx >= 0 and idx + n_step <= len(self.buffer)
-        batch = list(itertools.islice(self.buffer, idx, idx+n_step))
-        
-        state = self.buffer[idx][0]
-        next_state = self.buffer[idx+n_step-1][3]
-        
-        action = np.stack([b[1] for b in batch], axis = 0)
-        reward = np.stack([b[2] for b in batch], axis = 0)
-        done = np.stack([b[4] for b in batch], axis = 0)
-        
-        return (state, action, reward, next_state, done)
-
-    def sample_nstep(self, batch_size, n_step):
-        l_idxs = list(range(self.size - n_step + 1))
-        idxs_sample = random.sample(l_idxs, batch_size)
-        
-#         batch = [self.rollout_nstep(idx, n_step) for idx in idxs_sample]
-        batch = [self.rollout_nstep2(idx, n_step) for idx in idxs_sample]
-        
-        return self.separate_stack(batch)
     
     def rollout(self):
         state       = np.stack([b[0] for b in self.buffer], axis=0)

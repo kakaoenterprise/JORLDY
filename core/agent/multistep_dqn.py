@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import random
 import os
 
+from .utils import ReplayBuffer
 from .dqn import DQNAgent
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -10,6 +11,7 @@ class MultistepDQNAgent(DQNAgent):
     def __init__(self, n_step = 5, **kwargs):
         super(MultistepDQNAgent, self).__init__(**kwargs)
         self.n_step = n_step
+        self.memory = ReplayBuffer(self.buffer_size, True, self.n_step)
     
     def learn(self):
         if self.memory.size < max(self.batch_size, self.start_train_step):
@@ -20,17 +22,15 @@ class MultistepDQNAgent(DQNAgent):
 
         self.time_manager.start('time_learn')
         self.time_manager.start('time_sample')
-        transitions = self.memory.sample_nstep(self.batch_size, self.n_step)
+        transitions = self.memory.sample(self.batch_size)
         self.time_manager.end('time_sample')
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
         
         eye = torch.eye(self.action_size).to(device)
         one_hot_action = eye[action[:, 0].view(-1).long()]
-#         q = (self.network(state[:, 0]) * one_hot_action).sum(1, keepdims=True)
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
         with torch.no_grad():
             max_Q = torch.max(q).item()
-#             next_q = self.target_network(next_state[:, -1])
             next_q = self.target_network(next_state)
             target_q = next_q.max(1, keepdims=True).values
 
