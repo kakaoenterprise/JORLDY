@@ -4,8 +4,6 @@ import random
 import os
 from collections import deque
 
-import time 
-
 from .dqn import DQNAgent
 from .utils import PERBuffer
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -25,7 +23,7 @@ class PERAgent(DQNAgent):
                 
         transitions, w_batch, idx_batch = self.memory.sample(self.beta)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
-        
+                
         eye = torch.eye(self.action_size).to(device)
         one_hot_action = eye[action.view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
@@ -39,14 +37,13 @@ class PERAgent(DQNAgent):
             
             next_target_q = self.target_network(next_state)
             target_q = reward + (next_target_q * max_one_hot_action).sum(1, keepdims=True) * (self.gamma*(1 - done))
-        
+                
         # Update sum tree
         td_error = target_q - q
         p_j = torch.pow(torch.abs(td_error) + self.eps, self.alpha)
         for i, p in zip(idx_batch, p_j):
             self.memory.update_priority(p.item(), i)
-            self.memory.update_max_priority(p.item())
-        
+                
         # Annealing beta
         if self.beta < 1:
             self.beta += self.beta_add
@@ -54,7 +51,7 @@ class PERAgent(DQNAgent):
             self.beta = 1.0 
         
         w_batch = torch.FloatTensor(w_batch).to(device)
-        
+                
         loss = (w_batch * F.smooth_l1_loss(q, target_q, reduction="none")).mean()
         
         self.optimizer.zero_grad()
@@ -62,29 +59,10 @@ class PERAgent(DQNAgent):
         self.optimizer.step()
         
         self.num_learn += 1
-        
+                
         result = {
             "loss" : loss.item(),
             "epsilon" : self.epsilon,
-            "max_Q": max_Q,
+            "max_Q": max_Q
         }
         return result
-    
-#     def process(self, state, action, reward, next_state, done):
-#         result = None
-#         # Process per step
-#         self.memory.store(state, action, reward, next_state, done)
-#         result = self.learn()
-
-#         # Process per step if train start
-#         if self.num_learn > 0:
-#             self.epsilon_decay()
-
-#             if self.num_learn % self.target_update_term == 0:
-#                 self.update_target()
-        
-#         # Process per episode
-#         if done.all():
-#             pass
-
-#         return result

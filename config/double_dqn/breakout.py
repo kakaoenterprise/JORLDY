@@ -1,4 +1,4 @@
-### PER BreakOut Config ###
+### Double DQN BreakOut Config ###
 
 env = {
     "name": "breakout",
@@ -10,7 +10,7 @@ env = {
 }
 
 agent = {
-    "name": "per",
+    "name": "double_dqn",
     "network": "dqn_cnn",
     "optimizer": "adam",
     "learning_rate": 1e-4,#0.00025,
@@ -22,9 +22,6 @@ agent = {
     "batch_size": 32,
     "start_train_step": 100000,
     "target_update_term": 10000,
-    "alpha": 0.6,
-    "beta": 0.4,
-    "eps": 0.001
 }
 
 train = {

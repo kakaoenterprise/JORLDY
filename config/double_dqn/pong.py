@@ -1,4 +1,4 @@
-### PER Pong Config ###
+### DQN Pong Config ###
 
 env = {
     "name": "pong",
@@ -10,7 +10,7 @@ env = {
 }
 
 agent = {
-    "name": "per",
+    "name": "dqn",
     "network": "dqn_cnn",
     "optimizer": "adam",
     "learning_rate": 5e-4,
@@ -22,9 +22,6 @@ agent = {
     "batch_size": 64,
     "start_train_step": 100000,
     "target_update_term": 500,
-    "alpha": 0.6,
-    "beta": 0.4,
-    "eps": 0.001
 }
 
 train = {

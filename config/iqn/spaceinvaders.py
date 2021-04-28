@@ -1,7 +1,7 @@
-### PER Pong Config ###
+### IQN SpaceInvaders Config ###
 
 env = {
-    "name": "pong",
+    "name": "spaceinvaders",
     "render": False,
     "gray_img": True,
     "img_width": 80,
@@ -10,21 +10,24 @@ env = {
 }
 
 agent = {
-    "name": "per",
-    "network": "dqn_cnn",
+    "name": "iqn",
+    "network": "iqn_cnn",
     "optimizer": "adam",
-    "learning_rate": 5e-4,
+    "opt_eps": 1e-2/32,
+    "learning_rate": 0.00005,
     "gamma": 0.99,
     "epsilon_init": 1.0,
-    "epsilon_min": 0.1,
+    "epsilon_min": 0.01,
     "explore_step": 1000000,
-    "buffer_size": 100000,
-    "batch_size": 64,
+    "buffer_size": 1000000,
+    "batch_size": 32,
     "start_train_step": 100000,
-    "target_update_term": 500,
-    "alpha": 0.6,
-    "beta": 0.4,
-    "eps": 0.001
+    "target_update_term": 10000,
+
+    "num_sample": 64,
+    "embedding_dim": 64,
+    "sample_min": 0.0,
+    "sample_max": 1.0,
 }
 
 train = {

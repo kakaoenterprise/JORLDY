@@ -1,7 +1,7 @@
-### PER BreakOut Config ###
+### IQN Asterix Config ###
 
 env = {
-    "name": "breakout",
+    "name": "asterix",
     "render": False,
     "gray_img": True,
     "img_width": 84,
@@ -10,10 +10,11 @@ env = {
 }
 
 agent = {
-    "name": "per",
-    "network": "dqn_cnn",
+    "name": "iqn",
+    "network": "iqn_cnn",
     "optimizer": "adam",
-    "learning_rate": 1e-4,#0.00025,
+    "opt_eps": 1e-2/32,
+    "learning_rate": 0.00005,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
@@ -22,17 +23,19 @@ agent = {
     "batch_size": 32,
     "start_train_step": 100000,
     "target_update_term": 10000,
-    "alpha": 0.6,
-    "beta": 0.4,
-    "eps": 0.001
+
+    "num_sample": 64,
+    "embedding_dim": 64,
+    "sample_min": 0.0,
+    "sample_max": 1.0,
 }
 
 train = {
     "training" : True,
-    "load_path" : None, #"./logs/breakout/dqn/tmp/",
-    "train_step" : 100000000,
+    "load_path" : None,
+    "train_step" : 20000000,
     "test_step" : 1000000,
     "print_term" : 50,
     "save_term" : 500,
-    "test_iteration": 5,
+    "test_iteration": 10,
 }
