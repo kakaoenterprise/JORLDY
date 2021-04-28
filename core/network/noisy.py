@@ -42,8 +42,8 @@ class Noisy(torch.nn.Module):
         mu_b = torch.nn.Parameter(torch.empty(shape[1]))
         sig_b = torch.nn.Parameter(torch.full((shape[1],), 0.017))
         
-        mu_w.data.uniform_(0, np.sqrt(3/shape[0]))
-        mu_b.data.uniform_(0, np.sqrt(3/shape[0]))
+        mu_w.data.uniform_(-np.sqrt(3/shape[0]), np.sqrt(3/shape[0]))
+        mu_b.data.uniform_(-np.sqrt(3/shape[0]), np.sqrt(3/shape[0]))
         
         return mu_w, sig_w, mu_b, sig_b
         
