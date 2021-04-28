@@ -65,45 +65,45 @@ if __name__ == '__main__':
     update_term = config.train["update_term"]
 
     trans_queue = mp.Queue()
-    actor_sync_queue = mp.Queue(1)
+    interact_sync_queue = mp.Queue(1)
     result_queue = mp.Queue()
-    test_sync_queue = mp.Queue(1)
+    manage_sync_queue = mp.Queue(1)
     
     test_manager_config = (config.train["test_iteration"],)
     log_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
     log_manager_config = (config.env["name"], log_id)
     manage = mp.Process(target=manage_process,
-                        args=(agent.cpu(), env, result_queue, test_sync_queue,
+                        args=(agent.cpu(), env, result_queue, manage_sync_queue,
                               run_step, print_term, save_term, MetricManager,
                               TestManager, test_manager_config,
                               LogManager, log_manager_config))
     distributed_manager_config = (Env, config.env, agent.cpu(), config.train["num_worker"])
     interact = mp.Process(target=interact_process,
                             args=(DistributedManager, distributed_manager_config,
-                                  trans_queue, actor_sync_queue, run_step, update_term))
+                                  trans_queue, interact_sync_queue, run_step, update_term))
     manage.start()
     interact.start()
     try:
         step = 0
         while step < run_step:
             step += update_term
-            if actor_sync_queue.full():
-                actor_sync_queue.get()
-            actor_sync_queue.put(agent.sync_out())
+            if interact_sync_queue.full():
+                interact_sync_queue.get()
+            interact_sync_queue.put(agent.sync_out())
             transitions = trans_queue.get()
             result = agent.process(transitions)
             if result:
                 result_queue.put((step, result))
             if step % print_term == 0:
-                if test_sync_queue.full():
-                    test_sync_queue.get()
-                test_sync_queue.put(agent.sync_out())
+                if manage_sync_queue.full():
+                    manage_sync_queue.get()
+                manage_sync_queue.put(agent.sync_out())
         interact.join()
         manage.join()
     except Exception as e:
         print(e)
         trans_queue.close()
-        actor_sync_queue.close()
+        interact_sync_queue.close()
         result_queue.close()
-        test_sync_queue.close()
+        manage_sync_queue.close()
         env.close()
