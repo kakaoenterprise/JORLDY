@@ -125,24 +125,26 @@ class DQNAgent:
         self.optimizer.load_state_dict(checkpoint["optimizer"])
     
     def cpu(self):
-        self.device = torch.device("cpu")
-        self.network.cpu()
-        self.target_network.cpu()
-        self.optimizer.state.clear()
-        self.memory.clear()
-        return self
+        clone = copy.deepcopy(self)
+        clone.device = torch.device("cpu")
+        clone.network.cpu()
+        clone.target_network.cpu()
+        clone.optimizer.state.clear()
+        clone.memory.clear()
+        return clone
     
     def sync_out(self, device="cpu"):
         weights = OrderedDict([(k, v.to(device)) for k, v in self.network.state_dict().items()])
         sync_item ={
             "weights": weights,
-            "epsilon": self.epsilon,
         }
         return sync_item
     
-    def sync_in(self, weights, epsilon):
+    def sync_in(self, weights):
         self.network.load_state_dict(weights)
-        self.epsilon = epsilon
     
     def set_distributed(self, id):
+        while id >= 1.0:
+            id /= 10.
+        self.epsilon = id 
         return self

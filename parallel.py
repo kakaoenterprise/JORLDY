@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.ppo.cartpole as config
+import config.dqn.pong_mlagent as config
 import torch.multiprocessing as mp
 
 # Interact
@@ -87,16 +87,16 @@ if __name__ == '__main__':
         step = 0
         while step < run_step:
             step += update_term
-            if interact_sync_queue.full():
-                interact_sync_queue.get()
+            try: interact_sync_queue.get_nowait()
+            except: pass
             interact_sync_queue.put(agent.sync_out())
             transitions = trans_queue.get()
             result = agent.process(transitions)
             if result:
                 result_queue.put((step, result))
             if step % print_term == 0:
-                if manage_sync_queue.full():
-                    manage_sync_queue.get()
+                try: manage_sync_queue.get_nowait()
+                except: pass
                 manage_sync_queue.put(agent.sync_out())
         interact.join()
         manage.join()
