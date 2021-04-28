@@ -1,5 +1,6 @@
 from .dqn import *
 from .dueling import *
+from .noisy import * 
 from .iqn import *
 from .sac import *
 from .reinforce import *
@@ -11,6 +12,8 @@ class Network:
     "dqn_cnn": DQN_CNN,
     "dueling": Dueling,
     "dueling_cnn": Dueling_CNN,
+    "noisy": Noisy, 
+    "noisy_cnn": Noisy_CNN,
     "iqn": IQN,
     "iqn_cnn": IQN_CNN,
     "sac_actor": SACActor,

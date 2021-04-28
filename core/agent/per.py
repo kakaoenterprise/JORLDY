@@ -41,6 +41,7 @@ class PERAgent(DQNAgent):
         # Update sum tree
         td_error = target_q - q
         p_j = torch.pow(torch.abs(td_error) + self.eps, self.alpha)
+        
         for i, p in zip(idx_batch, p_j):
             self.memory.update_priority(p.item(), i)
                 
@@ -59,10 +60,12 @@ class PERAgent(DQNAgent):
         self.optimizer.step()
         
         self.num_learn += 1
-                
+        
+        td_write = torch.abs(td_error).mean().item()
+        
         result = {
             "loss" : loss.item(),
             "epsilon" : self.epsilon,
-            "max_Q": max_Q
+            "max_Q": max_Q,
         }
         return result

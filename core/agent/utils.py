@@ -90,11 +90,11 @@ class PERBuffer(ReplayBuffer):
 
             self.buffer_counter = min(self.buffer_counter, self.buffer_size)
             self.buffer_index = self.buffer_index % self.buffer_size
-        
+                
     def add_tree_data(self):
         if self.tree_index == (self.buffer_size * 2) - 1: # if sum tree index achive last index.
-            self.tree_index = self.buffer_size - 1 # change frist leaf node index.
-        
+            self.tree_index = self.buffer_size - 1 # change frist leaf node index.    
+            
         self.update_priority(self.max_priority, self.tree_index)
         self.tree_index += 1 # count current sum_tree index
 
@@ -140,7 +140,9 @@ class PERBuffer(ReplayBuffer):
         max_w = pow(self.buffer_size * min_p, -beta)
         
         seg_size = sum_p/self.batch_size
-
+        
+        priority_list = []
+        
         for i in range(self.batch_size):
             seg1 = seg_size * i
             seg2 = seg_size * (i + 1)
@@ -148,13 +150,15 @@ class PERBuffer(ReplayBuffer):
             sampled_val = np.random.uniform(seg1, seg2)
             priority, tree_idx, buffer_idx = self.search_tree(sampled_val)
             
+            priority_list.append(priority)
+            
             batch.append(self.buffer[buffer_idx])
             idx_batch.append(tree_idx)
             
             p_i = priority/sum_p
             w_i = pow((self.buffer_size * p_i), -beta)
             w_batch[i] = w_i/max_w
-    
+        
         state       = np.stack([b[0] for b in batch], axis=0)
         action      = np.stack([b[1] for b in batch], axis=0)
         reward      = np.stack([b[2] for b in batch], axis=0)
