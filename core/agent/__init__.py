@@ -2,6 +2,7 @@ from .dqn import DQNAgent
 from .sac import SACAgent
 from .double_dqn import DoubleDQNAgent
 from .per import PERAgent
+from .noisy import NoisyAgent
 from .c51 import C51Agent
 from .qrdqn import QRDQNAgent
 from .iqn import IQNAgent 
@@ -14,6 +15,7 @@ class Agent:
     "sac": SACAgent,
     "double_dqn": DoubleDQNAgent,
     "per": PERAgent,
+    "noisy": NoisyAgent,
     "c51": C51Agent,
     "qrdqn": QRDQNAgent,
     "iqn": IQNAgent,

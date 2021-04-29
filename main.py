@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.dqn.seaquest as config
+import config.noisy.pong_mlagent as config
 
 env = Env(**config.env)
 agent = Agent(state_size=env.state_size,
@@ -45,7 +45,7 @@ for step in range(train_step + test_step):
     
     if done:
         episode += 1
-
+        
         mode = "train" if training else "test"
         metric_manager.append({f"{mode}_score": env.score})
             

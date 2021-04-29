@@ -13,7 +13,7 @@ def match_build():
 class MLAgent:
     def __init__(self, env_name, train_mode=True, id=0):
         file_name = f"./core/env/mlagents/{env_name}/{match_build()}/{env_name}"
-        self.env = UnityEnvironment(file_name=file_name, worker_id=id, seed=id)
+        self.env = UnityEnvironment(file_name=file_name, worker_id=np.random.randint(60000), seed=id)
 
         self.train_mode = train_mode
         self.score = 0
