@@ -1,4 +1,4 @@
-### DQN Assualt Config ###
+### PER Assualt Config ###
 
 env = {
     "name": "assault",
@@ -10,7 +10,7 @@ env = {
 }
 
 agent = {
-    "name": "dqn",
+    "name": "per",
     "network": "dqn_cnn",
     "optimizer": "adam",
     "learning_rate": 1e-4,
@@ -21,7 +21,10 @@ agent = {
     "buffer_size": 1000000,
     "batch_size": 32,
     "start_train_step": 100000,
-    "target_update_term": 10000
+    "target_update_term": 10000,
+    "alpha": 0.6,
+    "beta": 0.4,
+    "eps": 0.00001
 }
 
 train = {

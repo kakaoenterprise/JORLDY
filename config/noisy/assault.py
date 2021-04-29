@@ -1,4 +1,4 @@
-### DQN Assualt Config ###
+### Noisy DQN Assualt Config ###
 
 env = {
     "name": "assault",
@@ -10,13 +10,11 @@ env = {
 }
 
 agent = {
-    "name": "dqn",
-    "network": "dqn_cnn",
+    "name": "noisy",
+    "network": "noisy_cnn",
     "optimizer": "adam",
     "learning_rate": 1e-4,
     "gamma": 0.99,
-    "epsilon_init": 1.0,
-    "epsilon_min": 0.01,
     "explore_step": 1000000,
     "buffer_size": 1000000,
     "batch_size": 32,

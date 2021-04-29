@@ -1,4 +1,4 @@
-### DQN Assualt Config ###
+### Double DQN Assualt Config ###
 
 env = {
     "name": "assault",
@@ -10,7 +10,7 @@ env = {
 }
 
 agent = {
-    "name": "dqn",
+    "name": "double_dqn",
     "network": "dqn_cnn",
     "optimizer": "adam",
     "learning_rate": 1e-4,

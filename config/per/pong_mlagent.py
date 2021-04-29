@@ -1,4 +1,4 @@
-### Double_DQN Pong MLAgent Config ###
+### PER Pong_ML-Agents Config ###
 
 env = {
     "name": "pong_mlagent",
@@ -6,7 +6,7 @@ env = {
 }
 
 agent = {
-    "name": "double_dqn",
+    "name": "per",
     "network": "dqn",
     "optimizer": "adam",
     "learning_rate": 0.00025,
@@ -15,9 +15,12 @@ agent = {
     "epsilon_min": 0.1,
     "explore_step": 450000,
     "buffer_size": 50000,
-    "batch_size": 64,
+    "batch_size": 32,
     "start_train_step": 25000,
     "target_update_term": 1000,
+    "alpha": 0.6,
+    "beta": 0.4,
+    "eps": 0.001
 }
 
 train = {
@@ -27,6 +30,5 @@ train = {
     "test_step" : 50000,
     "print_term" : 10,
     "save_term" : 500,
-    "id": "dddqn",
     "test_iteration": 10,
 }

@@ -1,7 +1,7 @@
-### DQN Assualt Config ###
+### Noisy DQN BreakOut Config ###
 
 env = {
-    "name": "assault",
+    "name": "breakout",
     "render": False,
     "gray_img": True,
     "img_width": 84,
@@ -10,23 +10,21 @@ env = {
 }
 
 agent = {
-    "name": "dqn",
-    "network": "dqn_cnn",
+    "name": "noisy",
+    "network": "noisy_cnn",
     "optimizer": "adam",
-    "learning_rate": 1e-4,
+    "learning_rate": 1e-4,#0.00025,
     "gamma": 0.99,
-    "epsilon_init": 1.0,
-    "epsilon_min": 0.01,
     "explore_step": 1000000,
     "buffer_size": 1000000,
     "batch_size": 32,
     "start_train_step": 100000,
-    "target_update_term": 10000
+    "target_update_term": 10000,
 }
 
 train = {
     "training" : True,
-    "load_path" : None,
+    "load_path" : None, #"./logs/breakout/dqn/tmp/",
     "train_step" : 100000000,
     "test_step" : 1000000,
     "print_term" : 50,

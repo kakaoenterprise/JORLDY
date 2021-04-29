@@ -1,4 +1,4 @@
-### DQN Assualt Config ###
+### PPO Assualt Config ###
 
 env = {
     "name": "assault",
@@ -10,18 +10,16 @@ env = {
 }
 
 agent = {
-    "name": "dqn",
-    "network": "dqn_cnn",
-    "optimizer": "adam",
-    "learning_rate": 1e-4,
-    "gamma": 0.99,
-    "epsilon_init": 1.0,
-    "epsilon_min": 0.01,
-    "explore_step": 1000000,
-    "buffer_size": 1000000,
-    "batch_size": 32,
-    "start_train_step": 100000,
-    "target_update_term": 10000
+    "name":"ppo",
+    "network":"discrete_pi_v_cnn",
+    "optimizer":"adam",
+    "learning_rate": 3e-4,
+    "gamma":0.99,
+    "batch_size":64,
+    "n_step": 500,
+    "n_epoch": 10,
+    "_lambda": 0.95,
+    "epsilon_clip": 0.1,
 }
 
 train = {
