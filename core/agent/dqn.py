@@ -7,10 +7,11 @@ import copy
 from core.network import Network
 from core.optimizer import Optimizer
 from .utils import ReplayBuffer
+from .base import BaseAgent
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class DQNAgent:
+class DQNAgent(BaseAgent):
     def __init__(self,
                 state_size,
                 action_size,

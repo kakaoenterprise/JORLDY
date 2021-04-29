@@ -5,13 +5,14 @@ from torch.distributions import Normal
 from core.network import Network
 from core.optimizer import Optimizer
 from .utils import ReplayBuffer
+from .base import BaseAgent
 
 import os 
 import copy
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class SACAgent:
+class SACAgent(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
