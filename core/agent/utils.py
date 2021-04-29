@@ -2,7 +2,6 @@ from collections import deque
 import random
 import numpy as np
 import itertools
-from managers import TimeManager
 
 class ReplayBuffer:
     def __init__(self, buffer_size=None, use_multistep = False, n_step = 1):
@@ -10,7 +9,6 @@ class ReplayBuffer:
         self.use_multistep = use_multistep
         if self.use_multistep: self.buffer_nstep = deque(maxlen=n_step)
         self.first_store = True
-        self.time_manager = TimeManager(20)
     
     def store(self, state, action, reward, next_state, done):
         if self.first_store:

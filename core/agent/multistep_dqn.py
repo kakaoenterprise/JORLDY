@@ -20,10 +20,7 @@ class MultistepDQNAgent(DQNAgent):
 #         shapes of 1-step implementations: (batch_size, dimension_data)
 #         shapes of multistep implementations: (batch_size, steps, dimension_data)
 
-        self.time_manager.start('time_learn')
-        self.time_manager.start('time_sample')
         transitions = self.memory.sample(self.batch_size)
-        self.time_manager.end('time_sample')
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
         
         eye = torch.eye(self.action_size).to(device)
@@ -44,14 +41,11 @@ class MultistepDQNAgent(DQNAgent):
         self.optimizer.step()
         
         self.num_learn += 1
-        
-        self.time_manager.end('time_learn')
 
         result = {
             "loss" : loss.item(),
             "epsilon" : self.epsilon,
             "max_Q": max_Q,
         }
-        stats_time = self.time_manager.get_statistics()
-        for k in stats_time.keys(): result[k] = stats_time[k]
+        
         return result

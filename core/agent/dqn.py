@@ -7,7 +7,6 @@ import copy
 from core.network import Network
 from core.optimizer import Optimizer
 from .utils import ReplayBuffer
-from managers import TimeManager
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -46,9 +45,6 @@ class DQNAgent:
         self.start_train_step = start_train_step
         self.target_update_term = target_update_term
         self.num_learn = 0
-        
-        self.time_manager = TimeManager(20)
-
 
     def act(self, state, training=True):
         self.network.train(training)
@@ -64,10 +60,7 @@ class DQNAgent:
         if self.memory.size < max(self.batch_size, self.start_train_step):
             return None
         
-        self.time_manager.start('time_learn')
-        self.time_manager.start('time_sample')
         transitions = self.memory.sample(self.batch_size)
-        self.time_manager.end('time_sample')
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
         
         eye = torch.eye(self.action_size).to(device)
@@ -85,7 +78,6 @@ class DQNAgent:
         self.optimizer.step()
         
         self.num_learn += 1
-        self.time_manager.end('time_learn')
 
         result = {
             "loss" : loss.item(),
@@ -93,8 +85,6 @@ class DQNAgent:
             "max_Q": max_Q,
         }
         
-        stats_time = self.time_manager.get_statistics()
-        for k in stats_time.keys(): result[k] = stats_time[k]
         return result
 
     def update_target(self):
