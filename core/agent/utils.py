@@ -1,10 +1,13 @@
 from collections import deque
 import random
 import numpy as np
+import itertools
 
 class ReplayBuffer:
-    def __init__(self, buffer_size=None):
+    def __init__(self, buffer_size=None, use_multistep = False, n_step = 1):
         self.buffer = list() if buffer_size is None else deque(maxlen=buffer_size)
+        self.use_multistep = use_multistep
+        if self.use_multistep: self.buffer_nstep = deque(maxlen=n_step)
         self.first_store = True
     
     def store(self, state, action, reward, next_state, done):
@@ -17,10 +20,29 @@ class ReplayBuffer:
             print("next_state:", next_state.shape)
             print("done:", done.shape)
             print("########################################")
-            self.first_store = False
             
-        for s, a, r, ns, d in zip(state, action, reward, next_state, done):
-            self.buffer.append((s, a, r, ns, d))
+            self.first_store = False
+        
+        if self.use_multistep:
+            for s, a, r, ns, d in zip(state, action, reward, next_state, done):
+                self.buffer_nstep.append((s, a, r, ns, d))
+                if len(self.buffer_nstep) == self.buffer_nstep.maxlen:
+                    self.buffer.append(self.prepare_nstep(self.buffer_nstep))
+                
+        else:
+            for s, a, r, ns, d in zip(state, action, reward, next_state, done):
+                self.buffer.append((s, a, r, ns, d))
+                
+    def prepare_nstep(self, batch):
+
+        state = batch[0][0]
+        next_state = batch[-1][3]
+    
+        action = np.stack([b[1] for b in batch], axis = 0)
+        reward = np.stack([b[2] for b in batch], axis = 0)
+        done = np.stack([b[4] for b in batch], axis = 0)
+
+        return (state, action, reward, next_state, done)
 
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)

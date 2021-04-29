@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 import numpy as np
-import os
+import os, sys
 import copy
 
 from core.network import Network
@@ -46,7 +46,6 @@ class DQNAgent:
         self.target_update_term = target_update_term
         self.num_learn = 0
 
-
     def act(self, state, training=True):
         self.network.train(training)
         epsilon = self.epsilon if training else self.epsilon_eval
@@ -85,6 +84,7 @@ class DQNAgent:
             "epsilon" : self.epsilon,
             "max_Q": max_Q,
         }
+        
         return result
 
     def update_target(self):
