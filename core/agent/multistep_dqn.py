@@ -5,7 +5,6 @@ import os
 
 from .utils import MultistepBuffer
 from .dqn import DQNAgent
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class MultistepDQNAgent(DQNAgent):
     def __init__(self, n_step = 5, **kwargs):
@@ -21,9 +20,9 @@ class MultistepDQNAgent(DQNAgent):
 #         shapes of multistep implementations: (batch_size, steps, dimension_data)
 
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
-        eye = torch.eye(self.action_size).to(device)
+        eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action[:, 0].view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
         with torch.no_grad():

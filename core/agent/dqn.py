@@ -9,8 +9,6 @@ from core.optimizer import Optimizer
 from .utils import ReplayBuffer
 from .base import BaseAgent
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 class DQNAgent(BaseAgent):
     def __init__(self,
                 state_size,
@@ -29,9 +27,9 @@ class DQNAgent(BaseAgent):
                 start_train_step=2000,
                 target_update_term=500,
                 ):
-        
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size
-        self.network = Network(network, state_size, action_size).to(device)
+        self.network = Network(network, state_size, action_size).to(self.device)
         self.target_network = copy.deepcopy(self.network)
         self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
         self.gamma = gamma
@@ -54,7 +52,7 @@ class DQNAgent(BaseAgent):
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            action = torch.argmax(self.network(torch.FloatTensor(state).to(device)), -1, keepdim=True).data.cpu().numpy()
+            action = torch.argmax(self.network(torch.FloatTensor(state).to(self.device)), -1, keepdim=True).data.cpu().numpy()
         return action
 
     def learn(self):
@@ -62,9 +60,9 @@ class DQNAgent(BaseAgent):
             return None
         
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
-        eye = torch.eye(self.action_size).to(device)
+        eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action.view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
         with torch.no_grad():
@@ -124,7 +122,7 @@ class DQNAgent(BaseAgent):
 
     def load(self, path):
         print(f"...Load model from {path}...")
-        checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=device)
+        checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=self.device)
         self.network.load_state_dict(checkpoint["network"])
         self.target_network = copy.deepcopy(self.network)
         self.optimizer.load_state_dict(checkpoint["optimizer"])

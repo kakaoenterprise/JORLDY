@@ -6,7 +6,6 @@ from collections import deque
 
 from .dqn import DQNAgent
 from .utils import PERBuffer
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class PERAgent(DQNAgent):
     def __init__(self, alpha, beta, eps, **kwargs):
@@ -22,9 +21,10 @@ class PERAgent(DQNAgent):
             return None
                 
         transitions, w_batch, idx_batch = self.memory.sample(self.beta, self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
-                
-        eye = torch.eye(self.action_size).to(device)
+        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        
+        reward = torch.clamp(reward, -1., 1.)
+        eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action.view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
         
@@ -32,15 +32,15 @@ class PERAgent(DQNAgent):
             max_Q = torch.max(q).item()
             next_q = self.network(next_state)
             max_a = torch.argmax(next_q, axis=1)
-            max_eye = torch.eye(self.action_size).to(device)
+            max_eye = torch.eye(self.action_size).to(self.device)
             max_one_hot_action = eye[max_a.view(-1).long()]
             
             next_target_q = self.target_network(next_state)
             target_q = reward + (next_target_q * max_one_hot_action).sum(1, keepdims=True) * (self.gamma*(1 - done))
                 
         # Update sum tree
-        td_error = torch.abs(target_q - q)
-        p_j = torch.pow(td_error + self.eps, self.alpha)
+        td_error = torch.clamp(target_q - q, -1., 1.)
+        p_j = torch.pow(abs(td_error) + self.eps, self.alpha)
         
         for i, p in zip(idx_batch, p_j):
             self.memory.update_priority(p.item(), i)
@@ -48,9 +48,9 @@ class PERAgent(DQNAgent):
         # Annealing beta
         self.beta = min(1.0, self.beta + self.beta_add)
         
-        w_batch = torch.FloatTensor(w_batch).to(device)
+        w_batch = torch.FloatTensor(w_batch).to(self.device)
                 
-        loss = (w_batch * F.smooth_l1_loss(q, target_q, reduction="none")).mean()
+        loss = (w_batch * td_error).mean()
         
         self.optimizer.zero_grad()
         loss.backward()

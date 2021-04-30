@@ -10,8 +10,6 @@ from core.optimizer import Optimizer
 from .utils import ReplayBuffer
 from .dqn import DQNAgent
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
 class NoisyAgent(DQNAgent):
     def __init__(self,
                 state_size,
@@ -27,9 +25,9 @@ class NoisyAgent(DQNAgent):
                 start_train_step=2000,
                 target_update_term=500,
                 ):
-        
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size
-        self.network = Network(network, state_size, action_size, device).to(device)
+        self.network = Network(network, state_size, action_size, self.device).to(self.device)
         self.target_network = copy.deepcopy(self.network)
         self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
         self.gamma = gamma
@@ -46,7 +44,7 @@ class NoisyAgent(DQNAgent):
         if training and self.memory.size < max(self.batch_size, self.start_train_step):
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            action = torch.argmax(self.network(torch.FloatTensor(state).to(device), training), -1, keepdim=True).data.cpu().numpy()
+            action = torch.argmax(self.network(torch.FloatTensor(state).to(self.device), training), -1, keepdim=True).data.cpu().numpy()
         
         return action
 
@@ -55,9 +53,9 @@ class NoisyAgent(DQNAgent):
             return None
         
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
-        eye = torch.eye(self.action_size).to(device)
+        eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action.view(-1).long()]
         q = (self.network(state, True) * one_hot_action).sum(1, keepdims=True)
         with torch.no_grad():

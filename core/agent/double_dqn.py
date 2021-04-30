@@ -4,7 +4,6 @@ import random
 import os
 
 from .dqn import DQNAgent
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class DoubleDQNAgent(DQNAgent):
     def __init__(self, **kwargs):
@@ -15,9 +14,9 @@ class DoubleDQNAgent(DQNAgent):
             return None
         
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
-        eye = torch.eye(self.action_size).to(device)
+        eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action.view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
         
@@ -25,7 +24,7 @@ class DoubleDQNAgent(DQNAgent):
             max_Q = torch.max(q).item()
             next_q = self.network(next_state)
             max_a = torch.argmax(next_q, axis=1)
-            max_eye = torch.eye(self.action_size).to(device)
+            max_eye = torch.eye(self.action_size).to(self.device)
             max_one_hot_action = eye[max_a.view(-1).long()]
             
             next_target_q = self.target_network(next_state)
