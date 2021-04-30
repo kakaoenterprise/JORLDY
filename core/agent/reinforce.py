@@ -5,7 +5,7 @@ import os
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import ReplayBuffer
+from .utils import Rollout
 from .base import BaseAgent
 
 
@@ -29,7 +29,7 @@ class REINFORCEAgent(BaseAgent):
         self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate)
 
         self.gamma = gamma
-        self.memory = ReplayBuffer()
+        self.memory = Rollout()
 
     def act(self, state, training=True):
         if self.action_type == "continuous":

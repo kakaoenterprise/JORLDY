@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import random
 import os
 
-from .utils import ReplayBuffer
+from .utils import MultistepBuffer
 from .dqn import DQNAgent
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -11,7 +11,7 @@ class MultistepDQNAgent(DQNAgent):
     def __init__(self, n_step = 5, **kwargs):
         super(MultistepDQNAgent, self).__init__(**kwargs)
         self.n_step = n_step
-        self.memory = ReplayBuffer(self.buffer_size, True, self.n_step)
+        self.memory = MultistepBuffer(self.buffer_size, self.n_step)
     
     def learn(self):
         if self.memory.size < max(self.batch_size, self.start_train_step):
