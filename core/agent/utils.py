@@ -53,17 +53,19 @@ class ReplayBuffer:
 
 # Reference: https://github.com/LeejwUniverse/following_deepmid/tree/master/jungwoolee_pytorch/100%20Algorithm_For_RL/01%20sum_tree
 class PERBuffer(ReplayBuffer):
-    def __init__(self, batch_size, buffer_size):
+    def __init__(self, buffer_size):
         self.buffer = [0 for i in range(buffer_size)] # define replay buffer
         self.sum_tree = [0 for i in range((buffer_size * 2) - 1)] # define sum tree
+#         self.buffer = np.zeros(buffer_size, dtype=tuple) # define replay buffer
+#         self.sum_tree = np.zeros((buffer_size * 2) - 1) # define sum tree
         
         self.tree_index = buffer_size - 1 # define sum_tree leaf node index.
         self.buffer_index = 0 # define replay buffer index.
         self.buffer_counter = 0
         
-        self.batch_size = batch_size
         self.buffer_size = buffer_size 
         self.first_store = True
+        self.full_charge = False
         
         self.max_priority = 1.0
         self.min_priority = self.max_priority
@@ -82,33 +84,25 @@ class PERBuffer(ReplayBuffer):
         
         for s, a, r, ns, d in zip(state, action, reward, next_state, done):
             self.buffer[self.buffer_index] = (s, a, r, ns, d)
-        
             self.add_tree_data()
 
-            self.buffer_index += 1
-            self.buffer_counter += 1
-
-            self.buffer_counter = min(self.buffer_counter, self.buffer_size)
-            self.buffer_index = self.buffer_index % self.buffer_size
+            self.buffer_counter = min(self.buffer_counter + 1, self.buffer_size)
+            self.buffer_index = (self.buffer_index + 1) % self.buffer_size
                 
     def add_tree_data(self):
-        if self.tree_index == (self.buffer_size * 2) - 1: # if sum tree index achive last index.
-            self.tree_index = self.buffer_size - 1 # change frist leaf node index.    
-            
         self.update_priority(self.max_priority, self.tree_index)
         self.tree_index += 1 # count current sum_tree index
 
-    def update_tree(self, index):
-        # index is a starting leaf node point.
-        while True: 
-            index = (index - 1)//2 # parent node index.
-            left = (index * 2) + 1 # left child node inex.
-            right = (index * 2) + 2 # right child node index
-            
-            self.sum_tree[index] = self.sum_tree[left] + self.sum_tree[right] # sum both child node.
-            if index == 0: ## if index is a root node.
-                break
+        if self.tree_index == (self.buffer_size * 2) - 1: # if sum tree index achive last index.
+            self.tree_index = self.buffer_size - 1 # change frist leaf node index.
+            self.full_charge = True
 
+    def update_tree(self, index, delta_priority):
+        # index is a starting leaf node point.
+        while index != 0: 
+            index = (index - 1)//2 # parent node index.
+            self.sum_tree[index] += delta_priority
+    
     def search_tree(self, num):
         index = 0 # always start from root index.
         while True:
@@ -121,7 +115,7 @@ class PERBuffer(ReplayBuffer):
                 num -= self.sum_tree[left] # if child left node is under current value.
                 index = right               # go to the right direction.
             
-            if index >= self.buffer_size -1:
+            if index >= self.buffer_size - 1:
                 break
 
         priority = self.sum_tree[index]
@@ -130,20 +124,20 @@ class PERBuffer(ReplayBuffer):
         
         return priority, tree_idx, buffer_idx
     
-    def sample(self, beta):
+    def sample(self, beta, batch_size):
         batch = []
         idx_batch = []
-        w_batch = np.zeros(self.batch_size)
+        w_batch = np.zeros(batch_size)
         
         sum_p = self.sum_tree[0] 
         min_p = self.min_priority/sum_p
         max_w = pow(self.buffer_size * min_p, -beta)
         
-        seg_size = sum_p/self.batch_size
+        seg_size = sum_p/batch_size
         
         priority_list = []
         
-        for i in range(self.batch_size):
+        for i in range(batch_size):
             seg1 = seg_size * i
             seg2 = seg_size * (i + 1)
 
@@ -167,13 +161,19 @@ class PERBuffer(ReplayBuffer):
         
         return (state, action, reward, next_state, done), w_batch, idx_batch
     
-    def update_priority(self, priority, index):
-        self.sum_tree[index] = priority
-        self.update_tree(index)
+    def update_priority(self, new_priority, index):
+        ex_priority = self.sum_tree[index]
+        delta_priority = new_priority - ex_priority
+        self.sum_tree[index] = new_priority
+        self.update_tree(index, delta_priority)
         
-        self.min_priority = min(self.min_priority, priority)
-        self.max_priority = max(self.max_priority, priority)
-        
-    @property
-    def size(self):
-        return len(self.buffer)
+        if self.full_charge:
+            if self.min_priority != ex_priority:
+                self.min_priority = min(self.min_priority, new_priority)
+            else:
+                min(self.sum_tree[self.buffer_size - 1:])
+            
+            if self.max_priority != ex_priority:
+                self.max_priority = max(self.max_priority, new_priority)
+            else:
+                max(self.sum_tree[self.buffer_size - 1:])

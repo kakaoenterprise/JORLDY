@@ -11,7 +11,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class PERAgent(DQNAgent):
     def __init__(self, alpha, beta, eps, **kwargs):
         super(PERAgent, self).__init__(**kwargs)
-        self.memory = PERBuffer(self.batch_size, self.buffer_size)
+        self.memory = PERBuffer(self.buffer_size)
         self.alpha = alpha
         self.beta = beta 
         self.beta_add = 1/self.explore_step
@@ -21,7 +21,7 @@ class PERAgent(DQNAgent):
         if self.memory.buffer_counter < max(self.batch_size, self.start_train_step):
             return None
                 
-        transitions, w_batch, idx_batch = self.memory.sample(self.beta)
+        transitions, w_batch, idx_batch = self.memory.sample(self.beta, self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
                 
         eye = torch.eye(self.action_size).to(device)
@@ -39,17 +39,14 @@ class PERAgent(DQNAgent):
             target_q = reward + (next_target_q * max_one_hot_action).sum(1, keepdims=True) * (self.gamma*(1 - done))
                 
         # Update sum tree
-        td_error = target_q - q
-        p_j = torch.pow(torch.abs(td_error) + self.eps, self.alpha)
+        td_error = torch.abs(target_q - q)
+        p_j = torch.pow(td_error + self.eps, self.alpha)
         
         for i, p in zip(idx_batch, p_j):
             self.memory.update_priority(p.item(), i)
                 
         # Annealing beta
-        if self.beta < 1:
-            self.beta += self.beta_add
-        else:
-            self.beta = 1.0 
+        self.beta = min(1.0, self.beta + self.beta_add)
         
         w_batch = torch.FloatTensor(w_batch).to(device)
                 
@@ -61,7 +58,7 @@ class PERAgent(DQNAgent):
         
         self.num_learn += 1
         
-        td_write = torch.abs(td_error).mean().item()
+        td_write = td_error.mean().item()
         
         result = {
             "loss" : loss.item(),
