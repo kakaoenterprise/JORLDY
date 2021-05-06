@@ -47,26 +47,26 @@ class NoisyAgent(DQNAgent):
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
             action = torch.argmax(self.network(torch.FloatTensor(state).to(device), training), -1, keepdim=True).data.cpu().numpy()
-        
         return action
 
     def learn(self):
         if self.memory.size < max(self.batch_size, self.start_train_step):
             return None
-        
+
         transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
         
         eye = torch.eye(self.action_size).to(device)
         one_hot_action = eye[action.view(-1).long()]
         q = (self.network(state, True) * one_hot_action).sum(1, keepdims=True)
+
         with torch.no_grad():
             max_Q = torch.max(q).item()
             next_q = self.target_network(next_state, False)
             target_q = reward + (1 - done) * self.gamma * next_q.max(1, keepdims=True).values
-            
+        
         loss = F.smooth_l1_loss(q, target_q)
-
+        
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -77,7 +77,7 @@ class NoisyAgent(DQNAgent):
             "loss" : loss.item(),
             "max_Q": max_Q,
         }
-        
+
         return result
     
     def process(self, state, action, reward, next_state, done):

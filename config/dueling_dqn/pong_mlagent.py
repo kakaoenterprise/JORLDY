@@ -1,4 +1,4 @@
-### DQN Pong_ML-Agents Config ###
+### Dueling DQN Pong_ML-Agents Config ###
 
 env = {
     "name": "pong_mlagent",
@@ -6,8 +6,8 @@ env = {
 }
 
 agent = {
-    "name": "dqn",
-    "network": "dqn",
+    "name": "dueling_dqn",
+    "network": "dueling",
     "optimizer": "adam",
     "learning_rate": 0.00025,
     "gamma": 0.99,

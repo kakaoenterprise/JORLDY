@@ -20,6 +20,7 @@ class Agent:
     "dqn": DQNAgent,
     "sac": SACAgent,
     "double_dqn": DoubleDQNAgent,
+    "dueling_dqn": DQNAgent,
     "multistep_dqn": MultistepDQNAgent,
     "per": PERAgent,
     "noisy": NoisyAgent,
