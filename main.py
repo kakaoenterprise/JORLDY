@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.noisy.assault as config
+import config.dueling_dqn.assault as config
 
 env = Env(**config.env)
 agent = Agent(state_size=env.state_size,

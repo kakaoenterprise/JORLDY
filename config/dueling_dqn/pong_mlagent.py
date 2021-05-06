@@ -1,4 +1,4 @@
-### PER Pong_ML-Agents Config ###
+### Dueling DQN Pong_ML-Agents Config ###
 
 env = {
     "name": "pong_mlagent",
@@ -6,10 +6,10 @@ env = {
 }
 
 agent = {
-    "name": "per",
-    "network": "dqn",
+    "name": "dueling_dqn",
+    "network": "dueling",
     "optimizer": "adam",
-    "learning_rate": 0.00025/4,
+    "learning_rate": 0.00025,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,
@@ -18,9 +18,6 @@ agent = {
     "batch_size": 32,
     "start_train_step": 25000,
     "target_update_term": 1000,
-    "alpha": 0.6,
-    "beta": 0.4,
-    "eps": 0.0001
 }
 
 train = {

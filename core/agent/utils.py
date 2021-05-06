@@ -187,7 +187,10 @@ class PERBuffer(ReplayBuffer):
         next_state  = np.stack([b[3] for b in batch], axis=0)
         done        = np.stack([b[4] for b in batch], axis=0)
         
-        return (state, action, reward, next_state, done), w_batch, idx_batch
+        sampled_p = np.mean(priority_list)
+        mean_p = sum_p / self.buffer_counter
+        
+        return (state, action, reward, next_state, done), w_batch, idx_batch, sampled_p, mean_p
     
     def update_priority(self, priority, index):
         self.sum_tree[index] = priority

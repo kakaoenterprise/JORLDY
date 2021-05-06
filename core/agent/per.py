@@ -21,7 +21,7 @@ class PERAgent(DQNAgent):
         if self.memory.buffer_counter < max(self.batch_size, self.start_train_step):
             return None
                 
-        transitions, w_batch, idx_batch = self.memory.sample(self.beta)
+        transitions, w_batch, idx_batch, sampled_p, mean_p = self.memory.sample(self.beta)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
                 
         eye = torch.eye(self.action_size).to(device)
@@ -67,5 +67,7 @@ class PERAgent(DQNAgent):
             "loss" : loss.item(),
             "epsilon" : self.epsilon,
             "max_Q": max_Q,
+            "sampled_p": sampled_p,
+            "mean_p": mean_p
         }
         return result
