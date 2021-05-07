@@ -71,20 +71,21 @@ class MultistepBuffer(ReplayBuffer):
                 
 # Reference: https://github.com/LeejwUniverse/following_deepmid/tree/master/jungwoolee_pytorch/100%20Algorithm_For_RL/01%20sum_tree
 class PERBuffer(ReplayBuffer):
-    def __init__(self, buffer_size):
-        self.buffer = [0 for i in range(buffer_size)] # define replay buffer
-        self.sum_tree = [0 for i in range((buffer_size * 2) - 1)] # define sum tree
-        
-        self.tree_index = buffer_size - 1 # define sum_tree leaf node index.
-        self.buffer_index = 0 # define replay buffer index.
-        self.buffer_counter = 0
-        
+    def __init__(self, buffer_size, uniform_sample_prob=1e-3):
         self.buffer_size = buffer_size 
-        self.first_store = True
-        self.full_charge = False
+        self.tree_size = (buffer_size * 2) - 1
+        self.first_leaf_index = buffer_size - 1 
         
+        self.buffer = [0] * buffer_size # define replay buffer
+        self.sum_tree = [0] * self.tree_size # define sum tree
+        
+        self.buffer_index = 0 # define replay buffer index.
+        self.tree_index = self.first_leaf_index # define sum_tree leaf node index.
+        self.buffer_counter = 0
         self.max_priority = 1.0
-        self.min_priority = self.max_priority
+        self.uniform_sample_prob = uniform_sample_prob
+        
+        self.first_store = True
         
     def store(self, state, action, reward, next_state, done):
         if self.first_store:
@@ -99,21 +100,29 @@ class PERBuffer(ReplayBuffer):
                 
     def add_tree_data(self):
         self.update_priority(self.max_priority, self.tree_index)
-        self.tree_index += 1 # count current sum_tree index
 
-        if self.tree_index == (self.buffer_size * 2) - 1: # if sum tree index achive last index.
-            self.tree_index = self.buffer_size - 1 # change frist leaf node index.
+        self.tree_index += 1 # count current sum_tree index
+        if self.tree_index == self.tree_size: # if sum tree index achive last index.
+            self.tree_index = self.first_leaf_index # change frist leaf node index.
             self.full_charge = True
+    
+    def update_priority(self, new_priority, index):
+        ex_priority = self.sum_tree[index]
+        delta_priority = new_priority - ex_priority
+        self.sum_tree[index] = new_priority
+        self.update_tree(index, delta_priority)
+
+        self.max_priority = max(self.max_priority, new_priority)
 
     def update_tree(self, index, delta_priority):
         # index is a starting leaf node point.
-        while index != 0: 
+        while index > 0: 
             index = (index - 1)//2 # parent node index.
             self.sum_tree[index] += delta_priority
-    
+            
     def search_tree(self, num):
         index = 0 # always start from root index.
-        while True:
+        while index < self.first_leaf_index:
             left = (index * 2) + 1
             right = (index * 2) + 2
             
@@ -122,70 +131,49 @@ class PERBuffer(ReplayBuffer):
             else:
                 num -= self.sum_tree[left] # if child left node is under current value.
                 index = right               # go to the right direction.
-            
-            if index >= self.buffer_size - 1:
-                break
 
-        priority = self.sum_tree[index]
-        tree_idx = index 
-        buffer_idx = index - (self.buffer_size - 1)
-        
-        return priority, tree_idx, buffer_idx
+        return index
     
     def sample(self, beta, batch_size):
-        batch = []
-        idx_batch = []
-        w_batch = np.zeros(batch_size)
+        assert self.sum_tree[0] > 0.
+        uniform_sampling = np.random.uniform(size=batch_size) < self.uniform_sample_prob
         
-        sum_p = self.sum_tree[0] 
-        min_p = self.min_priority/sum_p
-        max_w = pow(self.buffer_size * min_p, -beta)
+        uniform_size = np.sum(uniform_sampling)
+        prioritized_size = batch_size - uniform_size
         
-        seg_size = sum_p/batch_size
+        uniform_indices = list(np.random.randint(self.buffer_counter, size=uniform_size) + self.first_leaf_index)
+        uniform_priorities = [self.sum_tree[idx] for idx in uniform_indices]
         
-        priority_list = []
+        targets = np.random.uniform(size=prioritized_size) * self.sum_tree[0]
+        prioritized_indices = [self.search_tree(target) for target in targets]
         
-        for i in range(batch_size):
-            seg1 = seg_size * i
-            seg2 = seg_size * (i + 1)
-
-            sampled_val = np.random.uniform(seg1, seg2)
-            priority, tree_idx, buffer_idx = self.search_tree(sampled_val)
-            
-            priority_list.append(priority)
-            
-            batch.append(self.buffer[buffer_idx])
-            idx_batch.append(tree_idx)
-            
-            p_i = priority/sum_p
-            w_i = pow((self.buffer_size * p_i), -beta)
-            w_batch[i] = w_i/max_w
+        indices = np.asarray(uniform_indices + prioritized_indices)
+        priorities = np.asarray([self.sum_tree[index] for index in indices])
+        assert len(indices) == len(priorities) == batch_size
         
-        state       = np.stack([b[0] for b in batch], axis=0)
-        action      = np.stack([b[1] for b in batch], axis=0)
-        reward      = np.stack([b[2] for b in batch], axis=0)
-        next_state  = np.stack([b[3] for b in batch], axis=0)
-        done        = np.stack([b[4] for b in batch], axis=0)
+        uniform_probs = np.asarray(1. / self.buffer_counter)
+        prioritized_probs = priorities / self.sum_tree[0]
         
-        return (state, action, reward, next_state, done), w_batch, idx_batch
+        usp = self.uniform_sample_prob
+        sample_probs = (1. - usp) * prioritized_probs + usp * uniform_probs
+        weights = (uniform_probs / sample_probs) ** beta
+        weights /= np.max(weights)
+        transitions = [self.buffer[idx] for idx in indices - self.first_leaf_index]
+        
+        state       = np.stack([b[0] for b in transitions], axis=0)
+        action      = np.stack([b[1] for b in transitions], axis=0)
+        reward      = np.stack([b[2] for b in transitions], axis=0)
+        next_state  = np.stack([b[3] for b in transitions], axis=0)
+        done        = np.stack([b[4] for b in transitions], axis=0)
+        
+        sampled_p = np.mean(priorities) 
+        mean_p = np.mean(self.sum_tree[self.first_leaf_index: self.first_leaf_index+self.buffer_counter])
+        return (state, action, reward, next_state, done), weights, indices, sampled_p, mean_p
     
-    def update_priority(self, new_priority, index):
-        ex_priority = self.sum_tree[index]
-        delta_priority = new_priority - ex_priority
-        self.sum_tree[index] = new_priority
-        self.update_tree(index, delta_priority)
-        
-        if self.full_charge:
-            if self.min_priority != ex_priority:
-                self.min_priority = min(self.min_priority, new_priority)
-            else:
-                min(self.sum_tree[self.buffer_size - 1:])
-            
-            if self.max_priority != ex_priority:
-                self.max_priority = max(self.max_priority, new_priority)
-            else:
-                max(self.sum_tree[self.buffer_size - 1:])
-
+    @property
+    def size(self):
+        return self.buffer_counter
+    
 class Rollout(ReplayBuffer):
     def __init__(self, **kwargs):
         self.buffer = list()
