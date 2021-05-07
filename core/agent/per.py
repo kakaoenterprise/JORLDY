@@ -1,8 +1,5 @@
 import torch
 import torch.nn.functional as F
-import random
-import os
-from collections import deque
 
 from .dqn import DQNAgent
 from .utils import PERBuffer
@@ -76,7 +73,7 @@ class PERAgent(DQNAgent):
         if self.num_learn > 0:
             self.epsilon_decay()
 
-            if self.num_learn % self.target_update_term == 0:
+            if self.num_learn % self.target_update_period == 0:
                 self.update_target()
         
         # Process per episode

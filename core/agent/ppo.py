@@ -2,11 +2,7 @@ import torch
 import torch.nn.functional as F
 from torch.distributions import Normal, Categorical
 import numpy as np
-import os
 
-from core.network import Network
-from core.optimizer import Optimizer
-from .utils import ReplayBuffer
 from .reinforce import REINFORCEAgent
 
 class PPOAgent(REINFORCEAgent):
