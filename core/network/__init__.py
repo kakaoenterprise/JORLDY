@@ -1,7 +1,10 @@
 from .dqn import *
 from .dueling import *
+from .noisy import * 
 from .iqn import *
 from .sac import *
+from .reinforce import *
+from .ppo import *
 
 class Network:
     dictionary = {
@@ -9,10 +12,18 @@ class Network:
     "dqn_cnn": DQN_CNN,
     "dueling": Dueling,
     "dueling_cnn": Dueling_CNN,
+    "noisy": Noisy, 
+    "noisy_cnn": Noisy_CNN,
     "iqn": IQN,
     "iqn_cnn": IQN_CNN,
     "sac_actor": SACActor,
     "sac_critic": SACCritic,
+    "continuous_policy": ContinuousPolicy,
+    "discrete_policy": DiscretePolicy,
+    "continuous_pi_v": ContinuousPiV,
+    "discrete_pi_v": DiscretePiV,
+    "continuous_pi_v_cnn": ContinuousPiV_CNN,
+    "discrete_pi_v_cnn": DiscretePiV_CNN,
     }
     
     def __new__(self, name, *args, **kwargs):

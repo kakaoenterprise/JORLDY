@@ -2,7 +2,6 @@
 
 env = {
     "name":"pendulum",
-    "mode":"continuous",
     "render":False,
 }
 
@@ -30,7 +29,7 @@ train = {
     "load_path" : None, 
     "train_step" : 80000,
     "test_step" : 50000,
-    "print_term" : 10,
-    "save_term" : 100,
+    "print_period" : 10,
+    "save_period" : 100,
     "test_iteration": 10,
 }

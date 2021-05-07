@@ -3,13 +3,12 @@ for proxy in ['https_proxy', 'http_proxy']:
     if os.environ.get(proxy): 
         del os.environ[proxy]
 import ray
-import torch
 import numpy as np 
-import datetime
-import time
 import copy
 from collections import defaultdict
 from functools import reduce
+import datetime, time
+from collections import defaultdict, deque
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -30,10 +29,10 @@ class MetricManager:
         return ret
     
 class LogManager:
-    def __init__(self, env, id):
+    def __init__(self, env, id, purpose=None):
         self.id=id
-        self.now = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        self.path = f"./logs/{env}/{id}/{self.now}/"
+        now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        self.path = f"./logs/{env}/{id}/{now}/" if purpose is None else f"./logs/{env}/{purpose}/{id}/{now}/"
         self.writer = SummaryWriter(self.path)
         self.stamp = time.time()
         
@@ -45,6 +44,39 @@ class LogManager:
                 time_delta = int(time.time() - self.stamp)
                 self.writer.add_scalar(f"{self.id}/{key}_per_time", value, time_delta)
                 self.writer.add_scalar(f"all/{key}_per_time", value, time_delta)
+
+class TimeManager:
+    def __init__(self, n_mean = 20):
+        self.n_mean = n_mean
+        self.reset()
+    
+    def reset(self):
+        self.timedic = dict()
+    
+    def start(self, keyword):
+        if keyword not in self.timedic:
+            self.timedic[keyword] = {
+                'start_timestamp': time.time(),
+                'deque': deque(maxlen=self.n_mean),
+                'mean': -1,
+                'last_time': -1,
+            }
+        else:
+            self.timedic[keyword]['start_timestamp'] = time.time()
+    
+    def end(self, keyword):
+        if keyword in self.timedic:
+            time_current = time.time() - self.timedic[keyword]['start_timestamp']
+            self.timedic[keyword]['last_time'] = time_current
+            self.timedic[keyword]['deque'].append(time_current)
+            self.timedic[keyword]['start_timestamp'] = -1
+            self.timedic[keyword]['mean'] = sum(self.timedic[keyword]['deque']) / len(self.timedic[keyword]['deque'])
+            
+            return self.timedic[keyword]['last_time'], self.timedic[keyword]['mean']
+        
+    def get_statistics(self):
+        return {k: self.timedic[k]['mean'] for k in self.timedic}
+        
             
 class TestManager:
     def __init__(self):

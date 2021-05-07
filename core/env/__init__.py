@@ -1,5 +1,6 @@
 import os, sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__))) # for import mlagents
+sys.path.append(os.path.abspath('../../'))
 
 from .gym_env import *
 from .atari import *
@@ -9,10 +10,13 @@ class Env:
     dictionary = {
     "cartpole": CartPole,
     "pendulum": Pendulum,
+    "mountaincar": MountainCar,
     "breakout": Breakout,
     "pong": Pong,
     "asterix": Asterix,
     "assault": Assault,
+    "spaceinvaders": Spaceinvaders,
+    "seaquest": Seaquest,
     "hopper_mlagent": HopperMLAgent,
     "pong_mlagent": PongMLAgent,
     }

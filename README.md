@@ -3,17 +3,21 @@
 # Implementation List
 ### Algorithm
 
-- Deep Q Network (DQN)
-- Double DQN
-- Dueling DQN
-- C51
-- QR-DQN
-- Soft Actor Critic (SAC)
+- [Deep Q Network (DQN)](https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf)
+- [Double DQN](https://arxiv.org/abs/1509.06461)
+- [Dueling DQN](https://arxiv.org/abs/1511.06581)
+- [C51](https://arxiv.org/abs/1707.06887)
+- [QR-DQN](https://arxiv.org/abs/1710.10044)
+- [IQN](https://arxiv.org/abs/1806.06923)
+- REINFORCE (Discrete, Continuous)
+- [[PPO] Proximal Policy Optimization (Discrete, Continuous)](https://arxiv.org/abs/1707.06347)
+- [[SAC] Soft Actor Critic (Continuous)](https://arxiv.org/abs/1801.01290)
 
 ### Environment 
 
 - Cartpole
-- Pendulum 
+- Pendulum
+- Mountain Car
 - Atari 
 - ML-Agents 
 

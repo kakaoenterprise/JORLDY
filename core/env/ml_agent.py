@@ -1,9 +1,20 @@
 from mlagents.envs import UnityEnvironment
 import numpy as np 
+import platform, subprocess
+from .base import BaseEnv
 
-class MLAgent:
-    def __init__(self, file_name, train_mode=True, id=0):
-        self.env = UnityEnvironment(file_name=file_name, worker_id=id, seed=id)
+def match_build():
+    os = platform.system()
+    if os == "Linux":
+        return 'Server' if subprocess.getoutput("which Xorg") == '' else 'Linux'
+    else:
+        return {"Windows": "Windows",
+                "Darwin" : "Max"}[os]
+
+class MLAgent(BaseEnv):
+    def __init__(self, env_name, train_mode=True, id=0):
+        file_name = f"./core/env/mlagents/{env_name}/{match_build()}/{env_name}"
+        self.env = UnityEnvironment(file_name=file_name, worker_id=np.random.randint(60000), seed=id)
 
         self.train_mode = train_mode
         self.score = 0
@@ -25,7 +36,6 @@ class MLAgent:
         done = self.env_info.local_done
         
         self.score += reward[0] 
-
         reward, done = map(lambda x: np.expand_dims(x, 0), [reward, done])
         return (next_state, reward, done)
 
@@ -34,16 +44,16 @@ class MLAgent:
 
 class HopperMLAgent(MLAgent):
     def __init__(self, **kwargs):
-        file_name = "./core/env/mlagents/Hopper/Server/Hopper"
-        super(HopperMLAgent, self).__init__(file_name, **kwargs)
+        env_name = "Hopper"
+        super(HopperMLAgent, self).__init__(env_name, **kwargs)
 
         self.state_size = 19*4
         self.action_size = 3
         
 class PongMLAgent(MLAgent):
     def __init__(self, **kwargs):
-        file_name = "./core/env/mlagents/Pong/Server/Pong"
-        super(PongMLAgent, self).__init__(file_name, **kwargs)
+        env_name = "Pong"
+        super(PongMLAgent, self).__init__(env_name, **kwargs)
         
         self.state_size = 8*4
         self.action_size = 3

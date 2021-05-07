@@ -1,17 +1,15 @@
 import torch
 import torch.nn.functional as F
 from torch.distributions import Normal
+import os 
+import copy
 
 from core.network import Network
 from core.optimizer import Optimizer
 from .utils import ReplayBuffer
+from .base import BaseAgent
 
-import os 
-import copy
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-class SACAgent:
+class SACAgent(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
@@ -32,21 +30,22 @@ class SACAgent:
                  static_log_alpha=-2.0,
                  **kwargs,
                  ):
-        self.actor = Network(actor, state_size, action_size).to(device)
-        self.critic = Network(critic, state_size+action_size, action_size).to(device)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.actor = Network(actor, state_size, action_size).to(self.device)
+        self.critic = Network(critic, state_size+action_size, action_size).to(self.device)
         self.target_critic = copy.deepcopy(self.critic)
         self.actor_optimizer = Optimizer(actor_optimizer, self.actor.parameters(), lr=actor_lr)
         self.critic_optimizer = Optimizer(critic_optimizer, self.critic.parameters(), lr=critic_lr)
         
         self.use_dynamic_alpha = use_dynamic_alpha
         if use_dynamic_alpha:
-            self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
+            self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
             self.alpha_optimizer = Optimizer(alpha_optimizer, [self.log_alpha], lr=alpha_lr)
         else:
-            self.log_alpha = torch.tensor(static_log_alpha).to(device)
+            self.log_alpha = torch.tensor(static_log_alpha).to(self.device)
             self.alpha_optimizer = None
         self.alpha = self.log_alpha.exp()
-        self.target_entropy = -torch.prod(torch.Tensor(action_size)).to(device).item()
+        self.target_entropy = -1.0
 
         self.gamma = gamma
         self.tau = tau
@@ -57,8 +56,7 @@ class SACAgent:
 
     def act(self, state, training=True):
         self.actor.train(training)
-            
-        mu, std = self.actor(torch.FloatTensor(state).to(device))
+        mu, std = self.actor(torch.FloatTensor(state).to(self.device))
         std = std if training else 0
         m = Normal(mu, std)
         z = m.sample()
@@ -72,8 +70,7 @@ class SACAgent:
         action = torch.tanh(z)
         log_prob = m.log_prob(z)
         # Enforcing Action Bounds
-        log_prob -= torch.log(1 - action.pow(2) + 1e-6)
-        log_prob = log_prob.sum(1, keepdim=True)
+        log_prob -= torch.log(1 - action.pow(2) + 1e-7)
         return action, log_prob
 
     def learn(self):
@@ -81,16 +78,16 @@ class SACAgent:
             return None
 
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
 
         q1, q2 = self.critic(state, action)
 
         with torch.no_grad():
             mu, std = self.actor(next_state)
             next_action, next_log_prob = self.sample_action(mu, std)
-            next_target_q1, next_target_q2 = self.target_critic(next_state, next_action)
-            min_next_target_q = torch.min(next_target_q1, next_target_q2) - self.alpha * next_log_prob
-            target_q = reward + (1 - done)*self.gamma*min_next_target_q
+            next_q1, next_q2 = self.target_critic(next_state, next_action)
+            min_next_q = torch.min(next_q1, next_q2)
+            target_q = reward + (1 - done)*self.gamma*(min_next_q - self.alpha*next_log_prob)
         
         max_Q = torch.max(target_q, axis=0).values.cpu().numpy()[0]
         
@@ -109,7 +106,7 @@ class SACAgent:
         q1, q2 = self.critic(state, sample_action)
         min_q = torch.min(q1, q2)
 
-        actor_loss = ((self.alpha.to(device) * log_prob) - min_q).mean()
+        actor_loss = ((self.alpha.to(self.device) * log_prob) - min_q).mean()
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
@@ -169,7 +166,7 @@ class SACAgent:
 
     def load(self, path):
         print(f"...Load model from {path}...")
-        checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=device)
+        checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=self.device)
         self.actor.load_state_dict(checkpoint["actor"])
         self.actor_optimizer.load_state_dict(checkpoint["actor_optimizer"])
 
@@ -177,9 +174,6 @@ class SACAgent:
         self.target_critic = copy.deepcopy(self.critic)
         self.critic_optimizer.load_state_dict(checkpoint["critic_optimizer"])
         
-
         if self.use_dynamic_alpha and 'log_alpha' in checkpoint.keys():
             self.log_alpha = checkpoint['log_alpha']
             self.alpha_optimizer.load_state_dict(checkpoint['alpha_optimizer'])
-
-

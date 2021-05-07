@@ -1,27 +1,54 @@
 import gym
 import numpy as np
+from .base import BaseEnv
 
-class CartPole:
+class Gym(BaseEnv):
     def __init__(self,
-                render=False,
-                mode='discrete',
-                **kwargs,
+                 name,
+                 mode,
+                 render=False,
+                 custom_action=False,
                 ):
-        self.env = gym.make('CartPole-v1')
+        self.env = gym.make(name)
         self.mode = mode
         self.state_size = self.env.observation_space.shape[0]
-        self.action_size = self.env.action_space.n if mode=='discrete' else 1
-        self.score = 0
+        if not custom_action:
+            self.action_size = self.env.action_space.shape[0] if mode=='continuous' else self.env.action_space.n
         self.render = render
     
-    def get_size(self):
-        return self.state_size, self.action_size
-
     def reset(self):
         self.score = 0
         state = self.env.reset()
         state = np.expand_dims(state, 0) # for (1, state_size)
         return state
+
+    def step(self, action):
+        if self.render:
+            self.env.render()
+        if self.mode=="continuous":
+            action = ((action + 1.)/2.) * (self.env.action_space.high - self.env.action_space.low) + self.env.action_space.low
+            action = np.reshape(action, self.env.action_space.shape)
+        else:
+            action = np.asscalar(action)
+            
+        next_state, reward, done, info = self.env.step(action)
+        self.score += reward 
+
+        next_state, reward, done = map(lambda x: np.expand_dims(x, 0), [next_state, [reward], [done]]) # for (1, ?)
+        return (next_state, reward, done)
+
+    def close(self):
+        self.env.close()
+        
+class CartPole(Gym):
+    def __init__(self,
+                mode='discrete',
+                **kwargs):
+        if mode == "continuous":
+            super(CartPole, self).__init__('CartPole-v1', mode, custom_action=True, **kwargs)
+            self.action_size = 1
+        else:
+            super(CartPole, self).__init__('CartPole-v1', mode, **kwargs)
 
     def step(self, action):
         if self.render:
@@ -34,37 +61,16 @@ class CartPole:
         reward = -1 if done else 0.1
 
         next_state, reward, done = map(lambda x: np.expand_dims(x, 0), [next_state, [reward], [done]]) # for (1, ?)
-        return (next_state, reward, done)
-
-    def close(self):
-        self.env.close()
+        return (next_state, reward, done)    
     
-class Pendulum:
+class Pendulum(Gym):
     def __init__(self,
-                render=False,
-                **kwargs,
+                **kwargs
                 ):
-        self.env = gym.make('Pendulum-v0')
-        self.state_size = self.env.observation_space.shape[0]
-        self.action_size = self.env.action_space.shape[0]
-        self.score = 0
-        self.render = render
+        super(Pendulum, self).__init__('Pendulum-v0', 'continuous', **kwargs)
 
-    def reset(self):
-        self.score = 0
-        state = self.env.reset()
-        state = np.expand_dims(state, 0) # for (1, state_size)
-        return state
-
-    def step(self, action):
-        if self.render:
-            self.env.render()
-        next_state, reward, done, info = self.env.step(2*action[0])
-        self.score += reward 
-
-        next_state, reward, done = map(lambda x: np.expand_dims(x, 0), [next_state, [reward], [done]]) # for (1, ?)
-        return (next_state, reward, done)
-
-    def close(self):
-        self.env.close()
-    
+class MountainCar(Gym):
+    def __init__(self,
+                **kwargs
+                ):
+        super(MountainCar, self).__init__('MountainCar-v0', 'discrete', **kwargs)

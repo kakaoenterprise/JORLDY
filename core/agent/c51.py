@@ -1,11 +1,8 @@
 import torch
 import torch.nn.functional as F
-import os
 import numpy as np 
 
 from .dqn import DQNAgent
-from core.network import Network
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class C51Agent(DQNAgent):
     def __init__(self, state_size, action_size, v_min, v_max, num_support , **kwargs):
@@ -16,7 +13,7 @@ class C51Agent(DQNAgent):
         self.v_max = v_max
         self.num_support = num_support 
         self.delta_z = (self.v_max - self.v_min) / (self.num_support - 1)
-        self.z = torch.linspace(self.v_min, self.v_max, self.num_support, device=device).view(1, -1)
+        self.z = torch.linspace(self.v_min, self.v_max, self.num_support, device=self.device).view(1, -1)
         
     def act(self, state, training=True):
         self.network.train(training)
@@ -25,7 +22,7 @@ class C51Agent(DQNAgent):
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            logits = self.network(torch.FloatTensor(state).to(device))
+            logits = self.network(torch.FloatTensor(state).to(self.device))
             _, q_action = self.logits2Q(logits)
             action = torch.argmax(q_action, -1, keepdim=True).data.cpu().numpy()
         return action
@@ -35,16 +32,16 @@ class C51Agent(DQNAgent):
             return None
         
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
         logit = self.network(state)
         p_logit, q_action = self.logits2Q(logit)
         
-        action_eye = torch.eye(self.action_size, device=device)
+        action_eye = torch.eye(self.action_size, device=self.device)
         action_onehot = action_eye[action.long()]
         p_action = torch.squeeze(action_onehot @ p_logit, 1)
 
-        target_dist = torch.zeros(self.batch_size, self.num_support, device=device, requires_grad=False)
+        target_dist = torch.zeros(self.batch_size, self.num_support, device=self.device, requires_grad=False)
         with torch.no_grad():
             target_p_logit, target_q_action = self.logits2Q(self.target_network(next_state))
             
@@ -57,7 +54,7 @@ class C51Agent(DQNAgent):
             l = torch.floor(b).long()
             u = torch.ceil(b).long()
             
-            support_eye = torch.eye(self.num_support, device=device)
+            support_eye = torch.eye(self.num_support, device=self.device)
             l_support_onehot = support_eye[l]
             u_support_onehot = support_eye[u]
 
