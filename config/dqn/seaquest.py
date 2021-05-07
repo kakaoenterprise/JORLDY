@@ -26,7 +26,7 @@ agent = {
 
 train = {
     "training" : True,
-    "load_path" : None, #"./logs/breakout/dqn/20201027142347/",
+    "load_path" : None,
     "train_step" : 10000000,
     "test_step" : 1000000,
     "print_term" : 10,
