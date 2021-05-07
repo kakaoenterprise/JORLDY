@@ -9,7 +9,7 @@ agent = {
     "name": "per",
     "network": "dqn",
     "optimizer": "adam",
-    "learning_rate": 0.00025,
+    "learning_rate": 0.00025/4,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,
@@ -20,7 +20,8 @@ agent = {
     "target_update_term": 1000,
     "alpha": 0.6,
     "beta": 0.4,
-    "eps": 0.001
+    "uniform_sample_prob": 1e-3,
+    "learn_period" : 1,
 }
 
 train = {
