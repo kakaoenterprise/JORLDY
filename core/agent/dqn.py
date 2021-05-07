@@ -26,7 +26,7 @@ class DQNAgent(BaseAgent):
                 buffer_size=50000,
                 batch_size=64,
                 start_train_step=2000,
-                target_update_term=500,
+                target_update_period=500,
                 ):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size
@@ -43,7 +43,7 @@ class DQNAgent(BaseAgent):
         self.memory = ReplayBuffer(buffer_size)
         self.batch_size = batch_size
         self.start_train_step = start_train_step
-        self.target_update_term = target_update_term
+        self.target_update_period = target_update_period
         self.num_learn = 0
 
     def act(self, state, training=True):
@@ -100,7 +100,7 @@ class DQNAgent(BaseAgent):
         if self.num_learn > 0:
             self.epsilon_decay()
 
-            if self.num_learn % self.target_update_term == 0:
+            if self.num_learn % self.target_update_period == 0:
                 self.update_target()
         
         # Process per episode

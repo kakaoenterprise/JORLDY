@@ -21,7 +21,7 @@ agent = {
     "buffer_size": 1000000,
     "batch_size": 32,
     "start_train_step": 100000,
-    "target_update_term": 10000,
+    "target_update_period": 10000,
     "alpha": 0.6,
     "beta": 0.4,
     "learn_period": 4,
@@ -33,7 +33,7 @@ train = {
     "load_path" : None, #"./logs/breakout/dqn/20201027142347/",
     "train_step" : 10000000,
     "test_step" : 1000000,
-    "print_term" : 10,
-    "save_term" : 100,
+    "print_period" : 10,
+    "save_period" : 100,
     "test_iteration": 10,
 }

@@ -26,7 +26,7 @@ class IQNAgent(QRDQNAgent):
                 buffer_size=50000,
                 batch_size=64,
                 start_train_step=2000,
-                target_update_term=500,
+                target_update_period=500,
                 num_sample=64,
                 embedding_dim=64,
                 sample_min=0.0,
@@ -46,7 +46,7 @@ class IQNAgent(QRDQNAgent):
         self.memory = ReplayBuffer(buffer_size)
         self.batch_size = batch_size
         self.start_train_step = start_train_step
-        self.target_update_term = target_update_term
+        self.target_update_period = target_update_period
         self.num_learn = 0
         
         self.num_support = num_sample

@@ -18,7 +18,7 @@ agent = {
     "buffer_size": 50000,
     "batch_size": 32,
     "start_train_step": 2000,
-    "target_update_term": 1000,
+    "target_update_period": 1000,
 }
 
 train = {
@@ -26,7 +26,7 @@ train = {
     "load_path" : None,
     "train_step" : 80000,
     "test_step" : 30000,
-    "print_term" : 20,
-    "save_term" : 1000,
+    "print_period" : 20,
+    "save_period" : 1000,
     "test_iteration": 10,
 }

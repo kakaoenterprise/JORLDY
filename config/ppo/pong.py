@@ -27,7 +27,7 @@ train = {
     "load_path" : None, #"./logs/breakout/dqn/20201027142347/",
     "train_step" : 10000000,
     "test_step" : 1000000,
-    "print_term" : 10,
-    "save_term" : 100,
+    "print_period" : 10,
+    "save_period" : 100,
     "test_iteration": 10,
 }
