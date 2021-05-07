@@ -7,11 +7,10 @@ from collections import OrderedDict
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import ReplayBuffer
+from .utils import Rollout
+from .base import BaseAgent
 
-
-
-class REINFORCEAgent:
+class REINFORCEAgent(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
@@ -21,7 +20,6 @@ class REINFORCEAgent:
                  gamma=0.99,
                  **kwargs,
                  ):
-        
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.action_type = network.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
@@ -30,7 +28,7 @@ class REINFORCEAgent:
         self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate)
 
         self.gamma = gamma
-        self.memory = ReplayBuffer()
+        self.memory = Rollout()
 
     def act(self, state, training=True):
         if self.action_type == "continuous":

@@ -1,7 +1,8 @@
 import gym
 import numpy as np
+from .base import BaseEnv
 
-class Gym:
+class Gym(BaseEnv):
     def __init__(self,
                  name,
                  mode,

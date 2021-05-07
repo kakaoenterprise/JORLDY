@@ -2,7 +2,6 @@ import torch
 import torch.nn.functional as F
 from torch.distributions import Normal, Categorical
 import numpy as np
-import os
 
 from .reinforce import REINFORCEAgent
 

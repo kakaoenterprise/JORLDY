@@ -1,8 +1,9 @@
 import gym
 import numpy as np
 from .utils import ImgProcessor
+from .base import BaseEnv
 
-class Atari:
+class Atari(BaseEnv):
     def __init__(self,
                  name,
                  render=False,
@@ -77,7 +78,14 @@ class Asterix(Atari):
 class Assault(Atari):
     def __init__(self, **kwargs):
         super(Assault, self).__init__('AssaultDeterministic-v4', **kwargs)
-        
+
+class Seaquest(Atari):
+    def __init__(self, **kwargs):
+        super(Seaquest, self).__init__('Seaquest-v0', **kwargs)
+
+class Spaceinvaders(Atari):
+    def __init__(self, **kwargs):
+        super(Spaceinvaders, self).__init__('SpaceInvaders-v0', **kwargs)
         
 # class Breakout:
 #     def __init__(self, 

@@ -8,8 +8,9 @@ from collections import OrderedDict
 from core.network import Network
 from core.optimizer import Optimizer
 from .utils import ReplayBuffer
+from .base import BaseAgent
 
-class DQNAgent:
+class DQNAgent(BaseAgent):
     def __init__(self,
                 state_size,
                 action_size,
@@ -25,10 +26,8 @@ class DQNAgent:
                 buffer_size=50000,
                 batch_size=64,
                 start_train_step=2000,
-                target_update_term=500,
-                **kwargs,
+                target_update_period=500,
                 ):
-        
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size
         self.network = Network(network, state_size, action_size).to(self.device)
@@ -40,10 +39,11 @@ class DQNAgent:
         self.epsilon_min = epsilon_min
         self.epsilon_eval = epsilon_eval
         self.explore_step = explore_step
+        self.buffer_size = buffer_size
         self.memory = ReplayBuffer(buffer_size)
         self.batch_size = batch_size
         self.start_train_step = start_train_step
-        self.target_update_term = target_update_term
+        self.target_update_period = target_update_period
         self.num_learn = 0
 
     def act(self, state, training=True):
@@ -59,7 +59,7 @@ class DQNAgent:
     def learn(self):
         if self.memory.size < max(self.batch_size, self.start_train_step):
             return None
-        
+
         transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
@@ -84,6 +84,7 @@ class DQNAgent:
             "epsilon" : self.epsilon,
             "max_Q": max_Q,
         }
+        
         return result
 
     def update_target(self):
@@ -100,7 +101,7 @@ class DQNAgent:
         if self.num_learn > 0:
             self.epsilon_decay()
 
-            if self.num_learn % self.target_update_term == 0:
+            if self.num_learn % self.target_update_period == 0:
                 self.update_target()
 
         return result
