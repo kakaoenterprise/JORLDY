@@ -168,6 +168,7 @@ class PERBuffer(ReplayBuffer):
         
         sampled_p = np.mean(priorities) 
         mean_p = np.mean(self.sum_tree[self.first_leaf_index: self.first_leaf_index+self.buffer_counter])
+        
         return (state, action, reward, next_state, done), weights, indices, sampled_p, mean_p
     
     @property

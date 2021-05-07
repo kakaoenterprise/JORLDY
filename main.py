@@ -21,6 +21,7 @@ save_term = config.train["save_term"]
 
 test_manager = TestManager()
 metric_manager = MetricManager()
+time_manager = TimeManager()
 log_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
 purpose = None if "purpose" not in config.train.keys() else config.train["purpose"]
 log_manager = LogManager(config.env["name"], log_id, purpose)
@@ -36,7 +37,7 @@ for step in range(train_step + test_step):
     
     action = agent.act(state, training)
     next_state, reward, done = env.step(action)
-    
+
     if training:
         result = agent.process(state, action, reward, next_state, done)
         if result:
