@@ -1,10 +1,8 @@
 import torch
 import torch.nn.functional as F
-import os
 import numpy as np 
 
 from .dqn import DQNAgent
-from core.network import Network
 
 class C51Agent(DQNAgent):
     def __init__(self, state_size, action_size, v_min, v_max, num_support , **kwargs):

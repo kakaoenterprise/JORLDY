@@ -1,8 +1,5 @@
 import torch
 import torch.nn.functional as F
-import random
-import os
-from collections import deque
 
 from .dqn import DQNAgent
 from .utils import PERBuffer

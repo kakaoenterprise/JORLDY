@@ -1,7 +1,6 @@
 import torch
 import torch.nn.functional as F
 import numpy as np 
-import time 
 
 class Noisy(torch.nn.Module):
     def __init__(self, D_in, D_out, device, D_hidden=512):

@@ -1,7 +1,5 @@
 import torch
 import torch.nn.functional as F
-import random
-import os
 
 from .dqn import DQNAgent
 

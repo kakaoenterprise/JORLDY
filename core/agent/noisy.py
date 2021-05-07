@@ -1,9 +1,7 @@
 import torch
 import torch.nn.functional as F
 import numpy as np
-import os
 import copy
-import time
 
 from core.network import Network
 from core.optimizer import Optimizer
