@@ -9,8 +9,6 @@ from core.optimizer import Optimizer
 from .utils import ReplayBuffer
 from .reinforce import REINFORCEAgent
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
 class PPOAgent(REINFORCEAgent):
     def __init__(self,
                  state_size,
@@ -39,21 +37,21 @@ class PPOAgent(REINFORCEAgent):
         
     def act(self, state, training=True):
         if self.action_type == "continuous":
-            mu, std, _ = self.network(torch.FloatTensor(state).to(device))
+            mu, std, _ = self.network(torch.FloatTensor(state).to(self.device))
             std = std if training else 0
             m = Normal(mu, std)
             z = m.sample()
             action = torch.tanh(z)
             action = action.data.cpu().numpy()
         else:
-            pi, _ = self.network(torch.FloatTensor(state).to(device))
+            pi, _ = self.network(torch.FloatTensor(state).to(self.device))
             m = Categorical(pi)
             action = m.sample().data.cpu().numpy()[..., np.newaxis]
         return action
 
     def learn(self):
         transitions = self.memory.rollout()
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
         # set advantage and log_pi_old
         with torch.no_grad():

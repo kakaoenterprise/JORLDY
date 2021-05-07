@@ -7,8 +7,6 @@ import time
 from .dqn import DQNAgent
 from core.network import Network
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 class QRDQNAgent(DQNAgent):
     def __init__(self, state_size, action_size, num_support , **kwargs):
         super(QRDQNAgent, self).__init__(state_size, action_size*num_support, **kwargs)  
@@ -19,7 +17,7 @@ class QRDQNAgent(DQNAgent):
         # Get tau
         min_tau = 1/(2*self.num_support)
         max_tau = (2*self.num_support+1)/(2*self.num_support)
-        self.tau = torch.arange(min_tau, max_tau, 1/self.num_support, device=device).view(1, self.num_support)
+        self.tau = torch.arange(min_tau, max_tau, 1/self.num_support, device=self.device).view(1, self.num_support)
         self.inv_tau = 1 - self.tau
         
     def act(self, state, training=True):
@@ -29,7 +27,7 @@ class QRDQNAgent(DQNAgent):
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            logits = self.network(torch.FloatTensor(state).to(device))
+            logits = self.network(torch.FloatTensor(state).to(self.device))
             _, q_action = self.logits2Q(logits)
             action = torch.argmax(q_action, -1, keepdim=True).data.cpu().numpy()
         return action
@@ -39,12 +37,12 @@ class QRDQNAgent(DQNAgent):
             return None
         
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
         # Get Theta Pred
         logit = self.network(state)
         logits, q_action = self.logits2Q(logit)
-        action_eye = torch.eye(self.action_size, device=device)
+        action_eye = torch.eye(self.action_size, device=self.device)
         action_onehot = action_eye[action.long()]
         
         theta_pred = action_onehot @ logits

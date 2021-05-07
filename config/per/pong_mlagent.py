@@ -20,7 +20,8 @@ agent = {
     "target_update_term": 1000,
     "alpha": 0.6,
     "beta": 0.4,
-    "eps": 0.0001
+    "uniform_sample_prob": 1e-3,
+    "learn_period" : 1,
 }
 
 train = {

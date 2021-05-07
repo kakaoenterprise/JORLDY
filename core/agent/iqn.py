@@ -10,8 +10,6 @@ from core.optimizer import Optimizer
 from .utils import ReplayBuffer
 from .qrdqn import QRDQNAgent
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
 class IQNAgent(QRDQNAgent):
     def __init__(self,
                 state_size,
@@ -34,9 +32,9 @@ class IQNAgent(QRDQNAgent):
                 sample_min=0.0,
                 sample_max=1.0
                 ):
-        
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size
-        self.network = Network(network, state_size, action_size, embedding_dim, num_sample).to(device)
+        self.network = Network(network, state_size, action_size, embedding_dim, num_sample).to(self.device)
         self.target_network = copy.deepcopy(self.network)
         self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
         self.gamma = gamma
@@ -65,7 +63,7 @@ class IQNAgent(QRDQNAgent):
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            logits, _ = self.network(torch.FloatTensor(state).to(device), sample_min, sample_max)
+            logits, _ = self.network(torch.FloatTensor(state).to(self.device), sample_min, sample_max)
             _, q_action = self.logits2Q(logits)
             action = torch.argmax(q_action, -1, keepdim=True).data.cpu().numpy()
         return action
@@ -75,12 +73,12 @@ class IQNAgent(QRDQNAgent):
             return None
         
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
         # Get Theta Pred, Tau
         logit, tau = self.network(state)
         logits, q_action = self.logits2Q(logit)
-        action_eye = torch.eye(self.action_size, device=device)
+        action_eye = torch.eye(self.action_size, device=self.device)
         action_onehot = action_eye[action.long()]
 
         theta_pred = action_onehot @ logits
