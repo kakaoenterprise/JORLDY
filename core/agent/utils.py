@@ -74,8 +74,8 @@ class PERBuffer(ReplayBuffer):
         self.tree_size = (buffer_size * 2) - 1
         self.first_leaf_index = buffer_size - 1 
         
-        self.buffer = [0] * buffer_size # define replay buffer
-        self.sum_tree = [0] * self.tree_size # define sum tree
+        self.buffer = np.zeros(buffer_size, dtype=tuple) # define replay buffer
+        self.sum_tree = np.zeros(self.tree_size) # define sum tree
         
         self.buffer_index = 0 # define replay buffer index.
         self.tree_index = self.first_leaf_index # define sum_tree leaf node index.
@@ -102,7 +102,6 @@ class PERBuffer(ReplayBuffer):
         self.tree_index += 1 # count current sum_tree index
         if self.tree_index == self.tree_size: # if sum tree index achive last index.
             self.tree_index = self.first_leaf_index # change frist leaf node index.
-            self.full_charge = True
     
     def update_priority(self, new_priority, index):
         ex_priority = self.sum_tree[index]
@@ -135,7 +134,6 @@ class PERBuffer(ReplayBuffer):
     def sample(self, beta, batch_size):
         assert self.sum_tree[0] > 0.
         uniform_sampling = np.random.uniform(size=batch_size) < self.uniform_sample_prob
-        
         uniform_size = np.sum(uniform_sampling)
         prioritized_size = batch_size - uniform_size
         
@@ -164,8 +162,7 @@ class PERBuffer(ReplayBuffer):
         done        = np.concatenate([b[4] for b in transitions], axis=0)
         
         sampled_p = np.mean(priorities) 
-        mean_p = np.mean(self.sum_tree[self.first_leaf_index: self.first_leaf_index+self.buffer_counter])
-        
+        mean_p = self.sum_tree[0]/self.buffer_counter
         return (state, action, reward, next_state, done), weights, indices, sampled_p, mean_p
     
     @property
