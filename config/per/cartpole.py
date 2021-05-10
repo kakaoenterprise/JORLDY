@@ -18,10 +18,10 @@ agent = {
     "buffer_size": 50000,
     "batch_size": 32,
     "start_train_step": 2000,
-    "target_update_period": 10000,
+    "target_update_period": 1000,
     "alpha": 0.6,
     "beta": 0.4,
-    "learn_period": 4,
+    "learn_period": 1,
     "uniform_sample_prob": 1e-3,
 }
 
