@@ -39,6 +39,7 @@ class C51Agent(DQNAgent):
         
         action_eye = torch.eye(self.action_size, device=self.device)
         action_onehot = action_eye[action.long()]
+        
         p_action = torch.squeeze(action_onehot @ p_logit, 1)
 
         target_dist = torch.zeros(self.batch_size, self.num_support, device=self.device, requires_grad=False)
@@ -70,6 +71,7 @@ class C51Agent(DQNAgent):
         max_Q = torch.max(q_action).item()
         max_logit = torch.max(logit).item()
         min_logit = torch.min(logit).item()
+        
         loss = -(target_dist*torch.clamp(p_action, min=1e-8).log()).sum(-1).mean()
         self.optimizer.zero_grad()
         loss.backward()
