@@ -122,8 +122,10 @@ class RainbowAgent(DQNAgent):
             
             lluu = l_support_onehot * l_support_binary + u_support_onehot * u_support_binary
             
-            target_dist += done[:,-1,:] * torch.mean(l_support_onehot * u_support_onehot + lluu, 1)
-            target_dist += (1 - done[:,-1,:])* torch.sum(target_p_action_binary * lluu, 1)
+            done_in_nstep = (done.sum(axis = 1) != 0).type(torch.float)
+            
+            target_dist += done_in_nstep * torch.mean(l_support_onehot * u_support_onehot + lluu, 1)
+            target_dist += (1 - done_in_nstep)* torch.sum(target_p_action_binary * lluu, 1)
             target_dist /= torch.clamp(torch.sum(target_dist, 1, keepdim=True), min=1e-8)
 
         max_Q = torch.max(q_action).item()
