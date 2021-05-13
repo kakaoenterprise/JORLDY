@@ -7,21 +7,21 @@ import torch.multiprocessing as mp
 
 # Interact
 def interact_process(DistributedManager, distributed_manager_config,
-                     trans_queue, sync_queue, run_step, update_term):
+                     trans_queue, sync_queue, run_step, update_period):
     distributed_manager = DistributedManager(*distributed_manager_config)
     step = 0
     try:
         while step < run_step:
-            step += update_term
-            trans_queue.put(distributed_manager.run(update_term))
+            step += update_period
+            trans_queue.put(distributed_manager.run(update_period))
             distributed_manager.sync(sync_queue.get())
     except Exception as e:
         print(e)
-        distributed_manager.terminate()
+        distributed_manager.periodinate()
         
 # Manage
 def manage_process(agent, env, result_queue, sync_queue,
-                   run_step, print_term, save_term, MetricManager,
+                   run_step, print_period, save_period, MetricManager,
                    TestManager, test_manager_config,
                    LogManager, log_manager_config):
     test_manager = TestManager(*test_manager_config)
@@ -36,14 +36,14 @@ def manage_process(agent, env, result_queue, sync_queue,
             while not result_queue.empty():
                 step, result = result_queue.get()
                 metric_manager.append(result)
-            if step % print_term == 0: #and not sync_queue.empty():
+            if step % print_period == 0: #and not sync_queue.empty():
                 agent.sync_in(**sync_queue.get())
                 score = test_manager.test(agent, env)
                 metric_manager.append({"score": score})
                 statistics = metric_manager.get_statistics()
                 print(f"Step : {step} / {statistics}")
                 log_manager.write_scalar(statistics, step)
-            if step % save_term == 0 or step >= run_step:
+            if step % save_period == 0 or step >= run_step:
                 agent.save(log_manager.path)
     except Exception as e:
         print(e)
@@ -60,9 +60,9 @@ if __name__ == '__main__':
         agent.load(load_path)
 
     run_step = config.train["run_step"]
-    print_term = config.train["print_term"]
-    save_term = config.train["save_term"]
-    update_term = config.train["update_term"]
+    print_period = config.train["print_period"]
+    save_period = config.train["save_period"]
+    update_period = config.train["update_period"]
 
     trans_queue = mp.Queue()
     interact_sync_queue = mp.Queue(1)
@@ -74,19 +74,19 @@ if __name__ == '__main__':
     log_manager_config = (config.env["name"], log_id)
     manage = mp.Process(target=manage_process,
                         args=(agent.cpu(), env, result_queue, manage_sync_queue,
-                              run_step, print_term, save_term, MetricManager,
+                              run_step, print_period, save_period, MetricManager,
                               TestManager, test_manager_config,
                               LogManager, log_manager_config))
     distributed_manager_config = (Env, config.env, agent.cpu(), config.train["num_worker"])
     interact = mp.Process(target=interact_process,
                             args=(DistributedManager, distributed_manager_config,
-                                  trans_queue, interact_sync_queue, run_step, update_term))
+                                  trans_queue, interact_sync_queue, run_step, update_period))
     manage.start()
     interact.start()
     try:
         step = 0
         while step < run_step:
-            step += update_term
+            step += update_period
             try: interact_sync_queue.get_nowait()
             except: pass
             interact_sync_queue.put(agent.sync_out())
@@ -94,7 +94,7 @@ if __name__ == '__main__':
             result = agent.process(transitions)
             if result:
                 result_queue.put((step, result))
-            if step % print_term == 0:
+            if step % print_period == 0:
                 try: manage_sync_queue.get_nowait()
                 except: pass
                 manage_sync_queue.put(agent.sync_out())

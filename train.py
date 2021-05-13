@@ -15,9 +15,9 @@ if load_path:
     agent.load(load_path)
 
 run_step = config.train["run_step"]
-print_term = config.train["print_term"]
-save_term = config.train["save_term"]
-update_term = config.train["update_term"]
+print_period = config.train["print_period"]
+save_period = config.train["save_period"]
+update_period = config.train["update_period"]
 
 test_manager = TestManager(config.train["test_iteration"])
 metric_manager = MetricManager()
@@ -27,22 +27,22 @@ distributed_manager = DistributedManager(Env, config.env, agent.cpu(), config.tr
 
 step = 0
 while step < run_step:
-    step += update_term
-    transitions = distributed_manager.run(update_term)
+    step += update_period
+    transitions = distributed_manager.run(update_period)
     result = agent.process(transitions)
     
     if result:
         metric_manager.append(result)
         distributed_manager.sync(agent.sync_out())
     
-    if step % print_term == 0:
+    if step % print_period == 0:
         score = test_manager.test(agent, env)
         metric_manager.append({"score": score})
         statistics = metric_manager.get_statistics()
         print(f"Step : {step} / {statistics}")
         log_manager.write_scalar(statistics, step)
 
-    if step % save_term == 0 or step == run_step:
+    if step % save_period == 0 or step == run_step:
         agent.save(log_manager.path)
         
 env.close()

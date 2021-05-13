@@ -110,7 +110,7 @@ class DistributedManager:
         sync_item = ray.put(sync_item)
         ray.get([actor.sync.remote(sync_item) for actor in self.actors])
         
-    def terminate(self):
+    def periodinate(self):
         ray.shutdown()
     
 @ray.remote

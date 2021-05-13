@@ -28,6 +28,6 @@ train = {
     "print_period" : 20,
     "save_period" : 1000,
     "test_iteration": 10,
-    "update_term" : 1,
+    "update_period" : 1,
     "num_worker" : 16,
 }

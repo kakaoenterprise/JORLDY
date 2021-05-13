@@ -27,6 +27,6 @@ train = {
     "print_period" : 10,
     "save_period" : 1000,
     "test_iteration": 2,
-    "update_term" : agent["n_step"],
+    "update_period" : agent["n_step"],
     "num_worker" : 16,
 }
