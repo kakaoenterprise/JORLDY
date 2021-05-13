@@ -1,8 +1,9 @@
 import gym
 import numpy as np
 from .utils import ImgProcessor
+from .base import BaseEnv
 
-class Atari:
+class Atari(BaseEnv):
     def __init__(self,
                  name,
                  render=False,

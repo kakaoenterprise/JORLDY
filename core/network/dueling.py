@@ -68,11 +68,11 @@ class Dueling_CNN(torch.nn.Module):
         # A stream : action advantage
         x_a = self.fc2_a(x_a) # [bs, num_action]
         x_a_mean = x_a.mean(dim=1).unsqueeze(1) # [bs, 1]
-        x_a = x_a - x_a_mean.repeat(1, self.num_action) # [bs, num_action]
+        x_a = x_a - x_a_mean.repeat(1, self.D_out) # [bs, num_action]
 
         # V stream : state value
         x_v = self.fc2_v(x_v) # [bs, 1]
-        x_v = x_v.repeat(1, self.num_action) # [bs, num_action]
+        x_v = x_v.repeat(1, self.D_out) # [bs, num_action]
 
         out = x_a + x_v # [bs, num_action]
         return out

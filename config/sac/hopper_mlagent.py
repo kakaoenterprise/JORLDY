@@ -28,7 +28,7 @@ train = {
     "load_path" : None, 
     "train_step" : 1000000,
     "test_step" : 100000,
-    "print_term" : 10,
-    "save_term" : 1000,
+    "print_period" : 10,
+    "save_period" : 1000,
     "test_iteration": 10,
 }

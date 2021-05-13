@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.noisy.pong_mlagent as config
+import config.rainbow.cartpole as config
 
 env = Env(**config.env)
 agent = Agent(state_size=env.state_size,
@@ -16,11 +16,12 @@ if load_path:
 
 train_step = config.train["train_step"] if training else 0
 test_step = config.train["test_step"]
-print_term = config.train["print_term"]
-save_term = config.train["save_term"]
+print_period = config.train["print_period"]
+save_period = config.train["save_period"]
 
 test_manager = TestManager()
 metric_manager = MetricManager()
+time_manager = TimeManager()
 log_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
 purpose = None if "purpose" not in config.train.keys() else config.train["purpose"]
 log_manager = LogManager(config.env["name"], log_id, purpose)
@@ -36,7 +37,7 @@ for step in range(train_step + test_step):
     
     action = agent.act(state, training)
     next_state, reward, done = env.step(action)
-    
+
     if training:
         result = agent.process(state, action, reward, next_state, done)
         if result:
@@ -49,7 +50,7 @@ for step in range(train_step + test_step):
         mode = "train" if training else "test"
         metric_manager.append({f"{mode}_score": env.score})
             
-        if episode % print_term == 0:
+        if episode % print_period == 0:
             if training:
                 score = test_manager.test(agent, env, config.train["test_iteration"])
                 metric_manager.append({"test_score": score})
@@ -57,7 +58,7 @@ for step in range(train_step + test_step):
             print(f"{episode} Episode / Step : {step} / {statistics}")
             log_manager.write_scalar(statistics, step)
         
-        if training and episode % save_term == 0:
+        if training and episode % save_period == 0:
             agent.save(log_manager.path)
         
         state = env.reset()

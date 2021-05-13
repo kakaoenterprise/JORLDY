@@ -5,12 +5,10 @@ import os
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import ReplayBuffer
+from .utils import Rollout
+from .base import BaseAgent
 
-
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-class REINFORCEAgent:
+class REINFORCEAgent(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
@@ -20,26 +18,26 @@ class REINFORCEAgent:
                  gamma=0.99,
                  **kwargs,
                  ):
-        
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.action_type = network.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
 
-        self.network = Network(network, state_size, action_size).to(device)
+        self.network = Network(network, state_size, action_size).to(self.device)
         self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate)
 
         self.gamma = gamma
-        self.memory = ReplayBuffer()
+        self.memory = Rollout()
 
     def act(self, state, training=True):
         if self.action_type == "continuous":
-            mu, std = self.network(torch.FloatTensor(state).to(device))
+            mu, std = self.network(torch.FloatTensor(state).to(self.device))
             std = std if training else 0
             m = Normal(mu, std)
             z = m.sample()
             action = torch.tanh(z)
             action = action.data.cpu().numpy()
         else:
-            pi = self.network(torch.FloatTensor(state).to(device))
+            pi = self.network(torch.FloatTensor(state).to(self.device))
             m = Categorical(pi)
             action = m.sample().data.cpu().numpy()[..., np.newaxis]
         return action
@@ -51,7 +49,7 @@ class REINFORCEAgent:
         for t in reversed(range(len(ret)-1)):
             ret[t] += self.gamma * ret[t+1]
         
-        state, action, ret = map(lambda x: torch.FloatTensor(x).to(device), [state, action, ret])
+        state, action, ret = map(lambda x: torch.FloatTensor(x).to(self.device), [state, action, ret])
         
         if self.action_type == "continuous":
             mu, std = self.network(state)
@@ -93,6 +91,6 @@ class REINFORCEAgent:
 
     def load(self, path):
         print(f"...Load model from {path}...")
-        checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=device)
+        checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=self.device)
         self.network.load_state_dict(checkpoint["network"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])

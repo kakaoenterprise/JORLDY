@@ -1,14 +1,15 @@
 from .dqn import DQNAgent
 from .sac import SACAgent
-from .double_dqn import DoubleDQNAgent
+from .double import DoubleDQNAgent
 from .per import PERAgent
 from .noisy import NoisyAgent
 from .c51 import C51Agent
+from .rainbow import RainbowAgent
 from .qrdqn import QRDQNAgent
 from .iqn import IQNAgent 
 from .reinforce import REINFORCEAgent
 from .ppo import PPOAgent
-from .multistep_dqn import MultistepDQNAgent
+from .multistep import MultistepDQNAgent
 
 import sys, os
 
@@ -19,11 +20,13 @@ class Agent:
     dictionary = {
     "dqn": DQNAgent,
     "sac": SACAgent,
-    "double_dqn": DoubleDQNAgent,
-    "multistep_dqn": MultistepDQNAgent,
+    "double": DoubleDQNAgent,
+    "dueling": DQNAgent,
+    "multistep": MultistepDQNAgent,
     "per": PERAgent,
     "noisy": NoisyAgent,
     "c51": C51Agent,
+    "rainbow": RainbowAgent,
     "qrdqn": QRDQNAgent,
     "iqn": IQNAgent,
     "reinforce": REINFORCEAgent,
