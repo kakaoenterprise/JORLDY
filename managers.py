@@ -125,7 +125,7 @@ class Actor:
     def run(self, step):
         transitions = []
         for t in range(step):
-            action = self.agent.act(self.state)
+            action = self.agent.act(self.state, training=True)
             next_state, reward, done = self.env.step(action)
             transitions.append((self.state, action, reward, next_state, done))
             self.state = next_state if not done else self.env.reset()

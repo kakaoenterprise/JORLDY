@@ -38,6 +38,6 @@ train = {
     "save_period" : 50000,
     "test_iteration": 5,
     # distributed setting
-    "update_period" : 32,
+    "update_period" : 8,
     "num_worker" : 16,
 }

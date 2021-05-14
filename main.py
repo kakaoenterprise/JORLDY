@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.ppo.cartpole as config
+import config.iqn.breakout as config
 
 if __name__=="__main__":
     env = Env(**config.env)

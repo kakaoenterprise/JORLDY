@@ -3,7 +3,7 @@ from managers import *
 from process import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.ppo.cartpole as config
+import config.iqn.breakout as config
 import torch.multiprocessing as mp
 
 if __name__ == '__main__':
@@ -54,8 +54,7 @@ if __name__ == '__main__':
             interact_sync_queue.put(agent.sync_out())
             transitions = trans_queue.get()
             result = agent.process(transitions, step)
-            if result:
-                result_queue.put((step, result))
+            result_queue.put((step, result))
             if print_stamp >= print_period or step >= run_step:
                 try: manage_sync_queue.get_nowait()
                 except: pass
