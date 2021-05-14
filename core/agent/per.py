@@ -15,9 +15,6 @@ class PERAgent(DQNAgent):
         self.learn_period_stamp = 0 
                 
     def learn(self):        
-        if self.memory.buffer_counter < max(self.batch_size, self.start_train_step):
-            return None
-                
         transitions, weights, indices, sampled_p, mean_p = self.memory.sample(self.beta, self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
@@ -63,7 +60,7 @@ class PERAgent(DQNAgent):
         return result
 
     def process(self, transitions, step):
-        result = None
+        result = {}
 
         # Process per step
         self.memory.store(transitions)
@@ -72,7 +69,7 @@ class PERAgent(DQNAgent):
         self.target_update_stamp += delta_t
         self.learn_period_stamp += delta_t
         
-        if self.learn_period_stamp > self.learn_period:
+        if self.learn_period_stamp > self.learn_period and self.memory.size > self.batch_size and self.time_t >= self.start_train_step:
             result = self.learn()
             self.learn_period_stamp = 0
 

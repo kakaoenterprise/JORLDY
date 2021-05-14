@@ -28,9 +28,6 @@ class C51Agent(DQNAgent):
         return action
     
     def learn(self):        
-        if self.memory.size < max(self.batch_size, self.start_train_step):
-            return None
-        
         transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         

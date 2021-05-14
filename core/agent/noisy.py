@@ -49,9 +49,6 @@ class NoisyAgent(DQNAgent):
         return action
 
     def learn(self):
-        if self.memory.size < max(self.batch_size, self.start_train_step):
-            return None
-
         transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
@@ -80,7 +77,7 @@ class NoisyAgent(DQNAgent):
         return result
     
     def process(self, transitions, step):
-        result = None
+        result = {}
         
         # Process per step
         self.memory.store(transitions)
@@ -88,7 +85,8 @@ class NoisyAgent(DQNAgent):
         self.time_t = step
         self.target_update_stamp += delta_t
         
-        result = self.learn()
+        if self.memory.size > self.batch_size and self.time_t >= self.start_train_step:
+            result = self.learn()
 
         # Process per step if train start
         if self.num_learn > 0:

@@ -74,9 +74,6 @@ class SACAgent(BaseAgent):
         return action, log_prob
 
     def learn(self):
-        if self.memory.size < max(self.batch_size, self.start_train_step):
-            return None
-
         transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
 
@@ -137,11 +134,12 @@ class SACAgent(BaseAgent):
             t_p.data.copy_(self.tau*p.data + (1-self.tau)*t_p.data)
     
     def process(self, transitions, step):
-        result = None
+        result = {}
         # Process per step
         self.memory.store(transitions)
         
-        result = self.learn()
+        if self.memory.size > self.batch_size and step >= self.start_train_step:
+            result = self.learn()
         if self.num_learn > 0:
             self.update_target_soft()
 

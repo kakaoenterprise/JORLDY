@@ -21,7 +21,7 @@ class IQNAgent(DQNAgent):
                 sample_max=1.0,
                 **kwargs,
                 ):
-        super(IQNAgent, self).__init__(state_size, action_size, **kwargs)
+        super(IQNAgent, self).__init__(state_size, action_size, network=network, **kwargs)
         
         self.network = Network(network, state_size, action_size, embedding_dim, num_sample).to(self.device)
         self.target_network = copy.deepcopy(self.network)
@@ -48,9 +48,6 @@ class IQNAgent(DQNAgent):
         return action
 
     def learn(self):
-        if self.memory.size < max(self.batch_size, self.start_train_step):
-            return None
-        
         transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         

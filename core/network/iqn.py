@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import numpy as np
 
 class IQN(torch.nn.Module):
-    def __init__(self, D_in, D_out, D_em, N_sample, D_hidden=512):
+    def __init__(self, D_in, D_out, D_em=64, N_sample=64, D_hidden=512):
         super(IQN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
@@ -36,7 +36,7 @@ class IQN(torch.nn.Module):
         return embed, tau
     
 class IQN_CNN(torch.nn.Module):
-    def __init__(self, D_in, D_out, D_em, N_sample):
+    def __init__(self, D_in, D_out, D_em=64, N_sample=64):
         super(IQN_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out

@@ -74,7 +74,7 @@ class REINFORCEAgent(BaseAgent):
         return result
 
     def process(self, transitions, step):
-        result = None
+        result = {}
         # Process per step
         self.memory.store(transitions)
 

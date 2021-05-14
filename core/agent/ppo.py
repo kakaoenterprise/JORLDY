@@ -118,7 +118,7 @@ class PPOAgent(REINFORCEAgent):
         return result
 
     def process(self, transitions, step):
-        result = None
+        result = {}
         # Process per step
         self.memory.store(transitions)
         delta_t = step - self.time_t

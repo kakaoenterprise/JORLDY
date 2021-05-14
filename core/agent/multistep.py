@@ -11,9 +11,6 @@ class MultistepDQNAgent(DQNAgent):
         self.memory = MultistepBuffer(self.buffer_size, self.n_step)
     
     def learn(self):
-        if self.memory.size < max(self.batch_size, self.start_train_step):
-            return None
-        
 #         shapes of 1-step implementations: (batch_size, dimension_data)
 #         shapes of multistep implementations: (batch_size, steps, dimension_data)
 
