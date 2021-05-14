@@ -28,8 +28,9 @@ class SACAgent(BaseAgent):
                  batch_size = 64,
                  start_train_step=2000,
                  static_log_alpha=-2.0,
-                 ):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                device=None,
+                ):
+        self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.actor = Network(actor, state_size, action_size).to(self.device)
         self.critic = Network(critic, state_size+action_size, action_size).to(self.device)
         self.target_critic = copy.deepcopy(self.critic)
@@ -135,17 +136,14 @@ class SACAgent(BaseAgent):
         for t_p, p in zip(self.target_critic.parameters(), self.critic.parameters()):
             t_p.data.copy_(self.tau*p.data + (1-self.tau)*t_p.data)
     
-    def process(self, state, action, reward, next_state, done):
+    def process(self, transitions, step):
         result = None
         # Process per step
-        self.memory.store(state, action, reward, next_state, done)        
+        self.memory.store(transitions)
+        
         result = self.learn()
         if self.num_learn > 0:
             self.update_target_soft()
-
-        # Process per epi
-        if done.all() :
-            pass
 
         return result
 
@@ -176,3 +174,15 @@ class SACAgent(BaseAgent):
         if self.use_dynamic_alpha and 'log_alpha' in checkpoint.keys():
             self.log_alpha = checkpoint['log_alpha']
             self.alpha_optimizer.load_state_dict(checkpoint['alpha_optimizer'])
+            
+    def sync_in(self, weights):
+        self.actor.load_state_dict(weights)
+    
+    def sync_out(self, device="cpu"):
+        weights = self.actor.state_dict()
+        for k, v in weights.items():
+            weights[k] = v.to(device) 
+        sync_item ={
+            "weights": weights,
+        }
+        return sync_item

@@ -5,7 +5,7 @@ import numpy as np
 from .dqn import DQNAgent
 
 class QRDQNAgent(DQNAgent):
-    def __init__(self, state_size, action_size, num_support , **kwargs):
+    def __init__(self, state_size, action_size, num_support, **kwargs):
         super(QRDQNAgent, self).__init__(state_size, action_size*num_support, **kwargs)  
 
         self.action_size = action_size 

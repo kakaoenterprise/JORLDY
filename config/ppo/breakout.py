@@ -17,17 +17,21 @@ agent = {
     "gamma":0.99,
     "batch_size":64,
     "n_step": 500,
-    "n_epoch": 10,
+    "n_epoch": 3,
     "_lambda": 0.95,
     "epsilon_clip": 0.1,
+    "vf_coef": 0.5,
+    "ent_coef": 0.0,
 }
 
 train = {
     "training" : True,
     "load_path" : None,
-    "train_step" : 100000000,
-    "test_step" : 1000000,
-    "print_period" : 50,
-    "save_period" : 500,
-    "test_iteration": 5,
+    "run_step" : 100000000,
+    "print_period" : 5000,
+    "save_period" : 50000,
+    "test_iteration": 10,
+    # distributed setting
+    "update_period" : agent["n_step"],
+    "num_worker" : 16,
 }
