@@ -30,9 +30,11 @@ agent = {
 train = {
     "training" : True,
     "load_path" : None,
-    "train_step" : 50000,
-    "test_step" : 20000,
-    "print_period" : 5,
-    "save_period" : 1000,
-    "test_iteration" : 10,
+    "run_step" : 100000,
+    "print_period" : 1000,
+    "save_period" : 10000,
+    "test_iteration": 5,
+    # distributed setting
+    "update_period" : 32,
+    "num_worker" : 8,
 }

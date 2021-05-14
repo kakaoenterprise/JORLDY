@@ -18,9 +18,9 @@ class REINFORCEAgent(BaseAgent):
                  optimizer="adam",
                  learning_rate=1e-4,
                  gamma=0.99,
-                 **kwargs,
+                 device=None,
                  ):
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_type = network.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
 
@@ -73,7 +73,7 @@ class REINFORCEAgent(BaseAgent):
         }
         return result
 
-    def process(self, transitions):
+    def process(self, transitions, step):
         result = None
         # Process per step
         self.memory.store(transitions)
@@ -97,23 +97,3 @@ class REINFORCEAgent(BaseAgent):
         self.network.load_state_dict(checkpoint["network"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
         
-    def cpu(self):
-        clone = copy.deepcopy(self)
-        clone.device = torch.device("cpu")
-        clone.network.cpu()
-        clone.optimizer.state.clear()
-        clone.memory.clear()
-        return clone
-    
-    def sync_out(self, device="cpu"):
-        weights = OrderedDict([(k, v.to(device)) for k, v in self.network.state_dict().items()])
-        sync_item ={
-            "weights": weights,
-        }
-        return sync_item
-    
-    def sync_in(self, weights):
-        self.network.load_state_dict(weights)
-    
-    def set_distributed(self, id):
-        return self

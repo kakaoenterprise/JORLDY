@@ -23,10 +23,10 @@ agent = {
 train = {
     "training" : True,
     "load_path" : None,
-    "run_step" : 500000,
-    "print_period" : 10,
-    "save_period" : 500,
-    "test_iteration": 3,
-    "update_term" : agent["n_step"],
+    "run_step" : 200000,
+    "print_period" : 1000,
+    "save_period" : 10000,
+    "test_iteration": 10,
+    "update_period" : agent["n_step"],
     "num_worker" : 16,
 }

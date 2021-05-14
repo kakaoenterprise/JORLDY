@@ -96,12 +96,14 @@ class TestManager:
         return np.mean(scores)
 
 class DistributedManager:
-    def __init__(self, Env, env_config, agent, num_worker):
+    def __init__(self, Env, env_config, Agent, agent_config, num_worker):
         ray.init()
+        agent = Agent(**agent_config)
         Env, env_config, agent = map(ray.put, [Env, env_config, agent])
         self.actors = [Actor.remote(Env, env_config, agent, i) for i in range(num_worker)]
 
     def run(self, step=1):
+        assert step > 0
         transitions = reduce(lambda x,y: x+y, 
                              ray.get([actor.run.remote(step) for actor in self.actors]))
         return transitions
@@ -110,7 +112,7 @@ class DistributedManager:
         sync_item = ray.put(sync_item)
         ray.get([actor.sync.remote(sync_item) for actor in self.actors])
         
-    def periodinate(self):
+    def terminate(self):
         ray.shutdown()
     
 @ray.remote

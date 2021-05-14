@@ -24,10 +24,11 @@ agent = {
 train = {
     "training" : True,
     "load_path" : None,
-    "run_step" : 50000,
-    "print_period" : 20,
-    "save_period" : 1000,
+    "run_step" : 100000,
+    "print_period" : 1000,
+    "save_period" : 10000,
     "test_iteration": 10,
-    "update_period" : 1,
-    "num_worker" : 16,
+    # distributed setting
+    "update_period" : 32,
+    "num_worker" : 8,
 }

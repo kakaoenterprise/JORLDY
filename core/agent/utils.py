@@ -172,7 +172,7 @@ class PERBuffer(ReplayBuffer):
 class Rollout(ReplayBuffer):
     def __init__(self, **kwargs):
         self.buffer = list()
-        self.first_store = False
+        self.first_store = True
     
     def rollout(self):
         state       = np.concatenate([b[0] for b in self.buffer], axis=0)

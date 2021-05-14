@@ -12,7 +12,6 @@ class Atari(BaseEnv):
                  img_height=84,
                  stack_frame=4,
                  id=0,
-                 **kwargs,
                  ):
         self.id = id
         self.img_processor = ImgProcessor()

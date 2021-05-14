@@ -24,16 +24,18 @@ agent = {
     "target_update_period": 10000,
     "alpha": 0.6,
     "beta": 0.4,
-    "learn_period": 4,
+    "learn_period": 16,
     "uniform_sample_prob": 1e-3,
 }
 
 train = {
     "training" : True,
-    "load_path" : None, #"./logs/breakout/dqn/20201027142347/",
-    "train_step" : 10000000,
-    "test_step" : 1000000,
-    "print_period" : 10,
-    "save_period" : 100,
-    "test_iteration": 10,
+    "load_path" : None,
+    "run_step" : 100000000,
+    "print_period" : 5000,
+    "save_period" : 50000,
+    "test_iteration": 5,
+    # distributed setting
+    "update_period" : agent["learn_period"],
+    "num_worker" : 16,
 }

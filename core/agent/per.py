@@ -12,6 +12,7 @@ class PERAgent(DQNAgent):
         self.beta = beta 
         self.beta_add = 1/self.explore_step
         self.learn_period = learn_period
+        self.learn_period_stamp = 0 
                 
     def learn(self):        
         if self.memory.buffer_counter < max(self.batch_size, self.start_train_step):
@@ -61,23 +62,26 @@ class PERAgent(DQNAgent):
         }
         return result
 
-    def process(self, state, action, reward, next_state, done):
+    def process(self, transitions, step):
         result = None
+
         # Process per step
-        self.memory.store(state, action, reward, next_state, done)
+        self.memory.store(transitions)
+        delta_t = step - self.time_t
+        self.time_t = step
+        self.target_update_stamp += delta_t
+        self.learn_period_stamp += delta_t
         
-        if self.memory.size > 0 and self.memory.size % self.learn_period == 0:
+        if self.learn_period_stamp > self.learn_period:
             result = self.learn()
+            self.learn_period_stamp = 0
 
         # Process per step if train start
         if self.num_learn > 0:
-            self.epsilon_decay()
+            self.epsilon_decay(delta_t)
 
-            if self.num_learn % self.target_update_period == 0:
+            if self.target_update_stamp > self.target_update_period:
                 self.update_target()
-        
-        # Process per episode
-        if done.all():
-            pass
+                self.target_update_stamp = 0
 
         return result

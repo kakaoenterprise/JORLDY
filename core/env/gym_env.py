@@ -9,7 +9,6 @@ class Gym(BaseEnv):
                  render=False,
                  custom_action=False,
                  id=0,
-                 **kwargs,
                 ):
         self.id = id
         self.env = gym.make(name)

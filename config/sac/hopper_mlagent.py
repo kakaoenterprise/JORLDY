@@ -17,7 +17,7 @@ agent = {
     "gamma":0.99,
     "tau":5e-3,
     "buffer_size":50000,
-    "batch_size":128,
+    "batch_size":64,
     "start_train_step":25000,
     "static_log_alpha":-2.0,
 }
@@ -26,9 +26,11 @@ agent = {
 train = {
     "training" : True,
     "load_path" : None, 
-    "train_step" : 1000000,
-    "test_step" : 100000,
-    "print_period" : 10,
-    "save_period" : 1000,
+    "run_step" : 1000000,
+    "print_period" : 1000,
+    "save_period" : 10000,
     "test_iteration": 10,
+    # distributed setting
+    "update_period": 128,
+    "num_worker": 16,
 }

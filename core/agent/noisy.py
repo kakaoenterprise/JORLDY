@@ -22,8 +22,9 @@ class NoisyAgent(DQNAgent):
                 batch_size=64,
                 start_train_step=2000,
                 target_update_period=500,
-                ):
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+                 device=None,
+                 ):
+        self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size
         self.network = Network(network, state_size, action_size, self.device).to(self.device)
         self.target_network = copy.deepcopy(self.network)
@@ -34,7 +35,9 @@ class NoisyAgent(DQNAgent):
         self.batch_size = batch_size
         self.start_train_step = start_train_step
         self.target_update_period = target_update_period
+        self.target_update_stamp = 0
         self.num_learn = 0
+        self.time_t = 0
         
     def act(self, state, training=True):
         self.network.train(training)
@@ -76,19 +79,21 @@ class NoisyAgent(DQNAgent):
 
         return result
     
-    def process(self, state, action, reward, next_state, done):
+    def process(self, transitions, step):
         result = None
+        
         # Process per step
-        self.memory.store(state, action, reward, next_state, done)
+        self.memory.store(transitions)
+        delta_t = step - self.time_t
+        self.time_t = step
+        self.target_update_stamp += delta_t
+        
         result = self.learn()
 
         # Process per step if train start
         if self.num_learn > 0:
-            if self.num_learn % self.target_update_period == 0:
+            if self.target_update_stamp > self.target_update_period:
                 self.update_target()
+                self.target_update_stamp = 0
         
-        # Process per episode
-        if done.all():
-            pass
-    
         return result

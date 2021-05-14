@@ -22,11 +22,12 @@ agent = {
 
 train = {
     "training" : True,
-    "load_path" : None, 
-    "run_step" : 500000,
-    "print_period" : 10,
-    "save_period" : 1000,
-    "test_iteration": 2,
+    "load_path" : None,
+    "run_step" : 100000,
+    "print_period" : 1000,
+    "save_period" : 10000,
+    "test_iteration": 10,
+    # distributed setting
     "update_period" : agent["n_step"],
-    "num_worker" : 16,
+    "num_worker" : 8,
 }

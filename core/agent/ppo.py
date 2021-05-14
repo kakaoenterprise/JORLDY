@@ -30,6 +30,8 @@ class PPOAgent(REINFORCEAgent):
         self.epsilon_clip = epsilon_clip
         self.vf_coef = vf_coef
         self.ent_coef = ent_coef
+        self.time_t = 0
+        self.learn_stamp = 0
         
     def act(self, state, training=True):
         if self.action_type == "continuous":
@@ -115,13 +117,17 @@ class PPOAgent(REINFORCEAgent):
         }
         return result
 
-    def process(self, transitions):
+    def process(self, transitions, step):
         result = None
         # Process per step
         self.memory.store(transitions)
-
+        delta_t = step - self.time_t
+        self.time_t = step
+        self.learn_stamp += delta_t
+        
         # Process per epi
-        if self.memory.size >= self.n_step :
+        if self.learn_stamp >= self.n_step :
             result = self.learn()
+            self.learn_stamp = 0
         
         return result
