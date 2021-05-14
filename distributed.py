@@ -30,7 +30,8 @@ if __name__ == '__main__':
     
     test_manager_config = (config.train["test_iteration"],)
     log_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
-    log_manager_config = (config.env["name"], log_id)
+    purpose = None if "purpose" not in config.train.keys() else config.train["purpose"]
+    log_manager_config = (config.env["name"], log_id, purpose)
     agent_config['device'] = "cpu"
     manage = mp.Process(target=manage_process,
                         args=(Agent, agent_config, env, result_queue, manage_sync_queue,
