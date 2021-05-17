@@ -36,7 +36,7 @@ class RainbowAgent(DQNAgent):
                 ):
         
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.action_size = action_size
+        self.action_size = action_size        
         self.network = Network(network, state_size, action_size, num_support, self.device).to(self.device)
         self.target_network = copy.deepcopy(self.network)
         self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
@@ -107,7 +107,6 @@ class RainbowAgent(DQNAgent):
             for i in reversed(range(self.n_step)):
                 Tz = reward[:, i].expand(-1,self.num_support) + (1 - done[:, i])*self.gamma*self.z
             
-#             Tz = reward.expand(-1,self.num_support) + (1-done)*self.gamma*self.z
             b = torch.clamp(Tz - self.v_min, 0, self.v_max - self.v_min)/ self.delta_z
             l = torch.floor(b).long()
             u = torch.ceil(b).long()
@@ -121,11 +120,9 @@ class RainbowAgent(DQNAgent):
             target_p_action_binary = torch.unsqueeze(target_p_action, -1)
             
             lluu = l_support_onehot * l_support_binary + u_support_onehot * u_support_binary
-            
-            done_in_nstep = (done.sum(axis = 1) != 0).type(torch.float)
-            
-            target_dist += done_in_nstep * torch.mean(l_support_onehot * u_support_onehot + lluu, 1)
-            target_dist += (1 - done_in_nstep)* torch.sum(target_p_action_binary * lluu, 1)
+                       
+            target_dist += done[:,0,:] * torch.mean(l_support_onehot * u_support_onehot + lluu, 1)
+            target_dist += (1 - done[:,0,:])* torch.sum(target_p_action_binary * lluu, 1)
             target_dist /= torch.clamp(torch.sum(target_dist, 1, keepdim=True), min=1e-8)
 
         max_Q = torch.max(q_action).item()
@@ -144,7 +141,7 @@ class RainbowAgent(DQNAgent):
         self.beta = min(1.0, self.beta + self.beta_add)
 
         weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
-
+                    
         loss = (weights * KL).mean()
                 
         self.optimizer.zero_grad()

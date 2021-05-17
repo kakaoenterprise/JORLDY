@@ -5,6 +5,7 @@ from .per import PERAgent
 from .noisy import NoisyAgent
 from .c51 import C51Agent
 from .rainbow import RainbowAgent
+# from .rainbow_test import RainbowAgent
 from .qrdqn import QRDQNAgent
 from .iqn import IQNAgent 
 from .reinforce import REINFORCEAgent

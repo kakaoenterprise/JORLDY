@@ -17,6 +17,7 @@ agent = {
     "batch_size": 64,
     "start_train_step": 2000,
     "target_update_period": 1000,
+    
     # MultiStep
     "n_step": 4,
     # PER
