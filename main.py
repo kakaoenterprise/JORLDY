@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.ppo.cartpole as config
+import config.rainbow.assault as config
 
 env = Env(**config.env)
 agent = Agent(state_size=env.state_size,
