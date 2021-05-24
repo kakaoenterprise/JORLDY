@@ -9,12 +9,12 @@ def match_build():
         return 'Server' if subprocess.getoutput("which Xorg") == '' else 'Linux'
     else:
         return {"Windows": "Windows",
-                "Darwin" : "Max"}[os]
+                "Darwin" : "Mac"}[os]
 
 class MLAgent(BaseEnv):
-    def __init__(self, env_name, train_mode=True, id=0):
+    def __init__(self, env_name, train_mode=True, id=None):
         file_name = f"./core/env/mlagents/{env_name}/{match_build()}/{env_name}"
-        id = np.random.randint(65535) if id is None else id
+        id = np.random.randint(65534) if id is None else id
         self.env = UnityEnvironment(file_name=file_name, worker_id=id)
 
         self.train_mode = train_mode
