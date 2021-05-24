@@ -30,7 +30,7 @@ if __name__=="__main__":
     log_manager_config = (config.env["name"], log_id, purpose)
     agent_config['device'] = "cpu"
     manage = mp.Process(target=manage_process,
-                        args=(Agent, agent_config, env, result_queue, manage_sync_queue,
+                        args=(Agent, agent_config, Env(**config.env), result_queue, manage_sync_queue,
                               run_step, print_period, save_period, MetricManager,
                               TestManager, test_manager_config,
                               LogManager, log_manager_config))
