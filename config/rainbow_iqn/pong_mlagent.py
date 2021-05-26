@@ -1,4 +1,4 @@
-### Rainbow DQN Pong_ML-Agents Config ###
+### Rainbow IQN Pong_ML-Agents Config ###
 
 env = {
     "name": "pong_mlagent",
@@ -6,8 +6,8 @@ env = {
 }
 
 agent = {
-    "name": "rainbow",
-    "network": "rainbow",
+    "name": "rainbow_iqn",
+    "network": "rainbow_iqn",
     "optimizer": "adam",
     "learning_rate": 0.0000625,
     "gamma": 0.99,
@@ -23,10 +23,11 @@ agent = {
     "beta": 0.4,
     "learn_period": 4,
     "uniform_sample_prob": 1e-3,
-    # C51
-    "v_min": -10,
-    "v_max": 10,
-    "num_support": 51
+    # IQN
+    "num_sample": 64,
+    "embedding_dim": 64,
+    "sample_min": 0.0,
+    "sample_max": 1.0,
 }
 
 train = {
