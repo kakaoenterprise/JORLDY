@@ -26,11 +26,11 @@ class ReplayBuffer:
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
         
-        state       = np.concatenate([b[0] for b in batch], axis=0)
-        action      = np.concatenate([b[1] for b in batch], axis=0)
-        reward      = np.concatenate([b[2] for b in batch], axis=0)
-        next_state  = np.concatenate([b[3] for b in batch], axis=0)
-        done        = np.concatenate([b[4] for b in batch], axis=0)
+        state       = np.stack([b[0][0] for b in batch], axis=0)
+        action      = np.stack([b[1][0] for b in batch], axis=0)
+        reward      = np.stack([b[2][0] for b in batch], axis=0)
+        next_state  = np.stack([b[3][0] for b in batch], axis=0)
+        done        = np.stack([b[4][0] for b in batch], axis=0)
         
         return (state, action, reward, next_state, done)
     
@@ -155,11 +155,11 @@ class PERBuffer(ReplayBuffer):
         weights /= np.max(weights)
         transitions = [self.buffer[idx] for idx in indices - self.first_leaf_index]
         
-        state       = np.concatenate([b[0] for b in transitions], axis=0)
-        action      = np.concatenate([b[1] for b in transitions], axis=0)
-        reward      = np.concatenate([b[2] for b in transitions], axis=0)
-        next_state  = np.concatenate([b[3] for b in transitions], axis=0)
-        done        = np.concatenate([b[4] for b in transitions], axis=0)
+        state       = np.stack([b[0][0] for b in transitions], axis=0)
+        action      = np.stack([b[1][0] for b in transitions], axis=0)
+        reward      = np.stack([b[2][0] for b in transitions], axis=0)
+        next_state  = np.stack([b[3][0] for b in transitions], axis=0)
+        done        = np.stack([b[4][0] for b in transitions], axis=0)
         
         sampled_p = np.mean(priorities) 
         mean_p = self.sum_tree[0]/self.buffer_counter
@@ -175,11 +175,11 @@ class Rollout(ReplayBuffer):
         self.first_store = True
     
     def rollout(self):
-        state       = np.concatenate([b[0] for b in self.buffer], axis=0)
-        action      = np.concatenate([b[1] for b in self.buffer], axis=0)
-        reward      = np.concatenate([b[2] for b in self.buffer], axis=0)
-        next_state  = np.concatenate([b[3] for b in self.buffer], axis=0)
-        done        = np.concatenate([b[4] for b in self.buffer], axis=0)
+        state       = np.stack([b[0][0] for b in self.buffer], axis=0)
+        action      = np.stack([b[1][0] for b in self.buffer], axis=0)
+        reward      = np.stack([b[2][0] for b in self.buffer], axis=0)
+        next_state  = np.stack([b[3][0] for b in self.buffer], axis=0)
+        done        = np.stack([b[4][0] for b in self.buffer], axis=0)
         
         self.clear()
         return (state, action, reward, next_state, done)
