@@ -45,27 +45,28 @@ class MultistepBuffer(ReplayBuffer):
     def __init__(self, buffer_size, n_step):
         super(MultistepBuffer, self).__init__(buffer_size)
         self.n_step = n_step
-        self.buffer_nstep = deque(maxlen=n_step)
         
     def prepare_nstep(self, batch):
         state = batch[0][0]
         next_state = batch[-1][3]
 
-        action = np.stack([b[1] for b in batch], axis = 0)
-        reward = np.stack([b[2] for b in batch], axis = 0)
-        done = np.stack([b[4] for b in batch], axis = 0)
+        action = np.stack([b[1] for b in batch], axis = 1)
+        reward = np.stack([b[2] for b in batch], axis = 1)
+        done = np.stack([b[4] for b in batch], axis = 1)
 
         return (state, action, reward, next_state, done)
         
-    def store(self, transitions):
+    def store(self, transitions, delta_t=1):
         if self.first_store:
             self.check_dim(transitions[0])
+            self.nstep_buffers = [deque(maxlen=self.n_step) for _ in range(len(transitions)//delta_t)]
         
         # Issue: need to consider multiple actor
-        for transition in transitions:
-            self.buffer_nstep.append(transition)
-            if len(self.buffer_nstep) == self.buffer_nstep.maxlen:
-                self.buffer.append(self.prepare_nstep(self.buffer_nstep))
+        for i, transition in enumerate(transitions):
+            nstep_buffer = self.nstep_buffers[i//delta_t]
+            nstep_buffer.append(transition)
+            if len(nstep_buffer) == self.n_step:
+                self.buffer.append(self.prepare_nstep(nstep_buffer))
                 
 # Reference: https://github.com/LeejwUniverse/following_deepmid/tree/master/jungwoolee_pytorch/100%20Algorithm_For_RL/01%20sum_tree
 class PERBuffer(ReplayBuffer):
