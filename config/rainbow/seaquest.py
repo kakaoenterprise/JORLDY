@@ -21,7 +21,7 @@ agent = {
     "start_train_step": 100000,
     "target_update_period": 10000,
     # MultiStep
-    "n_step": 4,
+    "n_step": 3,
     # PER
     "alpha": 0.6,
     "beta": 0.4,
