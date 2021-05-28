@@ -2,6 +2,8 @@ import torch
 from torch.distributions import Normal, Categorical
 import numpy as np
 import os
+import copy
+from collections import OrderedDict
 
 from core.network import Network
 from core.optimizer import Optimizer
@@ -16,9 +18,9 @@ class REINFORCEAgent(BaseAgent):
                  optimizer="adam",
                  learning_rate=1e-4,
                  gamma=0.99,
-                 **kwargs,
+                 device=None,
                  ):
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_type = network.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
 
@@ -71,13 +73,13 @@ class REINFORCEAgent(BaseAgent):
         }
         return result
 
-    def process(self, state, action, reward, next_state, done):
-        result = None
+    def process(self, transitions, step):
+        result = {}
         # Process per step
-        self.memory.store(state, action, reward, next_state, done)
+        self.memory.store(transitions)
 
         # Process per epi
-        if done :
+        if transitions[-1] :
             result = self.learn()
         
         return result
@@ -94,3 +96,4 @@ class REINFORCEAgent(BaseAgent):
         checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=self.device)
         self.network.load_state_dict(checkpoint["network"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
+        

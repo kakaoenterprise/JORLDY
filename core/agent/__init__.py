@@ -6,7 +6,6 @@ from .noisy import NoisyAgent
 from .c51 import C51Agent
 from .rainbow import RainbowAgent
 from .rainbow_iqn import RainbowIQNAgent
-# from .rainbow_test import RainbowAgent
 from .qrdqn import QRDQNAgent
 from .iqn import IQNAgent 
 from .reinforce import REINFORCEAgent
@@ -47,8 +46,9 @@ class Agent:
             raise Exception
         return self.dictionary[name](*args, **kwargs)
 
+
 '''
-class TemplateAgent:
+class BaseAgent:
     def __init__(self):
         pass
 
@@ -58,7 +58,7 @@ class TemplateAgent:
     def learn(self):
         return result
     
-    def process(self, state, action, reward, next_state, done):
+    def process(self, transitions):
         result = None
         # Process per step
         

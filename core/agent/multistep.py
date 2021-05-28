@@ -11,15 +11,11 @@ class MultistepDQNAgent(DQNAgent):
         self.memory = MultistepBuffer(self.buffer_size, self.n_step)
     
     def learn(self):
-        if self.memory.size < max(self.batch_size, self.start_train_step):
-            return None
-        
 #         shapes of 1-step implementations: (batch_size, dimension_data)
 #         shapes of multistep implementations: (batch_size, steps, dimension_data)
 
         transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
-        
         eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action[:, 0].view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
@@ -45,4 +41,26 @@ class MultistepDQNAgent(DQNAgent):
             "max_Q": max_Q,
         }
         
+        return result
+    
+    def process(self, transitions, step):
+        result = {}
+
+        # Process per step
+        delta_t = step - self.time_t
+        self.memory.store(transitions, delta_t)
+        self.time_t = step
+        self.target_update_stamp += delta_t
+        
+        if self.memory.size > self.batch_size and self.time_t >= self.start_train_step:
+            result = self.learn()
+
+        # Process per step if train start
+        if self.num_learn > 0:
+            self.epsilon_decay(delta_t)
+
+            if self.target_update_stamp > self.target_update_period:
+                self.update_target()
+                self.target_update_stamp = 0
+
         return result

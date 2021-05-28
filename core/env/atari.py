@@ -11,7 +11,9 @@ class Atari(BaseEnv):
                  img_width=84,
                  img_height=84,
                  stack_frame=4,
+                 id=0,
                  ):
+        self.id = id
         self.img_processor = ImgProcessor()
         self.render=render
         self.gray_img=gray_img

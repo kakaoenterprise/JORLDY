@@ -34,9 +34,10 @@ class RainbowIQNAgent(RainbowAgent):
                 embedding_dim = 64,
                 sample_min = 0.0,
                 sample_max = 1.0,
+                device = None,
                 ):
         
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size        
         self.network = Network(network, state_size, action_size, embedding_dim, num_sample, self.device).to(self.device)
         self.target_network = copy.deepcopy(self.network)
@@ -45,15 +46,22 @@ class RainbowIQNAgent(RainbowAgent):
         self.explore_step = explore_step
         self.batch_size = batch_size
         self.start_train_step = start_train_step
+        self.target_update_stamp = 0
         self.target_update_period = target_update_period
+        self.num_learn = 0
+        self.time_t = 0
+        
         # MultiStep
         self.n_step = n_step
+        
         # PER
         self.alpha = alpha
         self.beta = beta
         self.learn_period = learn_period
+        self.learn_period_stamp = 0 
         self.uniform_sample_prob = uniform_sample_prob
         self.beta_add = 1/self.explore_step
+        
         # IQN
         self.num_sample = num_sample
         self.embedding_dim = embedding_dim
@@ -62,8 +70,6 @@ class RainbowIQNAgent(RainbowAgent):
         
         # MultiStep
         self.memory = RainbowBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
-        
-        self.num_learn = 0
         
     def act(self, state, training=True):
         self.network.train(training)
@@ -79,9 +85,6 @@ class RainbowIQNAgent(RainbowAgent):
         return action
 
     def learn(self):
-        if self.memory.buffer_counter < max(self.batch_size, self.start_train_step):
-            return None
-
         transitions, weights, indices, sampled_p, mean_p = self.memory.sample(self.beta, self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
@@ -149,25 +152,6 @@ class RainbowIQNAgent(RainbowAgent):
             "mean_p": mean_p,
         }
 
-        return result
-    
-    def process(self, state, action, reward, next_state, done):
-        result = None
-        # Process per step
-        self.memory.store(state, action, reward, next_state, done)
-        
-        if self.memory.size > 0 and self.memory.size % self.learn_period == 0:
-            result = self.learn()
-
-        # Process per step if train start
-        if self.num_learn > 0:
-            if self.num_learn % self.target_update_period == 0:
-                self.update_target()
-        
-        # Process per episode
-        if done.all():
-            pass
-    
         return result
     
     def logits2Q(self, logits):

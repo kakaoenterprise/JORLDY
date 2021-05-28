@@ -5,10 +5,9 @@ import copy
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import ReplayBuffer
-from .qrdqn import QRDQNAgent
+from .dqn import DQNAgent
 
-class IQNAgent(QRDQNAgent):
+class IQNAgent(DQNAgent):
     def __init__(self,
                 state_size,
                 action_size,
@@ -16,37 +15,19 @@ class IQNAgent(QRDQNAgent):
                 optimizer='adam',
                 learning_rate=3e-4,
                 opt_eps=1e-8,
-                gamma=0.99,
-                epsilon_init=1.0,
-                epsilon_min=0.1,
-                epsilon_eval=0.0,
-                explore_step=90000,
-                buffer_size=50000,
-                batch_size=64,
-                start_train_step=2000,
-                target_update_period=500,
                 num_sample=64,
                 embedding_dim=64,
                 sample_min=0.0,
-                sample_max=1.0
+                sample_max=1.0,
+                **kwargs,
                 ):
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.action_size = action_size
+        super(IQNAgent, self).__init__(state_size, action_size, network=network, **kwargs)
+        
         self.network = Network(network, state_size, action_size, embedding_dim, num_sample).to(self.device)
         self.target_network = copy.deepcopy(self.network)
         self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
-        self.gamma = gamma
-        self.epsilon = epsilon_init
-        self.epsilon_init = epsilon_init
-        self.epsilon_min = epsilon_min
-        self.epsilon_eval = epsilon_eval
-        self.explore_step = explore_step
-        self.memory = ReplayBuffer(buffer_size)
-        self.batch_size = batch_size
-        self.start_train_step = start_train_step
-        self.target_update_period = target_update_period
-        self.num_learn = 0
         
+        self.action_size = action_size
         self.num_support = num_sample
         self.embedding_dim = embedding_dim
         self.sample_min = sample_min
@@ -67,9 +48,6 @@ class IQNAgent(QRDQNAgent):
         return action
 
     def learn(self):
-        if self.memory.size < max(self.batch_size, self.start_train_step):
-            return None
-        
         transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
@@ -127,4 +105,3 @@ class IQNAgent(QRDQNAgent):
 
         q_action = torch.mean(_logits, dim=-1)
         return _logits, q_action
-    

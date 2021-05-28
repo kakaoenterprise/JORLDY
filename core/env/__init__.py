@@ -33,7 +33,7 @@ class Env:
         return self.dictionary[name](*args, **kwargs)
 
 '''
-class TemplateEnvironment:
+class BaseEnv:
     def __init__(self):
         pass
 

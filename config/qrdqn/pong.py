@@ -28,10 +28,12 @@ agent = {
 
 train = {
     "training" : True,
-    "load_path" : None, #"./logs/breakout/dqn/20201027142347/",
-    "train_step" : 10000000,
-    "test_step" : 1000000,
-    "print_period" : 10,
-    "save_period" : 100,
-    "test_iteration": 10,
+    "load_path" : None,
+    "run_step" : 100000000,
+    "print_period" : 5000,
+    "save_period" : 50000,
+    "test_iteration": 5,
+    # distributed setting
+    "update_period" : 8,
+    "num_worker" : 16,
 }
