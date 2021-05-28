@@ -3,7 +3,7 @@ from managers import *
 from process import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.iqn.breakout as config
+import config.rainbow_iqn.breakout as config
 import torch.multiprocessing as mp
 
 if __name__ == '__main__':

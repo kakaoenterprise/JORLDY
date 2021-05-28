@@ -1,6 +1,8 @@
 from .dqn import *
 from .dueling import *
 from .noisy import * 
+from .rainbow import * 
+from .rainbow_iqn import *
 from .iqn import *
 from .sac import *
 from .reinforce import *
@@ -14,6 +16,10 @@ class Network:
     "dueling_cnn": Dueling_CNN,
     "noisy": Noisy, 
     "noisy_cnn": Noisy_CNN,
+    "rainbow": Rainbow,
+    "rainbow_cnn": Rainbow_CNN,
+    "rainbow_iqn": Rainbow_IQN,
+    "rainbow_iqn_cnn": Rainbow_IQN_CNN,
     "iqn": IQN,
     "iqn_cnn": IQN_CNN,
     "sac_actor": SACActor,

@@ -38,7 +38,7 @@ class IQNAgent(DQNAgent):
         epsilon = self.epsilon if training else self.epsilon_eval
         sample_min = 0 if training else self.sample_min
         sample_max = 1 if training else self.sample_max
-        
+
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:

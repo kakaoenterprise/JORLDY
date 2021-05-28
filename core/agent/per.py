@@ -69,7 +69,9 @@ class PERAgent(DQNAgent):
         self.target_update_stamp += delta_t
         self.learn_period_stamp += delta_t
         
-        if self.learn_period_stamp > self.learn_period and self.memory.size > self.batch_size and self.time_t >= self.start_train_step:
+        if (self.learn_period_stamp > self.learn_period and
+            self.memory.size > self.batch_size and
+            self.time_t >= self.start_train_step):
             result = self.learn()
             self.learn_period_stamp = 0
 
