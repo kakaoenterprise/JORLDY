@@ -34,7 +34,7 @@ class RainbowIQNAgent(RainbowAgent):
                 embedding_dim = 64,
                 sample_min = 0.0,
                 sample_max = 1.0,
-                device=None,
+                device = None,
                 ):
         
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -33,7 +33,7 @@ class RainbowAgent(DQNAgent):
                 v_min = -10,
                 v_max = 10,
                 num_support = 51,
-                device=None,
+                device = None,
                 ):
         
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
