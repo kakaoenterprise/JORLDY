@@ -85,7 +85,24 @@ class Seaquest(Atari):
 class Spaceinvaders(Atari):
     def __init__(self, **kwargs):
         super(Spaceinvaders, self).__init__('SpaceInvaders-v0', **kwargs)
+
+class Alien(Atari):
+    def __init__(self, **kwargs):
+        super(Alien, self).__init__('Alien-v0', **kwargs)
         
+class CrazyClimber(Atari):
+    def __init__(self, **kwargs):
+        super(CrazyClimber, self).__init__('CrazyClimber-v0', **kwargs)
+        
+class PrivateEye(Atari):
+    def __init__(self, **kwargs):
+        super(PrivateEye, self).__init__('PrivateEye-v0', **kwargs)
+        
+class MontezumaRevenge(Atari):
+    def __init__(self, **kwargs):
+        super(MontezumaRevenge, self).__init__('MontezumaRevenge-v0', **kwargs)
+        
+
 # class Breakout:
 #     def __init__(self, 
 #                  render=False,

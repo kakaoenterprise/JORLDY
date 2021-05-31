@@ -1,7 +1,7 @@
-### DQN Alien Config ###
+### DQN CrazyClimber Config ###
 
 env = {
-    "name": "alien",
+    "name": "crazyclimber",
     "render": False,
     "gray_img": True,
     "img_width": 84,

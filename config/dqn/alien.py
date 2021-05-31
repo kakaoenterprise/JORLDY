@@ -1,7 +1,7 @@
-### DQN Alien Config ###
+### DQN Assualt Config ###
 
 env = {
-    "name": "alien",
+    "name": "assault",
     "render": False,
     "gray_img": True,
     "img_width": 84,
@@ -13,10 +13,10 @@ agent = {
     "name": "dqn",
     "network": "dqn_cnn",
     "optimizer": "adam",
-    "learning_rate": 0.00025,
+    "learning_rate": 1e-4,
     "gamma": 0.99,
     "epsilon_init": 1.0,
-    "epsilon_min": 0.1,
+    "epsilon_min": 0.01,
     "explore_step": 1000000,
     "buffer_size": 1000000,
     "batch_size": 32,
@@ -27,7 +27,7 @@ agent = {
 train = {
     "training" : True,
     "load_path" : None,
-    "run_step" : 30000000,
+    "run_step" : 100000000,
     "print_period" : 5000,
     "save_period" : 50000,
     "test_iteration": 5,
