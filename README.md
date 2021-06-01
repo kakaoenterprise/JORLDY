@@ -19,7 +19,7 @@
 ### Environments
 
 - Gym (Cartpole, Pendulum, Mountain Car)
-- Atari (Breakout, Pong, Asterix, Assault, Seaquest, Spaceinvaders) 
+- Atari (Alien, Asterix, Assault, Breakout, CrazyClimber, MontezumaRevenge, Pong, PrivateEye, Seaquest, Spaceinvaders) 
 - ML-Agents  (Hopper, Pong)
 
 
