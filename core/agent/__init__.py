@@ -11,6 +11,7 @@ from .iqn import IQNAgent
 from .reinforce import REINFORCEAgent
 from .ppo import PPOAgent
 from .multistep import MultistepDQNAgent
+from .vmpo import VMPOAgent
 
 import sys, os
 
@@ -33,6 +34,7 @@ class Agent:
     "iqn": IQNAgent,
     "reinforce": REINFORCEAgent,
     "ppo": PPOAgent,
+    "vmpo": VMPOAgent,
     }
     
     def __new__(self, name, *args, **kwargs):
