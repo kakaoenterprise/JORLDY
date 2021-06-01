@@ -8,7 +8,9 @@ class Gym(BaseEnv):
                  mode,
                  render=False,
                  custom_action=False,
+                 id=0,
                 ):
+        self.id = id
         self.env = gym.make(name)
         self.mode = mode
         self.state_size = self.env.observation_space.shape[0]

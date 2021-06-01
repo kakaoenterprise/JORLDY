@@ -5,7 +5,7 @@ import numpy as np
 from .dqn import DQNAgent
 
 class QRDQNAgent(DQNAgent):
-    def __init__(self, state_size, action_size, num_support , **kwargs):
+    def __init__(self, state_size, action_size, num_support, **kwargs):
         super(QRDQNAgent, self).__init__(state_size, action_size*num_support, **kwargs)  
 
         self.action_size = action_size 
@@ -30,9 +30,6 @@ class QRDQNAgent(DQNAgent):
         return action
     
     def learn(self):
-        if self.memory.size < max(self.batch_size, self.start_train_step):
-            return None
-        
         transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         

@@ -21,16 +21,18 @@ agent = {
     "target_update_period": 1000,
     "alpha": 0.6,
     "beta": 0.4,
-    "learn_period": 1,
+    "learn_period": 16,
     "uniform_sample_prob": 1e-3,
 }
 
 train = {
     "training" : True,
     "load_path" : None,
-    "train_step" : 80000,
-    "test_step" : 30000,
-    "print_period" : 20,
-    "save_period" : 1000,
-    "test_iteration": 10,
+    "run_step" : 100000,
+    "print_period" : 1000,
+    "save_period" : 10000,
+    "test_iteration": 5,
+    # distributed setting
+    "update_period" : agent["learn_period"],
+    "num_worker" : 8,
 }

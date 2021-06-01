@@ -32,11 +32,12 @@ class RainbowAgent(DQNAgent):
                 # C51
                 v_min = -10,
                 v_max = 10,
-                num_support = 51
+                num_support = 51,
+                device = None,
                 ):
         
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.action_size = action_size
+        self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.action_size = action_size        
         self.network = Network(network, state_size, action_size, num_support, self.device).to(self.device)
         self.target_network = copy.deepcopy(self.network)
         self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
@@ -44,15 +45,22 @@ class RainbowAgent(DQNAgent):
         self.explore_step = explore_step
         self.batch_size = batch_size
         self.start_train_step = start_train_step
+        self.target_update_stamp = 0
         self.target_update_period = target_update_period
+        self.num_learn = 0
+        self.time_t = 0
+        
         # MultiStep
         self.n_step = n_step
+        
         # PER
         self.alpha = alpha
         self.beta = beta
         self.learn_period = learn_period
+        self.learn_period_stamp = 0 
         self.uniform_sample_prob = uniform_sample_prob
         self.beta_add = 1/self.explore_step
+        
         # C51
         self.v_min = v_min
         self.v_max = v_max
@@ -64,9 +72,7 @@ class RainbowAgent(DQNAgent):
         # C51
         self.delta_z = (self.v_max - self.v_min) / (self.num_support - 1)
         self.z = torch.linspace(self.v_min, self.v_max, self.num_support, device=self.device).view(1, -1)
-        
-        self.num_learn = 0
-        
+    
     def act(self, state, training=True):
         self.network.train(training)
         
@@ -79,9 +85,6 @@ class RainbowAgent(DQNAgent):
         return action
 
     def learn(self):
-        if self.memory.buffer_counter < max(self.batch_size, self.start_train_step):
-            return None
-
         transitions, weights, indices, sampled_p, mean_p = self.memory.sample(self.beta, self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
@@ -104,10 +107,10 @@ class RainbowAgent(DQNAgent):
             target_action_onehot = action_eye[target_action.long()]
             target_p_action = torch.squeeze(target_action_onehot @ target_p_logit, 1)
             
+            Tz = self.z
             for i in reversed(range(self.n_step)):
                 Tz = reward[:, i].expand(-1,self.num_support) + (1 - done[:, i])*self.gamma*self.z
             
-#             Tz = reward.expand(-1,self.num_support) + (1-done)*self.gamma*self.z
             b = torch.clamp(Tz - self.v_min, 0, self.v_max - self.v_min)/ self.delta_z
             l = torch.floor(b).long()
             u = torch.ceil(b).long()
@@ -121,11 +124,9 @@ class RainbowAgent(DQNAgent):
             target_p_action_binary = torch.unsqueeze(target_p_action, -1)
             
             lluu = l_support_onehot * l_support_binary + u_support_onehot * u_support_binary
-            
-            done_in_nstep = (done.sum(axis = 1) != 0).type(torch.float)
-            
-            target_dist += done_in_nstep * torch.mean(l_support_onehot * u_support_onehot + lluu, 1)
-            target_dist += (1 - done_in_nstep)* torch.sum(target_p_action_binary * lluu, 1)
+                       
+            target_dist += done[:,0,:] * torch.mean(l_support_onehot * u_support_onehot + lluu, 1)
+            target_dist += (1 - done[:,0,:])* torch.sum(target_p_action_binary * lluu, 1)
             target_dist /= torch.clamp(torch.sum(target_dist, 1, keepdim=True), min=1e-8)
 
         max_Q = torch.max(q_action).item()
@@ -134,7 +135,6 @@ class RainbowAgent(DQNAgent):
         
         # PER
         KL = -(target_dist*torch.clamp(p_action, min=1e-8).log()).sum(-1)
-        
         p_j = torch.pow(KL, self.alpha)
         
         for i, p in zip(indices, p_j):
@@ -144,7 +144,7 @@ class RainbowAgent(DQNAgent):
         self.beta = min(1.0, self.beta + self.beta_add)
 
         weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
-
+                    
         loss = (weights * KL).mean()
                 
         self.optimizer.zero_grad()
@@ -164,23 +164,27 @@ class RainbowAgent(DQNAgent):
 
         return result
     
-    def process(self, state, action, reward, next_state, done):
-        result = None
-        # Process per step
-        self.memory.store(state, action, reward, next_state, done)
+    def process(self, transitions, step):
+        result = {}
         
-        if self.memory.size > 0 and self.memory.size % self.learn_period == 0:
+        # Process per step
+        delta_t = step - self.time_t
+        self.memory.store(transitions, delta_t)
+        self.time_t = step
+        self.target_update_stamp += delta_t
+        self.learn_period_stamp += delta_t
+        
+        if (self.learn_period_stamp > self.learn_period and
+            self.memory.buffer_counter > self.batch_size and
+            self.time_t >= self.start_train_step):
             result = self.learn()
+            self.learn_period_stamp = 0
 
         # Process per step if train start
-        if self.num_learn > 0:
-            if self.num_learn % self.target_update_period == 0:
-                self.update_target()
-        
-        # Process per episode
-        if done.all():
-            pass
-    
+        if self.num_learn > 0 and self.target_update_stamp > self.target_update_period:
+            self.update_target()
+            self.target_update_stamp = 0
+            
         return result
     
     def logits2Q(self, logits):

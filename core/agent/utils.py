@@ -7,32 +7,30 @@ class ReplayBuffer:
         self.buffer = deque(maxlen=buffer_size)
         self.first_store = True
     
-    def check_dim(self, state, action, reward, next_state, done):
+    def check_dim(self, transition):
         print("########################################")
         print("You should check dimension of transition")
-        print("state:", state.shape)
-        print("action:", action.shape)
-        print("reward:", reward.shape)
-        print("next_state:", next_state.shape)
-        print("done:", done.shape)
+        print("state:",      transition[0].shape)
+        print("action:",     transition[1].shape)
+        print("reward:",     transition[2].shape)
+        print("next_state:", transition[3].shape)
+        print("done:",       transition[4].shape)
         print("########################################")
         self.first_store = False
             
-    def store(self, state, action, reward, next_state, done):
+    def store(self, transitions):
         if self.first_store:
-            self.check_dim(state, action, reward, next_state, done)
-        
-        for s, a, r, ns, d in zip(state, action, reward, next_state, done):
-            self.buffer.append((s, a, r, ns, d))
+            self.check_dim(transitions[0])
+        self.buffer += transitions
 
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
         
-        state       = np.stack([b[0] for b in batch], axis=0)
-        action      = np.stack([b[1] for b in batch], axis=0)
-        reward      = np.stack([b[2] for b in batch], axis=0)
-        next_state  = np.stack([b[3] for b in batch], axis=0)
-        done        = np.stack([b[4] for b in batch], axis=0)
+        state       = np.stack([b[0][0] for b in batch], axis=0)
+        action      = np.stack([b[1][0] for b in batch], axis=0)
+        reward      = np.stack([b[2][0] for b in batch], axis=0)
+        next_state  = np.stack([b[3][0] for b in batch], axis=0)
+        done        = np.stack([b[4][0] for b in batch], axis=0)
         
         return (state, action, reward, next_state, done)
     
@@ -47,26 +45,28 @@ class MultistepBuffer(ReplayBuffer):
     def __init__(self, buffer_size, n_step):
         super(MultistepBuffer, self).__init__(buffer_size)
         self.n_step = n_step
-        self.buffer_nstep = deque(maxlen=n_step)
         
     def prepare_nstep(self, batch):
         state = batch[0][0]
         next_state = batch[-1][3]
 
-        action = np.stack([b[1] for b in batch], axis = 0)
-        reward = np.stack([b[2] for b in batch], axis = 0)
-        done = np.stack([b[4] for b in batch], axis = 0)
+        action = np.stack([b[1] for b in batch], axis = 1)
+        reward = np.stack([b[2] for b in batch], axis = 1)
+        done = np.stack([b[4] for b in batch], axis = 1)
 
         return (state, action, reward, next_state, done)
         
-    def store(self, state, action, reward, next_state, done):
+    def store(self, transitions, delta_t=1):
         if self.first_store:
-            self.check_dim(state, action, reward, next_state, done)
+            self.check_dim(transitions[0])
+            self.nstep_buffers = [deque(maxlen=self.n_step) for _ in range(len(transitions)//delta_t)]
         
-        for s, a, r, ns, d in zip(state, action, reward, next_state, done):
-            self.buffer_nstep.append((s, a, r, ns, d))
-            if len(self.buffer_nstep) == self.buffer_nstep.maxlen:
-                self.buffer.append(self.prepare_nstep(self.buffer_nstep))
+        # Issue: need to consider multiple actor
+        for i, transition in enumerate(transitions):
+            nstep_buffer = self.nstep_buffers[i//delta_t]
+            nstep_buffer.append(transition)
+            if len(nstep_buffer) == self.n_step:
+                self.buffer.append(self.prepare_nstep(nstep_buffer))
                 
 # Reference: https://github.com/LeejwUniverse/following_deepmid/tree/master/jungwoolee_pytorch/100%20Algorithm_For_RL/01%20sum_tree
 class PERBuffer(ReplayBuffer):
@@ -86,12 +86,12 @@ class PERBuffer(ReplayBuffer):
         
         self.first_store = True
         
-    def store(self, state, action, reward, next_state, done):
+    def store(self, transitions):
         if self.first_store:
-            self.check_dim(state, action, reward, next_state, done)
+            self.check_dim(transitions[0])
         
-        for s, a, r, ns, d in zip(state, action, reward, next_state, done):
-            self.buffer[self.buffer_index] = (s, a, r, ns, d)
+        for transition in transitions:
+            self.buffer[self.buffer_index] = transition
             self.add_tree_data()
 
             self.buffer_counter = min(self.buffer_counter + 1, self.buffer_size)
@@ -156,11 +156,11 @@ class PERBuffer(ReplayBuffer):
         weights /= np.max(weights)
         transitions = [self.buffer[idx] for idx in indices - self.first_leaf_index]
         
-        state       = np.stack([b[0] for b in transitions], axis=0)
-        action      = np.stack([b[1] for b in transitions], axis=0)
-        reward      = np.stack([b[2] for b in transitions], axis=0)
-        next_state  = np.stack([b[3] for b in transitions], axis=0)
-        done        = np.stack([b[4] for b in transitions], axis=0)
+        state       = np.stack([b[0][0] for b in transitions], axis=0)
+        action      = np.stack([b[1][0] for b in transitions], axis=0)
+        reward      = np.stack([b[2][0] for b in transitions], axis=0)
+        next_state  = np.stack([b[3][0] for b in transitions], axis=0)
+        done        = np.stack([b[4][0] for b in transitions], axis=0)
         
         sampled_p = np.mean(priorities) 
         mean_p = self.sum_tree[0]/self.buffer_counter
@@ -176,11 +176,11 @@ class Rollout(ReplayBuffer):
         self.first_store = True
     
     def rollout(self):
-        state       = np.stack([b[0] for b in self.buffer], axis=0)
-        action      = np.stack([b[1] for b in self.buffer], axis=0)
-        reward      = np.stack([b[2] for b in self.buffer], axis=0)
-        next_state  = np.stack([b[3] for b in self.buffer], axis=0)
-        done        = np.stack([b[4] for b in self.buffer], axis=0)
+        state       = np.stack([b[0][0] for b in self.buffer], axis=0)
+        action      = np.stack([b[1][0] for b in self.buffer], axis=0)
+        reward      = np.stack([b[2][0] for b in self.buffer], axis=0)
+        next_state  = np.stack([b[3][0] for b in self.buffer], axis=0)
+        done        = np.stack([b[4][0] for b in self.buffer], axis=0)
         
         self.clear()
         return (state, action, reward, next_state, done)
@@ -204,28 +204,30 @@ class RainbowBuffer(ReplayBuffer):
         self.first_store = True
 
         self.n_step = n_step
-        self.buffer_nstep = deque(maxlen=n_step)
         
     def prepare_nstep(self, batch):
         state = batch[0][0]
         next_state = batch[-1][3]
 
-        action = np.stack([b[1] for b in batch], axis = 0)
-        reward = np.stack([b[2] for b in batch], axis = 0)
-        done = np.stack([b[4] for b in batch], axis = 0)
+        action = np.stack([b[1] for b in batch], axis = 1)
+        reward = np.stack([b[2] for b in batch], axis = 1)
+        done = np.stack([b[4] for b in batch], axis = 1)
 
         return (state, action, reward, next_state, done)
     
-    def store(self, state, action, reward, next_state, done):
+    def store(self, transitions, delta_t=1):
         if self.first_store:
-            self.check_dim(state, action, reward, next_state, done)
+            self.check_dim(transitions[0])
+            self.nstep_buffers = [deque(maxlen=self.n_step) for _ in range(len(transitions)//delta_t)]
         
-        for s, a, r, ns, d in zip(state, action, reward, next_state, done):
+        # Issue: need to consider multiple actor
+        for i, transition in enumerate(transitions):
             # MultiStep
-            self.buffer_nstep.append((s, a, r, ns, d))
-            if len(self.buffer_nstep) == self.buffer_nstep.maxlen:
-                self.buffer[self.buffer_index] = self.prepare_nstep(self.buffer_nstep)
-            
+            nstep_buffer = self.nstep_buffers[i//delta_t]
+            nstep_buffer.append(transition)
+            if len(nstep_buffer) == self.n_step:
+                self.buffer[self.buffer_index] = self.prepare_nstep(nstep_buffer)
+        
                 # PER
                 self.add_tree_data()
 
@@ -291,17 +293,11 @@ class RainbowBuffer(ReplayBuffer):
         weights /= np.max(weights)
         transitions = [self.buffer[idx] for idx in indices - self.first_leaf_index]
         
-        try:
-            state = np.stack([b[0] for b in transitions], axis=0)
-        except:
-            for b in transitions:
-                print(b)
-                
-        state       = np.stack([b[0] for b in transitions], axis=0)
-        action      = np.stack([b[1] for b in transitions], axis=0)
-        reward      = np.stack([b[2] for b in transitions], axis=0)
-        next_state  = np.stack([b[3] for b in transitions], axis=0)
-        done        = np.stack([b[4] for b in transitions], axis=0)
+        state       = np.stack([b[0][0] for b in transitions], axis=0)
+        action      = np.stack([b[1][0] for b in transitions], axis=0)
+        reward      = np.stack([b[2][0] for b in transitions], axis=0)
+        next_state  = np.stack([b[3][0] for b in transitions], axis=0)
+        done        = np.stack([b[4][0] for b in transitions], axis=0)
         
         sampled_p = np.mean(priorities) 
         mean_p = self.sum_tree[0]/self.buffer_counter
@@ -311,17 +307,3 @@ class RainbowBuffer(ReplayBuffer):
     def size(self):
         return self.buffer_counter
     
-class Rollout(ReplayBuffer):
-    def __init__(self, **kwargs):
-        self.buffer = list()
-        self.first_store = False
-    
-    def rollout(self):
-        state       = np.stack([b[0] for b in self.buffer], axis=0)
-        action      = np.stack([b[1] for b in self.buffer], axis=0)
-        reward      = np.stack([b[2] for b in self.buffer], axis=0)
-        next_state  = np.stack([b[3] for b in self.buffer], axis=0)
-        done        = np.stack([b[4] for b in self.buffer], axis=0)
-        
-        self.clear()
-        return (state, action, reward, next_state, done)

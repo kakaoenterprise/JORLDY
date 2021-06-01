@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import numpy as np
 import os
 import copy
+from collections import OrderedDict
 
 from core.network import Network
 from core.optimizer import Optimizer
@@ -26,8 +27,9 @@ class DQNAgent(BaseAgent):
                 batch_size=64,
                 start_train_step=2000,
                 target_update_period=500,
+                device=None,
                 ):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size
         self.network = Network(network, state_size, action_size).to(self.device)
         self.target_network = copy.deepcopy(self.network)
@@ -38,13 +40,16 @@ class DQNAgent(BaseAgent):
         self.epsilon_min = epsilon_min
         self.epsilon_eval = epsilon_eval
         self.explore_step = explore_step
+        self.epsilon_delta = (epsilon_init - epsilon_min)/explore_step
         self.buffer_size = buffer_size
         self.memory = ReplayBuffer(buffer_size)
         self.batch_size = batch_size
         self.start_train_step = start_train_step
+        self.target_update_stamp = 0
         self.target_update_period = target_update_period
         self.num_learn = 0
-
+        self.time_t = 0
+        
     def act(self, state, training=True):
         self.network.train(training)
         epsilon = self.epsilon if training else self.epsilon_eval
@@ -56,9 +61,6 @@ class DQNAgent(BaseAgent):
         return action
 
     def learn(self):
-        if self.memory.size < max(self.batch_size, self.start_train_step):
-            return None
-
         transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
         
@@ -89,27 +91,30 @@ class DQNAgent(BaseAgent):
     def update_target(self):
         self.target_network.load_state_dict(self.network.state_dict())
         
-    def process(self, state, action, reward, next_state, done):
-        result = None
+    def process(self, transitions, step):
+        result = {}
+
         # Process per step
-        self.memory.store(state, action, reward, next_state, done)
-        result = self.learn()
+        self.memory.store(transitions)
+        delta_t = step - self.time_t
+        self.time_t = step
+        self.target_update_stamp += delta_t
+        
+        if self.memory.size > self.batch_size and self.time_t >= self.start_train_step:
+            result = self.learn()
 
         # Process per step if train start
         if self.num_learn > 0:
-            self.epsilon_decay()
+            self.epsilon_decay(delta_t)
 
-            if self.num_learn % self.target_update_period == 0:
+            if self.target_update_stamp > self.target_update_period:
                 self.update_target()
-        
-        # Process per episode
-        if done.all():
-            pass
+                self.target_update_stamp = 0
 
         return result
             
-    def epsilon_decay(self):
-        new_epsilon = self.epsilon - (self.epsilon_init - self.epsilon_min)/(self.explore_step)
+    def epsilon_decay(self, delta_t):
+        new_epsilon = self.epsilon - delta_t*self.epsilon_delta
         self.epsilon = max(self.epsilon_min, new_epsilon)
 
     def save(self, path):
@@ -126,8 +131,9 @@ class DQNAgent(BaseAgent):
         self.network.load_state_dict(checkpoint["network"])
         self.target_network = copy.deepcopy(self.network)
         self.optimizer.load_state_dict(checkpoint["optimizer"])
-
-
-        
-        
-
+    
+    def set_distributed(self, id):
+        while id >= 1.0:
+            id /= 10.
+        self.epsilon = id 
+        return self

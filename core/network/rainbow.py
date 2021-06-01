@@ -35,7 +35,7 @@ class Rainbow(torch.nn.Module):
 
         # V stream : state value
         x_v = self.noisy_l(x_v, self.mu_w_v2, self.sig_w_v2, self.mu_b_v2, self.sig_b_v2, is_train) # [bs, num_atom]
-        x_v = torch.reshape(x_v, (-1, 1, self.Num_atom)) # [bs, num_action, num_atom]
+        x_v = torch.reshape(x_v, (-1, 1, self.Num_atom)) # [bs, 1, num_atom]
         x_v = x_v.repeat(1, self.D_out, 1) # [bs, num_action, num_atom]
         
         out = x_a + x_v # [bs, num_action, num_atom]
@@ -71,9 +71,9 @@ class Rainbow(torch.nn.Module):
         # Independent: mu: np.sqrt(3/shape[0]), sig: 0.017
         # Factorised: mu: np.sqrt(1/shape[0]), sig: 0.4/np.sqrt(shape[0])
         mu_w = torch.nn.Parameter(torch.empty(shape[0],shape[1]))
-        sig_w = torch.nn.Parameter(torch.full((shape[0],shape[1]), 0.5))
+        sig_w = torch.nn.Parameter(torch.full((shape[0],shape[1]), 0.4/np.sqrt(shape[0])))
         mu_b = torch.nn.Parameter(torch.empty(shape[1]))
-        sig_b = torch.nn.Parameter(torch.full((shape[1],), 0.5))
+        sig_b = torch.nn.Parameter(torch.full((shape[1],), 0.4/np.sqrt(shape[0])))
         
         mu_w.data.uniform_(-np.sqrt(1/shape[0]), np.sqrt(1/shape[0]))
         mu_b.data.uniform_(-np.sqrt(1/shape[0]), np.sqrt(1/shape[0]))
@@ -96,11 +96,10 @@ class Rainbow_CNN(torch.nn.Module):
         self.conv3 = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
         dim3 = ((dim2[0] - 3)//1 + 1, (dim2[1] - 3)//1 + 1)
         
-        self.mu_w1, self.sig_w1, self.mu_b1, self.sig_b1 = self.init_weights((64*dim3[0]*dim3[1], 512))
-        self.mu_w2, self.sig_w2, self.mu_b2, self.sig_b2 = self.init_weights((512, self.D_out))
+        self.l1 = torch.nn.Linear(64*dim3[0]*dim3[1], 512)
         
-        self.mu_w_a1, self.sig_w_a1, self.mu_b_a1, self.sig_b_a1 = self.init_weights((64*dim3[0]*dim3[1], 512))
-        self.mu_w_v1, self.sig_w_v1, self.mu_b_v1, self.sig_b_v1 = self.init_weights((64*dim3[0]*dim3[1], 512))
+        self.mu_w_a1, self.sig_w_a1, self.mu_b_a1, self.sig_b_a1 = self.init_weights((512, 512))
+        self.mu_w_v1, self.sig_w_v1, self.mu_b_v1, self.sig_b_v1 = self.init_weights((512, 512))
         
         self.mu_w_a2, self.sig_w_a2, self.mu_b_a2, self.sig_b_a2 = self.init_weights((512, self.Num_atom * self.D_out))
         self.mu_w_v2, self.sig_w_v2, self.mu_b_v2, self.sig_b_v2 = self.init_weights((512, self.Num_atom))
@@ -111,6 +110,8 @@ class Rainbow_CNN(torch.nn.Module):
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
         x = x.view(x.size(0), -1)
+        
+        x = F.relu(self.l1(x))
         
         x_a = F.relu(self.noisy_l(x, self.mu_w_a1, self.sig_w_a1, self.mu_b_a1, self.sig_b_a1, is_train))
         x_v = F.relu(self.noisy_l(x, self.mu_w_v1, self.sig_w_v1, self.mu_b_v1, self.sig_b_v1, is_train))
@@ -123,9 +124,12 @@ class Rainbow_CNN(torch.nn.Module):
 
         # V stream : state value
         x_v = self.noisy_l(x_v, self.mu_w_v2, self.sig_w_v2, self.mu_b_v2, self.sig_b_v2, is_train) # [bs, num_atom]
+        x_v = torch.reshape(x_v, (-1, 1, self.Num_atom)) # [bs, 1, num_atom]
         x_v = x_v.repeat(1, self.D_out, 1) # [bs, num_action, num_atom]
         
-        return x
+        out = x_a + x_v # [bs, num_action, num_atom]
+        
+        return out
 
     def noisy_l(self, x, mu_w, sig_w, mu_b, sig_b, is_train):          
         # Factorized Gaussian Noise
@@ -156,9 +160,9 @@ class Rainbow_CNN(torch.nn.Module):
         # Independent: mu: np.sqrt(3/shape[0]), sig: 0.017
         # Factorised: mu: np.sqrt(1/shape[0]), sig: 0.4/np.sqrt(shape[0])
         mu_w = torch.nn.Parameter(torch.empty(shape[0],shape[1]))
-        sig_w = torch.nn.Parameter(torch.full((shape[0],shape[1]), 0.5))
+        sig_w = torch.nn.Parameter(torch.full((shape[0],shape[1]), 0.4/np.sqrt(shape[0])))
         mu_b = torch.nn.Parameter(torch.empty(shape[1]))
-        sig_b = torch.nn.Parameter(torch.full((shape[1],), 0.5))
+        sig_b = torch.nn.Parameter(torch.full((shape[1],), 0.4/np.sqrt(shape[0])))
         
         mu_w.data.uniform_(-np.sqrt(1/shape[0]), np.sqrt(1/shape[0]))
         mu_b.data.uniform_(-np.sqrt(1/shape[0]), np.sqrt(1/shape[0]))

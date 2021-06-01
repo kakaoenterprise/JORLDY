@@ -21,7 +21,7 @@ agent = {
     "start_train_step": 100000,
     "target_update_period": 500,
     # MultiStep
-    "n_step": 4,
+    "n_step": 3,
     # PER
     "alpha": 0.6,
     "beta": 0.4,
@@ -36,9 +36,11 @@ agent = {
 train = {
     "training" : True,
     "load_path" : None,
-    "train_step" : 10000000,
-    "test_step" : 1000000,
-    "print_period" : 10,
-    "save_period" : 100,
-    "test_iteration": 10,
+    "run_step" : 100000000,
+    "print_period" : 5000,
+    "save_period" : 50000,
+    "test_iteration": 5,
+    # distributed setting
+    "update_period" : 32,
+    "num_worker" : 16,
 }

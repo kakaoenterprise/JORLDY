@@ -13,8 +13,12 @@ class Env:
     "mountaincar": MountainCar,
     "breakout": Breakout,
     "pong": Pong,
+    "alien": Alien,
     "asterix": Asterix,
     "assault": Assault,
+    "crazyclimber": CrazyClimber,
+    "privateeye": PrivateEye,
+    "montezuma": MontezumaRevenge,
     "spaceinvaders": Spaceinvaders,
     "seaquest": Seaquest,
     "hopper_mlagent": HopperMLAgent,
@@ -33,7 +37,7 @@ class Env:
         return self.dictionary[name](*args, **kwargs)
 
 '''
-class TemplateEnvironment:
+class BaseEnv:
     def __init__(self):
         pass
 
