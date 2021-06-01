@@ -1,7 +1,4 @@
 import os
-for proxy in ['https_proxy', 'http_proxy']:
-    if os.environ.get(proxy): 
-        del os.environ[proxy]
 import ray
 import numpy as np 
 import copy
