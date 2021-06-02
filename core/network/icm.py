@@ -64,11 +64,12 @@ class ICM(torch.nn.Module):
         return r_i, l_f, l_i
         
 class ICM_CNN(torch.nn.Module):
-    def __init__(self, D_in, D_out, eta):
+    def __init__(self, D_in, D_out, eta, action_type):
         super(ICM_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
         self.eta = eta
+        self.action_type = action_type
         
         self.conv1_sc = torch.nn.Conv2d(in_channels=self.D_in[0], out_channels=32, kernel_size=3, stride=2)
         self.conv2_sc = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
