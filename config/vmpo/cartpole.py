@@ -25,18 +25,19 @@ agent = {
     "min_alpha_sigma": 1e-8,
     
     "eps_eta": 0.02,
-    "eps_alpha_mu": 0.01,
+    "eps_alpha_mu": 0.1,
     "eps_alpha_sigma": 0.1,
     
-    "eta": 1.0,
-    "alpha_mu": 5.0,
+    "eta": 2.0,
+    "alpha_mu": 0.1,
     "alpha_sigma": 5.0,
 }
 
 train = {
     "training" : True,
     "load_path" : None,
-    "run_step" : 100000,
+#     "run_step" : 100000,
+    "run_step" : 300000,
     "print_period" : 1000,
     "save_period" : 10000,
     "test_iteration": 10,

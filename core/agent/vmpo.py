@@ -34,10 +34,7 @@ class VMPOAgent(REINFORCEAgent):
                  gamma=0.99,
                  device=None,
                  ):
-#         super(VMPOAgent, self).__init__(state_size=state_size,
-#                                        action_size=action_size,
-#                                        network=network,
-#                                        **kwargs)
+
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.batch_size = batch_size
@@ -53,13 +50,21 @@ class VMPOAgent(REINFORCEAgent):
         self.min_eta = torch.tensor(min_eta, requires_grad=False).to(self.device)
         self.min_alpha_mu = torch.tensor(min_alpha_mu, requires_grad=False).to(self.device)
         self.min_alpha_sigma = torch.tensor(min_alpha_sigma, requires_grad=False).to(self.device)
-        self.eps_eta = torch.tensor(eps_eta, requires_grad=False).to(self.device)
-        self.eps_alpha_mu = torch.tensor(eps_alpha_mu, requires_grad=False).to(self.device)
-        self.eps_alpha_sigma = torch.tensor(eps_alpha_sigma, requires_grad=False).to(self.device)
         
-        self.eta = torch.nn.Parameter(torch.tensor(max(self.min_eta, eta), requires_grad=True).to(self.device))
-        self.alpha_mu = torch.nn.Parameter(torch.tensor(max(self.min_alpha_mu, alpha_mu), requires_grad=True).to(self.device))
-        self.alpha_sigma = torch.nn.Parameter(torch.tensor(max(self.min_alpha_sigma, alpha_sigma), requires_grad=True).to(self.device))
+#         self.eps_eta = torch.tensor(eps_eta, requires_grad=False).to(self.device)
+#         self.eps_alpha_mu = torch.tensor(eps_alpha_mu, requires_grad=False).to(self.device)
+#         self.eps_alpha_sigma = torch.tensor(eps_alpha_sigma, requires_grad=False).to(self.device)
+        self.eps_eta = eps_eta
+        self.eps_alpha_mu = eps_alpha_mu
+        self.eps_alpha_sigma = eps_alpha_sigma
+        
+        self.eta = torch.nn.Parameter(torch.tensor(eta, requires_grad=True).to(self.device))
+        self.alpha_mu = torch.nn.Parameter(torch.tensor(alpha_mu, requires_grad=True).to(self.device))
+        self.alpha_sigma = torch.nn.Parameter(torch.tensor(alpha_sigma, requires_grad=True).to(self.device))
+#         self.eta = torch.tensor(eta, requires_grad = True).to(self.device)
+#         self.alpha_mu = torch.tensor(alpha_mu, requires_grad = True).to(self.device)
+#         self.alpha_sigma = torch.tensor(alpha_sigma,  requires_grad = True).to(self.device)
+        self.reset_lgr_muls()
         
         self.action_type = network.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
@@ -120,78 +125,75 @@ class VMPOAgent(REINFORCEAgent):
         
         # start train iteration
         idxs = np.arange(len(reward))
-#         for _ in range(self.n_epoch):
-#             np.random.shuffle(idxs)
-        for start in range(0, len(reward), self.batch_size):
-            end = start + self.batch_size
-            idx = idxs[start:end]
+        for _ in range(self.n_epoch):
+            np.random.shuffle(idxs)
+            for start in range(0, len(reward), self.batch_size):
+                end = start + self.batch_size
+                idx = idxs[start:end]
 
-            _state, _action, _ret, _next_state, _done, _adv, _log_pi_old, _log_piall_old, _pi_old =\
-                map(lambda x: x[idx], [state, action, ret, next_state, done, adv, log_pi_old, log_piall_old, pi_old])
-            if self.action_type == "continuous":
-                _mu_old, _std_old = map(lambda x: x[idx], [mu_old, std_old])
-            
-            # select top 50% of advantages
-            idx_tophalf = _adv > _adv.median()
-            tophalf_adv = _adv[idx_tophalf]
-            # calculate psi
-            exp_adv_eta = torch.exp(tophalf_adv / self.eta)
-            psi = exp_adv_eta / torch.sum(exp_adv_eta.detach()) # TODO: is it right to detach() the denominator here?
+                _state, _action, _ret, _next_state, _done, _adv, _log_pi_old, _log_piall_old, _pi_old =\
+                    map(lambda x: x[idx], [state, action, ret, next_state, done, adv, log_pi_old, log_piall_old, pi_old])
+                if self.action_type == "continuous":
+                    _mu_old, _std_old = map(lambda x: x[idx], [mu_old, std_old])
 
-            value = self.network(_state)[-1]
-            critic_loss = F.mse_loss(value, _ret).mean()
+                # select top 50% of advantages
+                idx_tophalf = _adv > _adv.median()
+                tophalf_adv = _adv[idx_tophalf]
+                # calculate psi
+                exp_adv_eta = torch.exp(tophalf_adv / self.eta)
+                psi = exp_adv_eta / torch.sum(exp_adv_eta.detach()) # TODO: is it right to detach() the denominator here?
 
-            # calculate loss for eta
-            eta_loss = self.eta * self.eps_eta + torch.log(torch.mean(exp_adv_eta))
+                value = self.network(_state)[-1]
+                critic_loss = F.mse_loss(value, _ret).mean()
+                
+                # calculate loss for eta
+                eta_loss = self.eta * self.eps_eta + torch.log(torch.mean(exp_adv_eta))
 
-            if self.action_type == "continuous":
-                mu, std, _ = self.network(_state)
-                m = Normal(mu, std)
-                z = torch.atanh(torch.clamp(_action, -1+1e-7, 1-1e-7))
-                log_pi = m.log_prob(z)
-                log_pi -= torch.log(1 - _action.pow(2) + 1e-7)
-            else:
-                pi, _ = self.network(_state)
-                log_pi = torch.log(pi.gather(1, _action.long()))
-                log_piall = torch.log(pi)
+                if self.action_type == "continuous":
+                    mu, std, _ = self.network(_state)
+                    m = Normal(mu, std)
+                    z = torch.atanh(torch.clamp(_action, -1+1e-7, 1-1e-7))
+                    log_pi = m.log_prob(z)
+                    log_pi -= torch.log(1 - _action.pow(2) + 1e-7)
+                else:
+                    pi, _ = self.network(_state)
+                    log_pi = torch.log(pi.gather(1, _action.long()))
+                    log_piall = torch.log(pi)
 
-            # calculate policy loss (actor_loss)
-            actor_loss = -torch.sum(psi.detach() * log_pi[idx_tophalf])
+                # calculate policy loss (actor_loss)
+                actor_loss = -torch.sum(psi.detach() * log_pi[idx_tophalf])
 
-            # calculate loss for alpha
-            # NOTE: assumes that std are in the same shape as mu (hence vectors)
-            #       hence each dimension of Gaussian distribution is independent
-            if self.action_type == "continuous":
-                ss = 1. / (std**2)
-                ss_old = 1. / (_std_old ** 2)
+                # calculate loss for alpha
+                # NOTE: assumes that std are in the same shape as mu (hence vectors)
+                #       hence each dimension of Gaussian distribution is independent
+                if self.action_type == "continuous":
+                    ss = 1. / (std**2)
+                    ss_old = 1. / (_std_old ** 2)
 
-                # mu
-                d_mu = mu - _mu_old.detach()
-                KLD_mu = 0.5 * torch.dot(d_mu, 1./ss_old.detach() * d_mu)
-                mu_loss = torch.mean(self.alpha_mu * (self.eps_alpha_mu - KLD_mu.detach()) + \
-                                     self.alpha_mu.detach() * KLD_mu)
+                    # mu
+                    d_mu = mu - _mu_old.detach()
+                    KLD_mu = 0.5 * torch.dot(d_mu, 1./ss_old.detach() * d_mu)
+                    mu_loss = torch.mean(self.alpha_mu * (self.eps_alpha_mu - KLD_mu.detach()) + \
+                                         self.alpha_mu.detach() * KLD_mu)
 
-                # sigma
-                KLD_sigma = 0.5 * (torch.sum(1./ss * ss_old.detach()) - ss.shape[-1] + torch.log(torch.prod(ss)/torch.prod(ss_old.detach())))
-                sigma_loss = torch.mean(self.alpha_sigma * (self.eps_alpha_sigma - KLD_sigma.detach()) + \
-                                     self.alpha_sigma.detach() * KLD_sigma)
+                    # sigma
+                    KLD_sigma = 0.5 * (torch.sum(1./ss * ss_old.detach()) - ss.shape[-1] + torch.log(torch.prod(ss)/torch.prod(ss_old.detach())))
+                    sigma_loss = torch.mean(self.alpha_sigma * (self.eps_alpha_sigma - KLD_sigma.detach()) + \
+                                         self.alpha_sigma.detach() * KLD_sigma)
 
-                alpha_loss = mu_loss + sigma_loss
-            else:
-                KLD_pi = _pi_old.detach() * (_log_pi_old.detach() - log_pi)
-#                 print(f"KLD_pi: {KLD_pi.shape}, _pi_old: {_pi_old.shape}")
-                KLD_pi = torch.sum(KLD_pi, axis = len(_pi_old.shape)-1) # TODO: need to sum over all the possible state-action pairs
-                alpha_loss = torch.mean(self.alpha_mu * (self.eps_alpha_mu - KLD_pi.detach()) + \
-                                        self.alpha_mu.detach() * KLD_pi)
+                    alpha_loss = mu_loss + sigma_loss
+                else:
+                    KLD_pi = _pi_old.detach() * (_log_pi_old.detach() - log_pi)
+                    KLD_pi = torch.sum(KLD_pi, axis = len(_pi_old.shape)-1) # TODO: need to sum over all the possible state-action pairs
+                    alpha_loss = torch.mean(self.alpha_mu * (self.eps_alpha_mu - KLD_pi.detach()) + \
+                                            self.alpha_mu.detach() * KLD_pi)
 
-#                 entopy_loss = -(-log_pi).mean()
-#                 loss = actor_loss + self.vf_coef * critic_loss + self.ent_coef * entopy_loss
-            loss = critic_loss + actor_loss + eta_loss + alpha_loss
+                loss = critic_loss + actor_loss + eta_loss + alpha_loss
 
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-            self.reset_lgr_muls()
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+                self.reset_lgr_muls()
 
         result = {
             'actor_loss' : actor_loss.item(),
@@ -207,12 +209,16 @@ class VMPOAgent(REINFORCEAgent):
     # reset Lagrange multipliers: eta, alpha_{mu, sigma}
     def reset_lgr_muls(self):
         with torch.no_grad():
-            new_eta = torch.max(self.eta, self.min_eta).detach()
-            new_alpha_mu = torch.max(self.alpha_mu, self.min_alpha_mu).detach()
-            new_alpha_sigma = torch.max(self.alpha_sigma, self.min_alpha_sigma).detach()
+            new_eta = torch.max(self.eta, self.min_eta)
+            new_alpha_mu = torch.max(self.alpha_mu, self.min_alpha_mu)
+            new_alpha_sigma = torch.max(self.alpha_sigma, self.min_alpha_sigma)
             self.eta.copy_(new_eta)
             self.alpha_mu.copy_(new_alpha_mu)
             self.alpha_sigma.copy_(new_alpha_sigma)
+
+#         self.eta = torch.clamp(self.eta, min=self.min_eta).zero_()
+#         self.alpha_mu = torch.clamp(self.alpha_mu, min=self.min_alpha_mu).zero_()
+#         self.alpha_sigma = torch.clamp(self.alpha_sigma, min=self.min_alpha_sigma).zero_()
         
     def process(self, transitions, step):
         result = {}
