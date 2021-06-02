@@ -8,6 +8,8 @@ from .rainbow import RainbowAgent
 from .rainbow_iqn import RainbowIQNAgent
 from .qrdqn import QRDQNAgent
 from .iqn import IQNAgent 
+from .icm_dqn import ICMDQNAgent
+from .icm_ppo import ICMPPOAgent
 from .reinforce import REINFORCEAgent
 from .ppo import PPOAgent
 from .multistep import MultistepDQNAgent
@@ -31,6 +33,8 @@ class Agent:
     "rainbow_iqn": RainbowIQNAgent,
     "qrdqn": QRDQNAgent,
     "iqn": IQNAgent,
+    "icm_dqn": ICMDQNAgent,
+    "icm_ppo": ICMPPOAgent,
     "reinforce": REINFORCEAgent,
     "ppo": PPOAgent,
     }

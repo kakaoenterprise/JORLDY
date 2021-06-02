@@ -3,7 +3,7 @@ from managers import *
 from process import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.dqn.alien as config
+import config.ppo.hopper_mlagent as config
 import torch.multiprocessing as mp
 
 if __name__=="__main__":

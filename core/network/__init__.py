@@ -4,6 +4,7 @@ from .noisy import *
 from .rainbow import * 
 from .rainbow_iqn import *
 from .iqn import *
+from .icm import * 
 from .sac import *
 from .reinforce import *
 from .ppo import *
@@ -22,6 +23,8 @@ class Network:
     "rainbow_iqn_cnn": Rainbow_IQN_CNN,
     "iqn": IQN,
     "iqn_cnn": IQN_CNN,
+    "icm": ICM,
+    "icm_cnn": ICM_CNN,
     "sac_actor": SACActor,
     "sac_critic": SACCritic,
     "continuous_policy": ContinuousPolicy,
