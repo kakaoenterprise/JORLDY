@@ -47,13 +47,10 @@ class VMPOAgent(REINFORCEAgent):
         self.time_t = 0
         self.learn_stamp = 0
         
-        self.min_eta = torch.tensor(min_eta, requires_grad=False).to(self.device)
-        self.min_alpha_mu = torch.tensor(min_alpha_mu, requires_grad=False).to(self.device)
-        self.min_alpha_sigma = torch.tensor(min_alpha_sigma, requires_grad=False).to(self.device)
+        self.min_eta = torch.tensor(min_eta, device=self.device)
+        self.min_alpha_mu = torch.tensor(min_alpha_mu, device=self.device)
+        self.min_alpha_sigma = torch.tensor(min_alpha_sigma, device=self.device)
         
-#         self.eps_eta = torch.tensor(eps_eta, requires_grad=False).to(self.device)
-#         self.eps_alpha_mu = torch.tensor(eps_alpha_mu, requires_grad=False).to(self.device)
-#         self.eps_alpha_sigma = torch.tensor(eps_alpha_sigma, requires_grad=False).to(self.device)
         self.eps_eta = eps_eta
         self.eps_alpha_mu = eps_alpha_mu
         self.eps_alpha_sigma = eps_alpha_sigma
@@ -61,9 +58,7 @@ class VMPOAgent(REINFORCEAgent):
         self.eta = torch.nn.Parameter(torch.tensor(eta, requires_grad=True).to(self.device))
         self.alpha_mu = torch.nn.Parameter(torch.tensor(alpha_mu, requires_grad=True).to(self.device))
         self.alpha_sigma = torch.nn.Parameter(torch.tensor(alpha_sigma, requires_grad=True).to(self.device))
-#         self.eta = torch.tensor(eta, requires_grad = True).to(self.device)
-#         self.alpha_mu = torch.tensor(alpha_mu, requires_grad = True).to(self.device)
-#         self.alpha_sigma = torch.tensor(alpha_sigma,  requires_grad = True).to(self.device)
+
         self.reset_lgr_muls()
         
         self.action_type = network.split("_")[0]
@@ -113,6 +108,7 @@ class VMPOAgent(REINFORCEAgent):
                 z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
                 log_pi = m.log_prob(z)
                 log_pi -= torch.log(1 - action.pow(2) + 1e-7)
+                log_pi = log_pi.sum(axis=1,keepdim=True)
                 mu_old = mu
                 std_old = std
             else:
@@ -131,10 +127,12 @@ class VMPOAgent(REINFORCEAgent):
                 end = start + self.batch_size
                 idx = idxs[start:end]
 
-                _state, _action, _ret, _next_state, _done, _adv, _log_pi_old, _log_piall_old, _pi_old =\
-                    map(lambda x: x[idx], [state, action, ret, next_state, done, adv, log_pi_old, log_piall_old, pi_old])
+                _state, _action, _ret, _next_state, _done, _adv, _log_pi_old =\
+                    map(lambda x: x[idx], [state, action, ret, next_state, done, adv, log_pi_old])
                 if self.action_type == "continuous":
                     _mu_old, _std_old = map(lambda x: x[idx], [mu_old, std_old])
+                else: 
+                    _log_piall_old, _pi_old = map(lambda x: x[idx], [log_piall_old, pi_old])
 
                 # select top 50% of advantages
                 idx_tophalf = _adv > _adv.median()
@@ -155,6 +153,7 @@ class VMPOAgent(REINFORCEAgent):
                     z = torch.atanh(torch.clamp(_action, -1+1e-7, 1-1e-7))
                     log_pi = m.log_prob(z)
                     log_pi -= torch.log(1 - _action.pow(2) + 1e-7)
+                    log_pi = log_pi.sum(axis=1, keepdim=True)
                 else:
                     pi, _ = self.network(_state)
                     log_pi = torch.log(pi.gather(1, _action.long()))
@@ -167,17 +166,17 @@ class VMPOAgent(REINFORCEAgent):
                 # NOTE: assumes that std are in the same shape as mu (hence vectors)
                 #       hence each dimension of Gaussian distribution is independent
                 if self.action_type == "continuous":
-                    ss = 1. / (std**2)
-                    ss_old = 1. / (_std_old ** 2)
+                    ss = 1. / (std**2) # (batch_size * action_dim)
+                    ss_old = 1. / (_std_old ** 2) # (batch_size * action_dim)
 
                     # mu
-                    d_mu = mu - _mu_old.detach()
-                    KLD_mu = 0.5 * torch.dot(d_mu, 1./ss_old.detach() * d_mu)
+                    d_mu = mu - _mu_old.detach() # (batch_size * action_dim)
+                    KLD_mu = 0.5 * torch.sum(d_mu* 1./ss_old.detach() * d_mu, axis = 1)
                     mu_loss = torch.mean(self.alpha_mu * (self.eps_alpha_mu - KLD_mu.detach()) + \
                                          self.alpha_mu.detach() * KLD_mu)
 
                     # sigma
-                    KLD_sigma = 0.5 * (torch.sum(1./ss * ss_old.detach()) - ss.shape[-1] + torch.log(torch.prod(ss)/torch.prod(ss_old.detach())))
+                    KLD_sigma = 0.5 * ((torch.sum(1./ss * ss_old.detach(), axis = 1) - ss.shape[-1] + torch.log(torch.prod(ss, axis = 1)/torch.prod(ss_old.detach(), axis = 1))))
                     sigma_loss = torch.mean(self.alpha_sigma * (self.eps_alpha_sigma - KLD_sigma.detach()) + \
                                          self.alpha_sigma.detach() * KLD_sigma)
 
@@ -208,17 +207,9 @@ class VMPOAgent(REINFORCEAgent):
     
     # reset Lagrange multipliers: eta, alpha_{mu, sigma}
     def reset_lgr_muls(self):
-        with torch.no_grad():
-            new_eta = torch.max(self.eta, self.min_eta)
-            new_alpha_mu = torch.max(self.alpha_mu, self.min_alpha_mu)
-            new_alpha_sigma = torch.max(self.alpha_sigma, self.min_alpha_sigma)
-            self.eta.copy_(new_eta)
-            self.alpha_mu.copy_(new_alpha_mu)
-            self.alpha_sigma.copy_(new_alpha_sigma)
-
-#         self.eta = torch.clamp(self.eta, min=self.min_eta).zero_()
-#         self.alpha_mu = torch.clamp(self.alpha_mu, min=self.min_alpha_mu).zero_()
-#         self.alpha_sigma = torch.clamp(self.alpha_sigma, min=self.min_alpha_sigma).zero_()
+        self.eta.data = torch.max(self.eta, self.min_eta)
+        self.alpha_mu.data = torch.max(self.alpha_mu, self.min_alpha_mu)
+        self.alpha_sigma.data = torch.max(self.alpha_sigma, self.min_alpha_sigma)
         
     def process(self, transitions, step):
         result = {}
