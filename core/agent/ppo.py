@@ -32,11 +32,11 @@ class PPOAgent(REINFORCEAgent):
         self.ent_coef = ent_coef
         self.time_t = 0
         self.learn_stamp = 0
-        
+    
     def act(self, state, training=True):
         if self.action_type == "continuous":
             mu, std, _ = self.network(torch.FloatTensor(state).to(self.device))
-            std = std if training else 0
+            std = std if training else torch.zeros_like(std, device=self.device) + 1e-4
             m = Normal(mu, std)
             z = m.sample()
             action = torch.tanh(z)
