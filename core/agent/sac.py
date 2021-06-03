@@ -71,6 +71,7 @@ class SACAgent(BaseAgent):
         log_prob = m.log_prob(z)
         # Enforcing Action Bounds
         log_prob -= torch.log(1 - action.pow(2) + 1e-7)
+        log_prob = log_prob.sum(1, keepdim=True)
         return action, log_prob
 
     def learn(self):
