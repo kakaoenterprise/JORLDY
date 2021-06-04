@@ -107,11 +107,11 @@ class VMPOAgent(REINFORCEAgent):
             
             if self.action_type == "continuous":
                 mu, std, _ = self.network(state)
-                m = Normal(mu, std)
+                m = Normal(mu, std+1e-7)
                 z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
                 log_pi = m.log_prob(z)
                 log_pi -= torch.log(1 - action.pow(2) + 1e-7)
-                log_pi = log_pi.sum(axis=1,keepdim=True)
+#                 log_pi = log_pi.sum(axis=1,keepdim=True)
                 mu_old = mu
                 std_old = std
             else:
@@ -152,18 +152,19 @@ class VMPOAgent(REINFORCEAgent):
 
                 if self.action_type == "continuous":
                     mu, std, _ = self.network(_state)
-                    m = Normal(mu, std)
+                    m = Normal(mu, std+1e-7)
                     z = torch.atanh(torch.clamp(_action, -1+1e-7, 1-1e-7))
                     log_pi = m.log_prob(z)
                     log_pi -= torch.log(1 - _action.pow(2) + 1e-7)
-                    log_pi = log_pi.sum(axis=1, keepdim=True)
+#                     log_pi = log_pi.sum(axis=1, keepdim=True)
                 else:
                     pi, _ = self.network(_state)
                     log_pi = torch.log(pi.gather(1, _action.long()))
                     log_piall = torch.log(pi)
 
                 # calculate policy loss (actor_loss)
-                actor_loss = -torch.sum(psi.detach() * log_pi[idx_tophalf])
+                tophalf_logpi = log_pi[idx_tophalf.squeeze(), :]               
+                actor_loss = -torch.sum(psi.detach().unsqueeze(1) * tophalf_logpi)
 
                 # calculate loss for alpha
                 # NOTE: assumes that std are in the same shape as mu (hence vectors)
