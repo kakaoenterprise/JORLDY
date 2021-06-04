@@ -73,8 +73,11 @@ class VMPOAgent(REINFORCEAgent):
         
     def act(self, state, training=True):
         if self.action_type == "continuous":
+#             mu, std, _ = self.network(torch.FloatTensor(state).to(self.device))
+#             std = std if training else 0
             mu, std, _ = self.network(torch.FloatTensor(state).to(self.device))
-            std = std if training else 0
+            std = std if training else torch.zeros_like(std, device=self.device) + 1e-4
+
             m = Normal(mu, std)
             z = m.sample()
             action = torch.tanh(z)
