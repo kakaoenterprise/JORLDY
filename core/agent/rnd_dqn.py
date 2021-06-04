@@ -53,6 +53,7 @@ class RNDDQNAgent(DQNAgent):
         
         #ICM 
         r_i, l_f = self.rnd(next_state)
+                
         reward = self.extrinsic_coeff * reward + self.intrinsic_coeff * r_i.unsqueeze(1)
                 
         with torch.no_grad():

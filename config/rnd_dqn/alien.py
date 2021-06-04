@@ -20,7 +20,7 @@ agent = {
     "batch_size": 32,
     "start_train_step": 100000,
     "target_update_period": 10000,
-    # Parameters for Curiosity-driven Exploration
+    # Parameters for Random Network Distillation
     "rnd_network": "rnd_cnn",
     "beta": 0.2,
     "lamb": 1.0,

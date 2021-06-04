@@ -21,7 +21,7 @@ agent = {
     "start_train_step": 100000,
     "target_update_period": 10000,
     # Parameters for Random Network Distillation
-    "icm_network": "rnd_cnn",
+    "rnd_network": "rnd_cnn",
     "beta": 0.2,
     "lamb": 1.0,
     "eta": 0.01,
