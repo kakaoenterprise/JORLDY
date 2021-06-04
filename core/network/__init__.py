@@ -5,6 +5,7 @@ from .rainbow import *
 from .rainbow_iqn import *
 from .iqn import *
 from .icm import * 
+from .rnd import *
 from .sac import *
 from .reinforce import *
 from .ppo import *
@@ -25,6 +26,8 @@ class Network:
     "iqn_cnn": IQN_CNN,
     "icm": ICM,
     "icm_cnn": ICM_CNN,
+    "rnd": RND,
+    "rnd_cnn": RND_CNN,
     "sac_actor": SACActor,
     "sac_critic": SACCritic,
     "continuous_policy": ContinuousPolicy,

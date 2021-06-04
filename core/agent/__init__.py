@@ -10,6 +10,7 @@ from .qrdqn import QRDQNAgent
 from .iqn import IQNAgent 
 from .icm_dqn import ICMDQNAgent
 from .icm_ppo import ICMPPOAgent
+from .rnd_dqn import RNDDQNAgent
 from .reinforce import REINFORCEAgent
 from .ppo import PPOAgent
 from .multistep import MultistepDQNAgent
@@ -35,6 +36,7 @@ class Agent:
     "iqn": IQNAgent,
     "icm_dqn": ICMDQNAgent,
     "icm_ppo": ICMPPOAgent,
+    "rnd_dqn": RNDDQNAgent,
     "reinforce": REINFORCEAgent,
     "ppo": PPOAgent,
     }

@@ -1,4 +1,4 @@
-### ICM DQN CratPole Config ###
+### RND DQN CratPole Config ###
 
 env = {
     "name":"cartpole",
@@ -7,7 +7,7 @@ env = {
 }
 
 agent = {
-    "name": "icm_dqn",
+    "name": "rnd_dqn",
     "network": "dqn",
     "optimizer": "adam",
     "learning_rate": 0.0005,
@@ -17,9 +17,8 @@ agent = {
     "batch_size": 32,
     "start_train_step": 2000,
     "target_update_period": 1000,
-    # Parameters for Curiosity-driven Exploration
-    "icm_network": "icm",
-    "action_type": "discrete",
+    # Parameters for Random Network Distillation
+    "rnd_network": "rnd",
     "beta": 0.2,
     "lamb": 1.0,
     "eta": 0.01,

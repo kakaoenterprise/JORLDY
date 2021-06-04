@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.icm_ppo.cartpole as config
+import config.rnd_dqn.montezuma as config
 
 if __name__=="__main__":
     env = Env(**config.env)
