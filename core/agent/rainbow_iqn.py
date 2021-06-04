@@ -1,7 +1,9 @@
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np
 import copy
+import time
 
 from core.network import Network
 from core.optimizer import Optimizer
@@ -71,6 +73,7 @@ class RainbowIQNAgent(RainbowAgent):
         # MultiStep
         self.memory = RainbowBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
         
+    @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
         sample_min = 0 if training else self.sample_min
@@ -81,7 +84,7 @@ class RainbowIQNAgent(RainbowAgent):
         else:
             logits, _ = self.network(torch.FloatTensor(state).to(self.device), training, sample_min, sample_max)
             _, q_action = self.logits2Q(logits)
-            action = torch.argmax(q_action, -1, keepdim=True).data.cpu().numpy()
+            action = torch.argmax(q_action, -1, keepdim=True).cpu().numpy()
         return action
 
     def learn(self):
@@ -137,7 +140,7 @@ class RainbowIQNAgent(RainbowAgent):
                     
         loss = (weights * loss).mean()
                 
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
         

@@ -1,4 +1,5 @@
 import torch
+torch.backends.cudnn.benchmark = True
 from torch.distributions import Normal, Categorical
 import numpy as np
 import os
@@ -30,6 +31,7 @@ class REINFORCEAgent(BaseAgent):
         self.gamma = gamma
         self.memory = Rollout()
 
+    @torch.no_grad()
     def act(self, state, training=True):
         if self.action_type == "continuous":
             mu, std = self.network(torch.FloatTensor(state).to(self.device))
@@ -37,11 +39,11 @@ class REINFORCEAgent(BaseAgent):
             m = Normal(mu, std)
             z = m.sample()
             action = torch.tanh(z)
-            action = action.data.cpu().numpy()
+            action = action.cpu().numpy()
         else:
             pi = self.network(torch.FloatTensor(state).to(self.device))
             m = Categorical(pi)
-            action = m.sample().data.cpu().numpy()[..., np.newaxis]
+            action = m.sample().cpu().numpy()[..., np.newaxis]
         return action
 
     def learn(self):
@@ -64,7 +66,7 @@ class REINFORCEAgent(BaseAgent):
             pi = self.network(state)
             loss = -(torch.log(pi.gather(1, action.long()))*ret).mean()
 
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
 

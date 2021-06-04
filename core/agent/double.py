@@ -1,4 +1,5 @@
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 
 from .dqn import DQNAgent
@@ -27,7 +28,7 @@ class DoubleDQNAgent(DQNAgent):
         
         loss = F.smooth_l1_loss(q, target_q)
 
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
         

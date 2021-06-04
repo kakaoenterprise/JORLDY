@@ -1,4 +1,5 @@
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np
 import copy
@@ -39,13 +40,14 @@ class NoisyAgent(DQNAgent):
         self.num_learn = 0
         self.time_t = 0
         
+    @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
         
         if training and self.memory.size < max(self.batch_size, self.start_train_step):
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            action = torch.argmax(self.network(torch.FloatTensor(state).to(self.device), training), -1, keepdim=True).data.cpu().numpy()
+            action = torch.argmax(self.network(torch.FloatTensor(state).to(self.device), training), -1, keepdim=True).cpu().numpy()
         return action
 
     def learn(self):
@@ -63,7 +65,7 @@ class NoisyAgent(DQNAgent):
         
         loss = F.smooth_l1_loss(q, target_q)
         
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
         

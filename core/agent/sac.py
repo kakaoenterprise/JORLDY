@@ -1,4 +1,5 @@
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 from torch.distributions import Normal
 import os 
@@ -54,6 +55,7 @@ class SACAgent(BaseAgent):
         self.start_train_step = start_train_step
         self.num_learn = 0
 
+    @torch.no_grad()
     def act(self, state, training=True):
         self.actor.train(training)
         mu, std = self.actor(torch.FloatTensor(state).to(self.device))
@@ -61,7 +63,7 @@ class SACAgent(BaseAgent):
         m = Normal(mu, std)
         z = m.sample()
         action = torch.tanh(z)
-        action = action.data.cpu().numpy()
+        action = action.cpu().numpy()
         return action
 
     def sample_action(self, mu, std):
@@ -105,7 +107,7 @@ class SACAgent(BaseAgent):
         min_q = torch.min(q1, q2)
 
         actor_loss = ((self.alpha.to(self.device) * log_prob) - min_q).mean()
-        self.actor_optimizer.zero_grad()
+        self.actor_optimizer.zero_grad(set_to_none=True)
         actor_loss.backward()
         self.actor_optimizer.step()
 
@@ -114,7 +116,7 @@ class SACAgent(BaseAgent):
         self.alpha = self.log_alpha.exp()
             
         if self.use_dynamic_alpha:
-            self.alpha_optimizer.zero_grad()
+            self.alpha_optimizer.zero_grad(set_to_none=True)
             alpha_loss.backward()
             self.alpha_optimizer.step()
 

@@ -1,4 +1,5 @@
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np 
 
@@ -15,6 +16,7 @@ class C51Agent(DQNAgent):
         self.delta_z = (self.v_max - self.v_min) / (self.num_support - 1)
         self.z = torch.linspace(self.v_min, self.v_max, self.num_support, device=self.device).view(1, -1)
         
+    @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
         epsilon = self.epsilon if training else self.epsilon_eval
@@ -24,7 +26,7 @@ class C51Agent(DQNAgent):
         else:
             logits = self.network(torch.FloatTensor(state).to(self.device))
             _, q_action = self.logits2Q(logits)
-            action = torch.argmax(q_action, -1, keepdim=True).data.cpu().numpy()
+            action = torch.argmax(q_action, -1, keepdim=True).cpu().numpy()
         return action
     
     def learn(self):        
@@ -70,7 +72,7 @@ class C51Agent(DQNAgent):
         min_logit = torch.min(logit).item()
         
         loss = -(target_dist*torch.clamp(p_action, min=1e-8).log()).sum(-1).mean()
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
         

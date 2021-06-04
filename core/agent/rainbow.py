@@ -1,4 +1,5 @@
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np
 import copy
@@ -73,6 +74,7 @@ class RainbowAgent(DQNAgent):
         self.delta_z = (self.v_max - self.v_min) / (self.num_support - 1)
         self.z = torch.linspace(self.v_min, self.v_max, self.num_support, device=self.device).view(1, -1)
     
+    @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
         
@@ -81,7 +83,7 @@ class RainbowAgent(DQNAgent):
         else:
             logits = self.network(torch.FloatTensor(state).to(self.device), training)
             _, q_action = self.logits2Q(logits)
-            action = torch.argmax(q_action, -1, keepdim=True).data.cpu().numpy()
+            action = torch.argmax(q_action, -1, keepdim=True).cpu().numpy()
         return action
 
     def learn(self):
@@ -147,7 +149,7 @@ class RainbowAgent(DQNAgent):
                     
         loss = (weights * KL).mean()
                 
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
         
