@@ -37,21 +37,21 @@ class PPOAgent(REINFORCEAgent):
     @torch.no_grad()
     def act(self, state, training=True):
         if self.action_type == "continuous":
-            mu, std, _ = self.network(torch.FloatTensor(state).to(self.device))
+            mu, std, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             std = std if training else torch.zeros_like(std, device=self.device) + 1e-4
             m = Normal(mu, std)
             z = m.sample()
             action = torch.tanh(z)
             action = action.cpu().numpy()
         else:
-            pi, _ = self.network(torch.FloatTensor(state).to(self.device))
+            pi, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             m = Categorical(pi)
             action = m.sample().cpu().numpy()[..., np.newaxis]
         return action
 
     def learn(self):
         transitions = self.memory.rollout()
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
         
         # set advantage and log_pi_old
         with torch.no_grad():

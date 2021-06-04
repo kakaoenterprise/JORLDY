@@ -16,7 +16,7 @@ class MultistepDQNAgent(DQNAgent):
 #         shapes of multistep implementations: (batch_size, steps, dimension_data)
 
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
         eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action[:, 0].view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)

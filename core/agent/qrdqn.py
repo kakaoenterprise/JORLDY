@@ -26,14 +26,14 @@ class QRDQNAgent(DQNAgent):
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            logits = self.network(torch.FloatTensor(state).to(self.device))
+            logits = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             _, q_action = self.logits2Q(logits)
             action = torch.argmax(q_action, -1, keepdim=True).cpu().numpy()
         return action
     
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
         
         # Get Theta Pred
         logit = self.network(state)

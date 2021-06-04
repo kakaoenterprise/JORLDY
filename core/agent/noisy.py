@@ -47,12 +47,12 @@ class NoisyAgent(DQNAgent):
         if training and self.memory.size < max(self.batch_size, self.start_train_step):
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            action = torch.argmax(self.network(torch.FloatTensor(state).to(self.device), training), -1, keepdim=True).cpu().numpy()
+            action = torch.argmax(self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device), training), -1, keepdim=True).cpu().numpy()
         return action
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
         
         eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action.view(-1).long()]

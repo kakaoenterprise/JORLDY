@@ -10,7 +10,7 @@ class DoubleDQNAgent(DQNAgent):
 
     def learn(self):        
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
         
         eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action.view(-1).long()]

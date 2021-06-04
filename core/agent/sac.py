@@ -58,7 +58,7 @@ class SACAgent(BaseAgent):
     @torch.no_grad()
     def act(self, state, training=True):
         self.actor.train(training)
-        mu, std = self.actor(torch.FloatTensor(state).to(self.device))
+        mu, std = self.actor(torch.as_tensor(state, dtype=torch.float32, device=self.device))
         std = std if training else torch.zeros_like(std, device=self.device) + 1e-4
         m = Normal(mu, std)
         z = m.sample()
@@ -78,7 +78,7 @@ class SACAgent(BaseAgent):
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
 
         q1, q2 = self.critic(state, action)
 

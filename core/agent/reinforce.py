@@ -34,14 +34,14 @@ class REINFORCEAgent(BaseAgent):
     @torch.no_grad()
     def act(self, state, training=True):
         if self.action_type == "continuous":
-            mu, std = self.network(torch.FloatTensor(state).to(self.device))
+            mu, std = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             std = std if training else torch.zeros_like(std, device=self.device) + 1e-4
             m = Normal(mu, std)
             z = m.sample()
             action = torch.tanh(z)
             action = action.cpu().numpy()
         else:
-            pi = self.network(torch.FloatTensor(state).to(self.device))
+            pi = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             m = Categorical(pi)
             action = m.sample().cpu().numpy()[..., np.newaxis]
         return action
@@ -53,7 +53,7 @@ class REINFORCEAgent(BaseAgent):
         for t in reversed(range(len(ret)-1)):
             ret[t] += self.gamma * ret[t+1]
         
-        state, action, ret = map(lambda x: torch.FloatTensor(x).to(self.device), [state, action, ret])
+        state, action, ret = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), [state, action, ret])
         
         if self.action_type == "continuous":
             mu, std = self.network(state)
