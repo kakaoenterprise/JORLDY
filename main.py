@@ -19,9 +19,8 @@ if __name__=="__main__":
     print_period = config.train["print_period"]
     save_period = config.train["save_period"]
 
-    test_manager = TestManager(config.train["test_iteration"])
+    test_manager = TestManager(Env(**config.env), config.train["test_iteration"])
     metric_manager = MetricManager()
-    time_manager = TimeManager()
     log_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
     purpose = None if "purpose" not in config.train.keys() else config.train["purpose"]
     log_manager = LogManager(config.env["name"], log_id, purpose)
@@ -43,7 +42,7 @@ if __name__=="__main__":
             state = env.reset()
 
         if step % print_period == 0:
-            score = test_manager.test(agent, env)
+            score = test_manager.test(agent)
             metric_manager.append({"score": score})
             statistics = metric_manager.get_statistics()
             print(f"{episode} Episode / Step : {step} / {statistics}")

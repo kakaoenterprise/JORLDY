@@ -76,19 +76,20 @@ class TimeManager:
         
             
 class TestManager:
-    def __init__(self, iteration=10):
+    def __init__(self, env, iteration=10):
         assert iteration > 0
+        self.env = env
         self.iteration = iteration
     
-    def test(self, agent, env):
+    def test(self, agent):
         scores = []
         for i in range(self.iteration):
             done = False
-            state = env.reset()
+            state = self.env.reset()
             while not done:
                 action = agent.act(state, training=False)
-                state, reward, done = env.step(action)
-            scores.append(env.score)
+                state, reward, done = self.env.step(action)
+            scores.append(self.env.score)
             
         return np.mean(scores)
 
