@@ -12,6 +12,7 @@ class Atari(BaseEnv):
                  img_height=84,
                  stack_frame=4,
                  id=0,
+                 life_key='ale.lives'
                  ):
         self.id = id
         self.render=render
@@ -28,13 +29,14 @@ class Atari(BaseEnv):
         self.action_size = self.env.action_space.n
         self.score = 0
         self.life = 0
+        self.life_key = life_key
 
     def reset(self):
         self.env.reset()
         state, _, _, info = self.env.step(1)
         state = self.img_processor.convert_img(state)
         self.stacked_state = np.tile(state, (self.stack_frame,1,1))
-        self.life = info['ale.lives']
+        self.life = info[self.life_key]
         self.score = 0
         state = np.expand_dims(self.stacked_state, 0)
         return state
@@ -45,11 +47,11 @@ class Atari(BaseEnv):
         action = np.asscalar(action)
         next_state, reward, done, info = self.env.step(action)
         
-        if self.life != info['ale.lives']:
+        if self.life != info[self.life_key] and not done:
             next_state, _, _, _ = self.env.step(1)
             next_state = self.img_processor.convert_img(next_state)
             self.stacked_state = np.tile(next_state, (self.stack_frame,1,1))
-            self.life = info['ale.lives']
+            self.life = info[self.life_key]
         else:
             next_state = self.img_processor.convert_img(next_state)
             self.stacked_state = np.concatenate((self.stacked_state[self.num_channel:], next_state), axis=0)
