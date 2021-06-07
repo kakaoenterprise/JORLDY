@@ -1,4 +1,5 @@
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np
 import os
@@ -49,7 +50,8 @@ class DQNAgent(BaseAgent):
         self.target_update_period = target_update_period
         self.num_learn = 0
         self.time_t = 0
-        
+    
+    @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
         epsilon = self.epsilon if training else self.epsilon_eval
@@ -57,27 +59,26 @@ class DQNAgent(BaseAgent):
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            action = torch.argmax(self.network(torch.FloatTensor(state).to(self.device)), -1, keepdim=True).data.cpu().numpy()
+            action = torch.argmax(self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device)), -1, keepdim=True).cpu().numpy()
         return action
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
         
-        eye = torch.eye(self.action_size).to(self.device)
+        eye = torch.eye(self.action_size, device=self.device)
         one_hot_action = eye[action.view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
         with torch.no_grad():
             max_Q = torch.max(q).item()
             next_q = self.target_network(next_state)
             target_q = reward + (1 - done) * self.gamma * next_q.max(1, keepdims=True).values
-            
-        loss = F.smooth_l1_loss(q, target_q)
 
-        self.optimizer.zero_grad()
+        loss = F.smooth_l1_loss(q, target_q)
+        self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
-        
+
         self.num_learn += 1
 
         result = {
