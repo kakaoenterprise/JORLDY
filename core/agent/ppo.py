@@ -1,4 +1,5 @@
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 from torch.distributions import Normal, Categorical
 import numpy as np
@@ -33,23 +34,24 @@ class PPOAgent(REINFORCEAgent):
         self.time_t = 0
         self.learn_stamp = 0
     
+    @torch.no_grad()
     def act(self, state, training=True):
         if self.action_type == "continuous":
-            mu, std, _ = self.network(torch.FloatTensor(state).to(self.device))
+            mu, std, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             std = std if training else torch.zeros_like(std, device=self.device) + 1e-4
             m = Normal(mu, std)
             z = m.sample()
             action = torch.tanh(z)
-            action = action.data.cpu().numpy()
+            action = action.cpu().numpy()
         else:
-            pi, _ = self.network(torch.FloatTensor(state).to(self.device))
+            pi, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             m = Categorical(pi)
-            action = m.sample().data.cpu().numpy()[..., np.newaxis]
+            action = m.sample().cpu().numpy()[..., np.newaxis]
         return action
 
     def learn(self):
         transitions = self.memory.rollout()
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
         
         # set advantage and log_pi_old
         with torch.no_grad():
@@ -107,7 +109,7 @@ class PPOAgent(REINFORCEAgent):
                 entopy_loss = -(-log_pi).mean()
                 loss = actor_loss + self.vf_coef * critic_loss + self.ent_coef * entopy_loss
 
-                self.optimizer.zero_grad()
+                self.optimizer.zero_grad(set_to_none=True)
                 loss.backward()
                 self.optimizer.step()
 
