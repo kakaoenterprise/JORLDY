@@ -18,14 +18,14 @@ agent = {
     "explore_step": 1000000,
     "buffer_size": 100000,
     "batch_size": 32,
-    "start_train_step": 100000,
+    "start_train_step": 50000,
     "target_update_period": 10000,
     # Parameters for Curiosity-driven Exploration
     "icm_network": "icm_cnn",
-    "beta": 0.2,
+    "beta": 0.6,
     "lamb": 1.0,
-    "eta": 0.0001,
-    "extrinsic_coeff": 1.0,
+    "eta": 0.1,
+    "extrinsic_coeff": 0.0,
     "intrinsic_coeff": 1.0,
 }
 
@@ -33,7 +33,7 @@ train = {
     "training" : True,
     "load_path" : None,
     "run_step" : 100000000,
-    "print_period" : 10000,
+    "print_period" : 5000,
     "save_period" : 50000,
     "test_iteration": 1,
     # distributed setting

@@ -23,6 +23,7 @@ class Env:
     "seaquest": Seaquest,
     "hopper_mlagent": HopperMLAgent,
     "pong_mlagent": PongMLAgent,
+    "mario": Mario,
     }
     
     def __new__(self, name, *args, **kwargs):

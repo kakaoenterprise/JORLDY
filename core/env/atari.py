@@ -3,6 +3,11 @@ import numpy as np
 from .utils import ImgProcessor
 from .base import BaseEnv
 
+# https://pypi.org/project/gym-super-mario-bros/
+from nes_py.wrappers import JoypadSpace
+import gym_super_mario_bros
+from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
+
 class Atari(BaseEnv):
     def __init__(self,
                  name,
@@ -103,3 +108,9 @@ class PrivateEye(Atari):
 class MontezumaRevenge(Atari):
     def __init__(self, **kwargs):
         super(MontezumaRevenge, self).__init__('MontezumaRevenge-v0', **kwargs)
+        
+class Mario(Atari):
+    def __init__(self, **kwargs):
+        super(Mario, self).__init__('SuperMarioBros-v0', life_key='life' ,**kwargs)
+        self.env = JoypadSpace(self.env, SIMPLE_MOVEMENT)
+        self.action_size = self.env.action_space.n
