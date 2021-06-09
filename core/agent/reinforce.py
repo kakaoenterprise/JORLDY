@@ -35,17 +35,14 @@ class REINFORCEAgent(BaseAgent):
     def act(self, state, training=True):
         if self.action_type == "continuous":
             mu, std = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
-            std = std if training else torch.zeros_like(std, device=self.device) + 1e-4
-            m = Normal(mu, std)
-            z = m.sample()
+            z = torch.normal(mu, std) if training else mu
             action = torch.tanh(z)
             action = action.cpu().numpy()
         else:
             pi = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
-            m = Categorical(pi)
-            action = m.sample().cpu().numpy()[..., np.newaxis]
+            action = torch.multinomial(pi, 1).cpu().numpy()
         return action
-
+    
     def learn(self):
         state, action, reward = self.memory.rollout()[:3]
         
@@ -61,6 +58,7 @@ class REINFORCEAgent(BaseAgent):
             z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
             log_prob = m.log_prob(z)
             log_prob -= torch.log(1 - action.pow(2) + 1e-7)
+            log_prob = log_prob.sum(1, keepdim=True)
             loss = -(log_prob*ret).mean()
         else:
             pi = self.network(state)
