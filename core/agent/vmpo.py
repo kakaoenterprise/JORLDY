@@ -111,7 +111,6 @@ class VMPOAgent(REINFORCEAgent):
                 z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
                 log_pi = m.log_prob(z)
                 log_pi -= torch.log(1 - action.pow(2) + 1e-7)
-#                 log_pi = log_pi.sum(axis=1,keepdim=True)
                 mu_old = mu
                 std_old = std
             else:
@@ -156,7 +155,6 @@ class VMPOAgent(REINFORCEAgent):
                     z = torch.atanh(torch.clamp(_action, -1+1e-7, 1-1e-7))
                     log_pi = m.log_prob(z)
                     log_pi -= torch.log(1 - _action.pow(2) + 1e-7)
-#                     log_pi = log_pi.sum(axis=1, keepdim=True)
                 else:
                     pi, _ = self.network(_state)
                     log_pi = torch.log(pi.gather(1, _action.long()))
