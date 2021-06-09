@@ -59,9 +59,7 @@ class SACAgent(BaseAgent):
     def act(self, state, training=True):
         self.actor.train(training)
         mu, std = self.actor(torch.as_tensor(state, dtype=torch.float32, device=self.device))
-        std = std if training else torch.zeros_like(std, device=self.device) + 1e-4
-        m = Normal(mu, std)
-        z = m.sample()
+        z = torch.normal(mu, std) if training else mu
         action = torch.tanh(z)
         action = action.cpu().numpy()
         return action
