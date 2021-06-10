@@ -1,7 +1,12 @@
 import gym
 import numpy as np
-from .utils import ImgProcessor
+from .utils import ImgProcessor, GifMaker
 from .base import BaseEnv
+
+# https://pypi.org/project/gym-super-mario-bros/
+from nes_py.wrappers import JoypadSpace
+import gym_super_mario_bros
+from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 
 class Atari(BaseEnv):
     def __init__(self,
@@ -19,7 +24,10 @@ class Atari(BaseEnv):
         self.gray_img=gray_img
         self.img_width=img_width
         self.img_height=img_height
+        
         self.img_processor = ImgProcessor(gray_img, img_width, img_height)
+        self.gif_maker = GifMaker()
+        
         self.stack_frame=stack_frame
         self.num_channel = 1 if self.gray_img else 3 
         self.stacked_state = np.zeros([self.num_channel*stack_frame, img_height, img_width])
@@ -60,7 +68,19 @@ class Atari(BaseEnv):
         
         next_state, reward, done = map(lambda x: np.expand_dims(x, 0), [self.stacked_state, [reward], [done]])
         return (next_state, reward, done)
-
+    
+    def reset_raw(self):
+        self.env.reset()
+        state, _, _, info = self.env.step(1)
+        
+        return state
+    
+    def step_raw(self, action):
+        action = np.asscalar(action)
+        next_state, reward, done, info = self.env.step(action)
+        
+        return (next_state, reward, done)
+    
     def close(self):
         self.env.close()
 
@@ -103,3 +123,9 @@ class PrivateEye(Atari):
 class MontezumaRevenge(Atari):
     def __init__(self, **kwargs):
         super(MontezumaRevenge, self).__init__('MontezumaRevenge-v0', **kwargs)
+        
+class Mario(Atari):
+    def __init__(self, **kwargs):
+        super(Mario, self).__init__('SuperMarioBros-v0', life_key='life' ,**kwargs)
+        self.env = JoypadSpace(self.env, SIMPLE_MOVEMENT)
+        self.action_size = self.env.action_space.n

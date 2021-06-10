@@ -1,7 +1,7 @@
-### DQN SpaceInvaders Config ###
+### DQN Mario Config ###
 
 env = {
-    "name": "spaceinvaders",
+    "name": "mario",
     "render": False,
     "gray_img": True,
     "img_width": 84,
@@ -13,7 +13,7 @@ agent = {
     "name": "dqn",
     "network": "dqn_cnn",
     "optimizer": "adam",
-    "learning_rate": 1e-4,
+    "learning_rate": 1e-4, #0.00025,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
@@ -21,7 +21,7 @@ agent = {
     "buffer_size": 1000000,
     "batch_size": 32,
     "start_train_step": 100000,
-    "target_update_period": 10000
+    "target_update_period": 10000,
 }
 
 train = {

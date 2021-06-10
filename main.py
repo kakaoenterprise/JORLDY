@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.ppo.cartpole as config
+import config.icm_dqn.mario as config
 
 if __name__=="__main__":
     env = Env(**config.env)
@@ -20,6 +20,7 @@ if __name__=="__main__":
     save_period = config.train["save_period"]
 
     test_manager = TestManager(Env(**config.env), config.train["test_iteration"])
+    gif_manager = GIFManager(Env(**config.env))
     metric_manager = MetricManager()
     log_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
     purpose = None if "purpose" not in config.train.keys() else config.train["purpose"]
@@ -50,6 +51,9 @@ if __name__=="__main__":
 
         if training and (step % save_period == 0 or step == run_step - 1):
             agent.save(log_manager.path)
-
-
+        
+        if len(state.shape) == 4:
+#         if len(state.shape) == 4 and step % gif_period == 0:
+            gif_manager.make_gif(agent, step, config.agent["name"], config.env["name"])
+        
     env.close()
