@@ -46,7 +46,7 @@ class ICM(torch.nn.Module):
         x_forward = torch.cat((x_forward, a), axis=1)
         x_forward = self.forward_fc2(x_forward)
         
-        r_i = (self.eta * 0.5) * torch.sum(torch.square(x_forward - s_next), axis = 1)
+        r_i = (self.eta * 0.5) * torch.sum(torch.abs(x_forward - s_next), axis = 1)
         
         l_f = self.forward_loss(x_forward, s_next)
         
@@ -126,7 +126,7 @@ class ICM_CNN(torch.nn.Module):
         x_forward = torch.cat((x_forward, a), axis=1)
         x_forward = self.forward_fc2(x_forward)
         
-        r_i = (self.eta * 0.5) * torch.sum(torch.square(x_forward - s_next), axis = 1)
+        r_i = (self.eta * 0.5) * torch.sum(torch.abs(x_forward - s_next), axis = 1)
         
         l_f = self.forward_loss(x_forward, s_next)
         

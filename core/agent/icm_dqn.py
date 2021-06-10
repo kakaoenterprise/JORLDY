@@ -35,7 +35,7 @@ class ICMDQNAgent(DQNAgent):
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
             action = torch.argmax(self.network(torch.FloatTensor(state).to(self.device)), -1, keepdim=True).data.cpu().numpy()
-            
+        
         return action
     
                                   
@@ -49,15 +49,16 @@ class ICMDQNAgent(DQNAgent):
         
         #ICM 
         r_i, l_f, l_i = self.icm(state, action, next_state)
-        reward = self.extrinsic_coeff * reward + self.intrinsic_coeff * r_i.unsqueeze(1)
-                
+        reward = (self.extrinsic_coeff * reward) + (self.intrinsic_coeff * r_i.unsqueeze(1))
+        
         with torch.no_grad():
             max_Q = torch.max(q).item()
             next_q = self.target_network(next_state)
             target_q = reward + (1 - done) * self.gamma * next_q.max(1, keepdims=True).values
-            
+                
         # ICM
         loss_origin = F.smooth_l1_loss(q, target_q)
+
         loss = self.lamb * loss_origin + (self.beta * l_f) + ((1-self.beta) * l_i)
         
         self.optimizer.zero_grad()
@@ -67,9 +68,11 @@ class ICMDQNAgent(DQNAgent):
         self.num_learn += 1
         
         result = {
-            "loss" : loss.item(),
+            "loss" : loss_origin.item(),
             "max_Q": max_Q,
             "r_i": r_i.mean().item(),
+            'l_f': l_f.item(),
+            'l_i': l_i.item(),
         }
         return result
     

@@ -25,7 +25,7 @@ class RND(torch.nn.Module):
         t = F.elu(self.fc1_target(s_next))
         t = F.elu(self.fc2_target(t))
         
-        r_i = (self.eta * 0.5) * torch.sum(torch.square(p - t), axis = 1)
+        r_i = (self.eta * 0.5) * torch.sum(torch.abs(p - t), axis = 1)
         l_f = self.forward_loss(p, t)
         
         return r_i, l_f
@@ -71,7 +71,7 @@ class RND_CNN(torch.nn.Module):
         t = F.elu(self.conv4_target(t))
         t = t.view(t.size(0), -1)
         
-        r_i = (self.eta * 0.5) * torch.sum(torch.square(p - t), axis = 1)
+        r_i = (self.eta * 0.5) * torch.sum(torch.abs(p - t), axis = 1)
         
         l_f = self.forward_loss(p, t)
 

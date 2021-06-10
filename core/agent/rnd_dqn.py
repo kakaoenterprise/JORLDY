@@ -72,9 +72,10 @@ class RNDDQNAgent(DQNAgent):
         self.num_learn += 1
         
         result = {
-            "loss" : loss.item(),
+            "loss" : loss_origin.item(),
             "max_Q": max_Q,
             "r_i": r_i.mean().item(),
+            "l_f": l_f.item(),
         }
         return result
     

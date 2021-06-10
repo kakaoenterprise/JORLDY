@@ -21,6 +21,7 @@ agent = {
     "target_update_period": 500,
     # Parameters for Curiosity-driven Exploration
     "icm_network": "icm_cnn",
+    "action_type": "discrete",
     "beta": 0.2,
     "lamb": 1.0,
     "eta": 0.01,
