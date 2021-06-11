@@ -12,3 +12,6 @@ class BaseEnv(ABC):
     @abstractmethod
     def close(self):
         pass
+    
+    def recordable(self):
+        return False

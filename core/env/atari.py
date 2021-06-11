@@ -1,6 +1,6 @@
 import gym
 import numpy as np
-from .utils import ImgProcessor, GifMaker
+from .utils import ImgProcessor
 from .base import BaseEnv
 
 # https://pypi.org/project/gym-super-mario-bros/
@@ -26,7 +26,6 @@ class Atari(BaseEnv):
         self.img_height=img_height
         
         self.img_processor = ImgProcessor(gray_img, img_width, img_height)
-        self.gif_maker = GifMaker()
         
         self.stack_frame=stack_frame
         self.num_channel = 1 if self.gray_img else 3 
@@ -69,21 +68,16 @@ class Atari(BaseEnv):
         next_state, reward, done = map(lambda x: np.expand_dims(x, 0), [self.stacked_state, [reward], [done]])
         return (next_state, reward, done)
     
-    def reset_raw(self):
-        self.env.reset()
-        state, _, _, info = self.env.step(1)
-        
-        return state
-    
-    def step_raw(self, action):
-        action = np.asscalar(action)
-        next_state, reward, done, info = self.env.step(action)
-        
-        return (next_state, reward, done)
-    
     def close(self):
         self.env.close()
+    
+    def recordable(self):
+        return True
+    
+    def get_frame(self):
+        return self.env.ale.getScreenRGB2()
 
+    
 class Breakout(Atari):
     def __init__(self, **kwargs):
         super(Breakout, self).__init__('BreakoutDeterministic-v4', **kwargs)
@@ -129,3 +123,7 @@ class Mario(Atari):
         super(Mario, self).__init__('SuperMarioBros-v0', life_key='life' ,**kwargs)
         self.env = JoypadSpace(self.env, SIMPLE_MOVEMENT)
         self.action_size = self.env.action_space.n
+        
+    def get_frame(self):
+        return np.copy(self.env.screen)
+    
