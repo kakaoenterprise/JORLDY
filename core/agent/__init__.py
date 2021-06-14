@@ -8,6 +8,9 @@ from .rainbow import RainbowAgent
 from .rainbow_iqn import RainbowIQNAgent
 from .qrdqn import QRDQNAgent
 from .iqn import IQNAgent 
+from .icm_dqn import ICMDQNAgent
+from .icm_ppo import ICMPPOAgent
+from .rnd_dqn import RNDDQNAgent
 from .reinforce import REINFORCEAgent
 from .ppo import PPOAgent
 from .multistep import MultistepDQNAgent
@@ -15,9 +18,7 @@ from .vmpo import VMPOAgent
 from .mpo import MPOAgent
 
 import sys, os
-
 sys.path.append(os.path.abspath('../../'))
-
 
 class Agent:
     dictionary = {
@@ -33,6 +34,9 @@ class Agent:
     "rainbow_iqn": RainbowIQNAgent,
     "qrdqn": QRDQNAgent,
     "iqn": IQNAgent,
+    "icm_dqn": ICMDQNAgent,
+    "icm_ppo": ICMPPOAgent,
+    "rnd_dqn": RNDDQNAgent,
     "reinforce": REINFORCEAgent,
     "ppo": PPOAgent,
     "vmpo": VMPOAgent,
@@ -50,30 +54,3 @@ class Agent:
             raise Exception
         return self.dictionary[name](*args, **kwargs)
 
-
-'''
-class BaseAgent:
-    def __init__(self):
-        pass
-
-    def act(self, state):
-        return action
-
-    def learn(self):
-        return result
-    
-    def process(self, transitions):
-        result = None
-        # Process per step
-        
-        # Process per epi
-        if done :
-            pass
-        return result
-
-    def save(self, path):
-        pass
-
-    def load(self, path):
-        pass
-'''

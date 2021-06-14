@@ -31,6 +31,7 @@ train = {
     "print_period" : 5000,
     "save_period" : 50000,
     "test_iteration": 5,
+    "record" : True,
     # distributed setting
     "update_period" : 32,
     "num_worker" : 16,

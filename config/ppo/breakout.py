@@ -31,6 +31,8 @@ train = {
     "print_period" : 5000,
     "save_period" : 50000,
     "test_iteration": 10,
+    "record" : True,
+    "record_period" : 50000,
     # distributed setting
     "update_period" : agent["n_step"],
     "num_worker" : 16,

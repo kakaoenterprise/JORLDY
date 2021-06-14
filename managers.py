@@ -6,6 +6,7 @@ from collections import defaultdict
 from functools import reduce
 import datetime, time
 from collections import defaultdict, deque
+import imageio
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -33,7 +34,7 @@ class LogManager:
         self.writer = SummaryWriter(self.path)
         self.stamp = time.time()
         
-    def write_scalar(self, scalar_dict, step):
+    def write(self, scalar_dict, frames, step):
         for key, value in scalar_dict.items():
             self.writer.add_scalar(f"{self.id}/"+key, value, step)
             self.writer.add_scalar("all/"+key, value, step)
@@ -41,6 +42,11 @@ class LogManager:
                 time_delta = int(time.time() - self.stamp)
                 self.writer.add_scalar(f"{self.id}/{key}_per_time", value, time_delta)
                 self.writer.add_scalar(f"all/{key}_per_time", value, time_delta)
+        
+        if len(frames) > 0 :
+            write_path = os.path.join(self.path, f"{step}.gif")
+            imageio.mimwrite(write_path, frames, fps=60)
+            print(f"...Record episode to {write_path}...")
 
 class TimeManager:
     def __init__(self, n_mean = 20):
@@ -76,21 +82,35 @@ class TimeManager:
         
             
 class TestManager:
-    def __init__(self, iteration=10):
+    def __init__(self, env, iteration=10, record=False, record_period=1000000):
         assert iteration > 0
+        self.env = env
         self.iteration = iteration
+        self.record = record and env.recordable()
+        self.record_period = record_period
+        self.record_stamp = 0
+        self.time_t = 0
     
-    def test(self, agent, env):
+    def test(self, agent, step):
         scores = []
+        frames = []
+        self.record_stamp += step - self.time_t
+        self.time_t = step
+        record = self.record and self.record_stamp >= self.record_period
         for i in range(self.iteration):
             done = False
-            state = env.reset()
+            state = self.env.reset()
             while not done:
+                # record first iteration
+                if record and i == 0: 
+                    frames.append(self.env.get_frame())
                 action = agent.act(state, training=False)
-                state, reward, done = env.step(action)
-            scores.append(env.score)
+                state, reward, done = self.env.step(action)
+            scores.append(self.env.score)
             
-        return np.mean(scores)
+        if record:
+            self.record_stamp = 0
+        return np.mean(scores), frames
 
 class DistributedManager:
     def __init__(self, Env, env_config, Agent, agent_config, num_worker):
@@ -111,7 +131,7 @@ class DistributedManager:
         
     def terminate(self):
         ray.shutdown()
-    
+
 @ray.remote
 class Actor:
     def __init__(self, Env, env_config, agent, id):
@@ -130,4 +150,3 @@ class Actor:
     
     def sync(self, sync_item):
         self.agent.sync_in(**sync_item)
-

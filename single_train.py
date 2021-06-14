@@ -3,7 +3,7 @@ from managers import *
 from process import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.dqn.alien as config
+import config.ppo.breakout as config
 import torch.multiprocessing as mp
 
 if __name__=="__main__":
@@ -24,13 +24,15 @@ if __name__=="__main__":
     result_queue = mp.Queue()
     manage_sync_queue = mp.Queue(1)
     
-    test_manager_config = (config.train["test_iteration"],)
+    record = False if "record" not in config.train.keys() else config.train["record"]
+    record_period = run_step//10 if "record_period" not in config.train.keys() else config.train["record_period"]
+    test_manager_config = (Env(**config.env), config.train["test_iteration"], record, record_period)
     log_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
     purpose = None if "purpose" not in config.train.keys() else config.train["purpose"]
     log_manager_config = (config.env["name"], log_id, purpose)
     agent_config['device'] = "cpu"
     manage = mp.Process(target=manage_process,
-                        args=(Agent, agent_config, Env(**config.env), result_queue, manage_sync_queue,
+                        args=(Agent, agent_config, result_queue, manage_sync_queue,
                               run_step, print_period, save_period, MetricManager,
                               TestManager, test_manager_config,
                               LogManager, log_manager_config))
@@ -40,7 +42,6 @@ if __name__=="__main__":
         for step in range(1, run_step+1):
             action = agent.act(state, training=True)
             next_state, reward, done = env.step(action)
-
             result = agent.process([(state, action, reward, next_state, done)], step)
             result_queue.put((step, result))
 

@@ -1,7 +1,7 @@
-### DQN Alien Config ###
+### DQN Assault Config ###
 
 env = {
-    "name": "alien",
+    "name": "assault",
     "render": False,
     "gray_img": True,
     "img_width": 84,

@@ -1,4 +1,5 @@
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np 
 
@@ -15,6 +16,7 @@ class C51Agent(DQNAgent):
         self.delta_z = (self.v_max - self.v_min) / (self.num_support - 1)
         self.z = torch.linspace(self.v_min, self.v_max, self.num_support, device=self.device).view(1, -1)
         
+    @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
         epsilon = self.epsilon if training else self.epsilon_eval
@@ -22,14 +24,14 @@ class C51Agent(DQNAgent):
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            logits = self.network(torch.FloatTensor(state).to(self.device))
+            logits = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             _, q_action = self.logits2Q(logits)
-            action = torch.argmax(q_action, -1, keepdim=True).data.cpu().numpy()
+            action = torch.argmax(q_action, -1, keepdim=True).cpu().numpy()
         return action
     
     def learn(self):        
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
         
         logit = self.network(state)
         p_logit, q_action = self.logits2Q(logit)
@@ -70,7 +72,7 @@ class C51Agent(DQNAgent):
         min_logit = torch.min(logit).item()
         
         loss = -(target_dist*torch.clamp(p_action, min=1e-8).log()).sum(-1).mean()
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
         

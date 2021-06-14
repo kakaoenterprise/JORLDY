@@ -2,7 +2,7 @@ from core import *
 from managers import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
-import config.rainbow_iqn.breakout as config
+import config.ppo.breakout as config
 
 if __name__=="__main__":
     env = Env(**config.env)
@@ -19,9 +19,10 @@ if __name__=="__main__":
     print_period = config.train["print_period"]
     save_period = config.train["save_period"]
 
-    test_manager = TestManager(config.train["test_iteration"])
+    record = False if "record" not in config.train.keys() else config.train["record"]
+    record_period = run_step//10 if "record_period" not in config.train.keys() else config.train["record_period"]
+    test_manager = TestManager(Env(**config.env), config.train["test_iteration"], record, record_period)
     metric_manager = MetricManager()
-    time_manager = TimeManager()
     log_id = config.agent["name"] if "id" not in config.train.keys() else config.train["id"]
     purpose = None if "purpose" not in config.train.keys() else config.train["purpose"]
     log_manager = LogManager(config.env["name"], log_id, purpose)
@@ -43,14 +44,13 @@ if __name__=="__main__":
             state = env.reset()
 
         if step % print_period == 0:
-            score = test_manager.test(agent, env)
+            score, frames = test_manager.test(agent, step)
             metric_manager.append({"score": score})
             statistics = metric_manager.get_statistics()
             print(f"{episode} Episode / Step : {step} / {statistics}")
-            log_manager.write_scalar(statistics, step)
+            log_manager.write(statistics, frames, step)
 
         if training and (step % save_period == 0 or step == run_step - 1):
             agent.save(log_manager.path)
-
-
+        
     env.close()

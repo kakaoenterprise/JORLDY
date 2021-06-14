@@ -1,4 +1,5 @@
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np
 import copy
@@ -33,6 +34,7 @@ class IQNAgent(DQNAgent):
         self.sample_min = sample_min
         self.sample_max = sample_max
         
+    @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
         epsilon = self.epsilon if training else self.epsilon_eval
@@ -42,14 +44,14 @@ class IQNAgent(DQNAgent):
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            logits, _ = self.network(torch.FloatTensor(state).to(self.device), sample_min, sample_max)
+            logits, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device), sample_min, sample_max)
             _, q_action = self.logits2Q(logits)
-            action = torch.argmax(q_action, -1, keepdim=True).data.cpu().numpy()
+            action = torch.argmax(q_action, -1, keepdim=True).cpu().numpy()
         return action
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
         
         # Get Theta Pred, Tau
         logit, tau = self.network(state)
@@ -85,7 +87,7 @@ class IQNAgent(DQNAgent):
         max_logit = torch.max(logit).item()
         min_logit = torch.min(logit).item()
 
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
         

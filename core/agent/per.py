@@ -1,4 +1,5 @@
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 
 from .dqn import DQNAgent
@@ -16,7 +17,7 @@ class PERAgent(DQNAgent):
                 
     def learn(self):        
         transitions, weights, indices, sampled_p, mean_p = self.memory.sample(self.beta, self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
         
         eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action.view(-1).long()]
@@ -44,7 +45,7 @@ class PERAgent(DQNAgent):
         weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
                 
         loss = (weights * (td_error**2)).mean()
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
         

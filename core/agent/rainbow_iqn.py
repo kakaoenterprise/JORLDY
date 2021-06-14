@@ -1,7 +1,9 @@
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np
 import copy
+import time
 
 from core.network import Network
 from core.optimizer import Optimizer
@@ -71,6 +73,7 @@ class RainbowIQNAgent(RainbowAgent):
         # MultiStep
         self.memory = RainbowBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
         
+    @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
         sample_min = 0 if training else self.sample_min
@@ -79,14 +82,14 @@ class RainbowIQNAgent(RainbowAgent):
         if training and self.memory.size < max(self.batch_size, self.start_train_step):
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            logits, _ = self.network(torch.FloatTensor(state).to(self.device), training, sample_min, sample_max)
+            logits, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device), training, sample_min, sample_max)
             _, q_action = self.logits2Q(logits)
-            action = torch.argmax(q_action, -1, keepdim=True).data.cpu().numpy()
+            action = torch.argmax(q_action, -1, keepdim=True).cpu().numpy()
         return action
 
     def learn(self):
         transitions, weights, indices, sampled_p, mean_p = self.memory.sample(self.beta, self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
         
          # Get Theta Pred, Tau
         logit, tau = self.network(state, True)
@@ -137,7 +140,7 @@ class RainbowIQNAgent(RainbowAgent):
                     
         loss = (weights * loss).mean()
                 
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
         

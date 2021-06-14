@@ -1,4 +1,5 @@
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np 
 
@@ -17,6 +18,7 @@ class QRDQNAgent(DQNAgent):
         self.tau = torch.arange(min_tau, max_tau, 1/self.num_support, device=self.device).view(1, self.num_support)
         self.inv_tau = 1 - self.tau
         
+    @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
         epsilon = self.epsilon if training else self.epsilon_eval
@@ -24,14 +26,14 @@ class QRDQNAgent(DQNAgent):
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            logits = self.network(torch.FloatTensor(state).to(self.device))
+            logits = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             _, q_action = self.logits2Q(logits)
-            action = torch.argmax(q_action, -1, keepdim=True).data.cpu().numpy()
+            action = torch.argmax(q_action, -1, keepdim=True).cpu().numpy()
         return action
     
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
         
         # Get Theta Pred
         logit = self.network(state)
@@ -66,7 +68,7 @@ class QRDQNAgent(DQNAgent):
         max_logit = torch.max(logit).item()
         min_logit = torch.min(logit).item()
 
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
         
