@@ -12,6 +12,7 @@ from .reinforce import REINFORCEAgent
 from .ppo import PPOAgent
 from .multistep import MultistepDQNAgent
 from .vmpo import VMPOAgent
+from .mpo import MPOAgent
 
 import sys, os
 
@@ -35,6 +36,7 @@ class Agent:
     "reinforce": REINFORCEAgent,
     "ppo": PPOAgent,
     "vmpo": VMPOAgent,
+    "mpo": MPOAgent,
     }
     
     def __new__(self, name, *args, **kwargs):
