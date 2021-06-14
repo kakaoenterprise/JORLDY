@@ -3,6 +3,11 @@ import numpy as np
 from .utils import ImgProcessor
 from .base import BaseEnv
 
+# https://pypi.org/project/gym-super-mario-bros/
+from nes_py.wrappers import JoypadSpace
+import gym_super_mario_bros
+from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
+
 class Atari(BaseEnv):
     def __init__(self,
                  name,
@@ -19,7 +24,9 @@ class Atari(BaseEnv):
         self.gray_img=gray_img
         self.img_width=img_width
         self.img_height=img_height
+        
         self.img_processor = ImgProcessor(gray_img, img_width, img_height)
+        
         self.stack_frame=stack_frame
         self.num_channel = 1 if self.gray_img else 3 
         self.stacked_state = np.zeros([self.num_channel*stack_frame, img_height, img_width])
@@ -60,10 +67,17 @@ class Atari(BaseEnv):
         
         next_state, reward, done = map(lambda x: np.expand_dims(x, 0), [self.stacked_state, [reward], [done]])
         return (next_state, reward, done)
-
+    
     def close(self):
         self.env.close()
+    
+    def recordable(self):
+        return True
+    
+    def get_frame(self):
+        return self.env.ale.getScreenRGB2()
 
+    
 class Breakout(Atari):
     def __init__(self, **kwargs):
         super(Breakout, self).__init__('BreakoutDeterministic-v4', **kwargs)
@@ -103,3 +117,13 @@ class PrivateEye(Atari):
 class MontezumaRevenge(Atari):
     def __init__(self, **kwargs):
         super(MontezumaRevenge, self).__init__('MontezumaRevenge-v0', **kwargs)
+        
+class Mario(Atari):
+    def __init__(self, **kwargs):
+        super(Mario, self).__init__('SuperMarioBros-v0', life_key='life' ,**kwargs)
+        self.env = JoypadSpace(self.env, SIMPLE_MOVEMENT)
+        self.action_size = self.env.action_space.n
+        
+    def get_frame(self):
+        return np.copy(self.env.screen)
+    
