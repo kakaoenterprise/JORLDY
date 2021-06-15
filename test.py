@@ -1,5 +1,5 @@
 from core import *
-from managers import *
+from manager import *
 
 # import config.YOUR_AGENT.YOUR_ENV as config
 import config.dqn.cartpole as config
