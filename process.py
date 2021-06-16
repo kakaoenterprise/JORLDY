@@ -19,11 +19,12 @@ def interact_process(DistributedManager, distributed_manager_config,
 def manage_process(Agent, agent_config, result_queue, sync_queue,
                    run_step, print_period, save_period, MetricManager,
                    TestManager, test_manager_config,
-                   LogManager, log_manager_config):
+                   LogManager, log_manager_config, config_manager):
     agent = Agent(**agent_config)
     test_manager = TestManager(*test_manager_config)
     metric_manager = MetricManager()
     log_manager = LogManager(*log_manager_config)
+    config_manager.dump(log_manager.path)
     
     step, print_stamp, save_stamp = 0, 0, 0
     try:
