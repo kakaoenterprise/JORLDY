@@ -1,10 +1,10 @@
 import numpy as np 
 
 class TestManager:
-    def __init__(self, env, iteration=10, record=False, record_period=1000000):
-        assert iteration > 0
+    def __init__(self, env, iteration=10, record=None, record_period=None):
         self.env = env
-        self.iteration = iteration
+        self.iteration = iteration if iteration else 10
+        assert iteration > 0
         self.record = record and env.recordable()
         self.record_period = record_period
         self.record_stamp = 0

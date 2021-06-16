@@ -1,26 +1,31 @@
+import argparse
+
 from core import *
 from manager import *
 
-# import config.YOUR_AGENT.YOUR_ENV as config
-import config.dqn.cartpole as config
+# default_config_path = "config.YOUR_AGENT.YOUR_ENV"
+default_config_path = "config.ppo.breakout"
 
-if __name__=="__main__":
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=str, help='config.dqn.cartpole')
+    args, unknown = parser.parse_known_args()
+    config_path = args.config if args.config else default_config_path
+    config_manager = ConfigManager(config_path, unknown)
+    config = config_manager.config
+    
     env = Env(**config.env)
     agent = Agent(state_size=env.state_size,
                   action_size=env.action_size,
                   **config.agent)
 
-    load_path = config.train["load_path"]
-    assert load_path is not None
-    if load_path:
-        agent.load(load_path)
-
-    run_step = config.train["run_step"]
+    assert config.train.load_path
+    agent.load(config.train.load_path)
 
     episode, score = 0, 0
     state = env.reset()
-    for step in range(1, run_step+1):
-        action = agent.act(state, training)
+    for step in range(1, config.train.run_step+1):
+        action = agent.act(state, training=False)
         next_state, reward, done = env.step(action)
         score += reward
         state = next_state
