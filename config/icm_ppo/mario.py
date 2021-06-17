@@ -1,11 +1,11 @@
-### ICM PPO SpaceInvaders Config ###
+### ICM PPO Mario Config ###
 
 env = {
-    "name": "spaceinvaders",
+    "name": "mario",
     "render": False,
     "gray_img": True,
-    "img_width": 80,
-    "img_height": 80,
+    "img_width": 84,
+    "img_height": 84,
     "stack_frame": 4,
 }
 
@@ -17,9 +17,11 @@ agent = {
     "gamma":0.99,
     "batch_size":64,
     "n_step": 500,
-    "n_epoch": 10,
+    "n_epoch": 3,
     "_lambda": 0.95,
     "epsilon_clip": 0.1,
+    "vf_coef": 0.5,
+    "ent_coef": 0.0,
     # Parameters for Curiosity-driven Exploration
     "icm_network": "icm_cnn",
     "beta": 0.2,
@@ -32,11 +34,11 @@ agent = {
 train = {
     "training" : True,
     "load_path" : None,
-    "run_step" : 100000,
-    "print_period" : 1000,
-    "save_period" : 10000,
+    "run_step" : 100000000,
+    "print_period" : 50000,
+    "save_period" : 500000,
     "test_iteration": 10,
     # distributed setting
     "update_period" : agent["n_step"],
-    "num_worker" : 8,
+    "num_worker" : 16,
 }
