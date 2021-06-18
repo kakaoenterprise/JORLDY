@@ -131,6 +131,8 @@ class ICMPPOAgent(PPOAgent):
             'critic_loss' : critic_loss.item(),
             'loss' : loss.item(),
             'r_i' : r_i.mean().item(),
+            'l_f': l_f.item(),
+            'l_i': l_i.item(),
         }
         return result
 
