@@ -4,10 +4,10 @@ import torch.nn.functional as F
 from torch.distributions import Normal, Categorical
 import numpy as np
 
-from .reinforce import REINFORCEAgent
+from .ppo import PPOAgent
 from core.network import Network
 
-class ICMPPOAgent(REINFORCEAgent):
+class ICMPPOAgent(PPOAgent):
     def __init__(self,
                  state_size,
                  action_size,
@@ -115,7 +115,9 @@ class ICMPPOAgent(REINFORCEAgent):
                 entropy_loss = -(-log_pi).mean()
                 
                 # ICM
-                loss_origin = actor_loss + self.vf_coef * critic_loss + self.ent_coef * entopy_loss
+                _, l_f, l_i = self.icm(_state, _action, _next_state)
+                    
+                loss_origin = actor_loss + self.vf_coef * critic_loss + self.ent_coef * entropy_loss
                 loss = self.lamb * loss_origin + (self.beta * l_f) + ((1-self.beta) * l_i)
 
                 self.optimizer.zero_grad(set_to_none=True)
