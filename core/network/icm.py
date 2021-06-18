@@ -106,7 +106,7 @@ class ICM_CNN(torch.nn.Module):
             
     def forward(self, s, a, s_next):
         s = (s-(255.0/2))/(255.0/2)
-        s_next = (s-(255.0/2))/(255.0/2)
+        s_next = (s_next-(255.0/2))/(255.0/2)
         
         s = F.elu(self.conv1_sc(s))
         s = F.elu(self.conv2_sc(s))
