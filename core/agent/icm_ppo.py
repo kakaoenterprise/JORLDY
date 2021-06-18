@@ -114,7 +114,6 @@ class ICMPPOAgent(PPOAgent):
                 
                 entropy_loss = -(-log_pi).mean()
                 
-                
                 # ICM
                 _, l_f, l_i = self.icm(_state, _action, _next_state)
                     
