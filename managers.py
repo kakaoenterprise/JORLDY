@@ -138,12 +138,19 @@ class Actor:
         self.env = Env(id=id+1, **env_config)
         self.agent = agent.set_distributed(id)
         self.state = self.env.reset()
+        try:
+            self.action_size = self.env.action_size
+        except:
+            self.action_size = self.env.action_space.n
+            
     
     def run(self, step):
         transitions = []
         for t in range(step):
             action = self.agent.act(self.state, training=True)
-            next_state, reward, done = self.env.step(action)
+            
+            next_state, reward, done = self.env.step(action[:, :self.action_size])
+                
             transitions.append((self.state, action, reward, next_state, done))
             self.state = next_state if not done else self.env.reset()
         return transitions

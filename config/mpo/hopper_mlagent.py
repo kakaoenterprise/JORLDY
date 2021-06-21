@@ -6,23 +6,22 @@ env = {
 }
 
 agent = {
-    "name": "vmpo",
+    "name": "mpo",
     "network": "continuous_pi_v",
     "optimizer": "adam",
     "learning_rate": 5e-4,
     "gamma": 0.99,
+    "buffer_size": 50000,
     "batch_size":64,
-    "n_step": 200,
+    "n_step": 4,
     "n_epoch": 1,
-    "_lambda": 0.95,
+    "start_train_step": 2000,
+    "target_update_period": 1000,
     
     "min_eta": 1e-8,
     "min_alpha_mu": 1e-8,
     "min_alpha_sigma": 1e-8,
     
-#     "eps_eta": 0.01,
-#     "eps_alpha_mu": 0.05,
-#     "eps_alpha_sigma": 5*1e-5,
     "eps_eta": 0.01,
     "eps_alpha_mu": 0.01,
     "eps_alpha_sigma": 5*1e-5,

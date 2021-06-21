@@ -20,10 +20,13 @@ class ContinuousPiV(torch.nn.Module):
         mu = torch.clamp(self.mu(x), min=-8., max=8.)
         log_std = self.log_std(x)
         log_std = torch.clamp(log_std, min=-5., max=2.)
-        return mu, log_std.exp(), None #TODO: v->Q???
+        return mu, log_std.exp()
     
     def calculate_Q(self, x, a):
-        return self.Q(torch.concat([x, a], axis=-1))
+        x = F.relu(self.l1(x))
+        x = F.relu(self.l2(x))
+        
+        return self.Q(torch.cat([x, a], axis=-1))
     
     
 class DiscretePiV(torch.nn.Module):

@@ -2,26 +2,29 @@ import torch
 import torch.nn.functional as F
 from torch.distributions import Normal, Categorical
 import numpy as np
+import os, copy
 
 from .reinforce import REINFORCEAgent
+from .base import BaseAgent
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import Rollout
+from .utils import MultistepBuffer
 
 class MPOAgent(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
-                 network="discrete_pi_v",
+                 network="discrete_pi_q",
                  buffer_size=50000,
                  batch_size=64,
                  start_train_step=2000,
+                 target_update_period=500,
                  n_step=100,
                  n_epoch=5,
-                 _lambda=0.9,
+                 num_sample = 30,
                  min_eta=1e-8,
                  min_alpha_mu=1e-8,
-                 min_alpha_sigma = 1e-8,
+                 min_alpha_sigma=1e-8,
                  eps_eta=0.1,
                  eps_alpha_mu=0.1,
                  eps_alpha_sigma=0.1,
@@ -37,16 +40,24 @@ class MPOAgent(BaseAgent):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_type = network.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
+        self.action_size = action_size
 
         self.network = Network(network, state_size, action_size).to(self.device)
-
+        self.target_network = copy.deepcopy(self.network)
+        
         self.batch_size = batch_size
         self.n_step = n_step
         self.n_epoch = n_epoch
-        self._lambda = _lambda
 
+        self.num_learn = 0
         self.time_t = 0
-        self.learn_stamp = 0
+        self.start_train_step = start_train_step
+        self.target_update_stamp = 0
+        self.target_update_period = target_update_period
+        
+        self.num_sample = num_sample
+        
+        self.ones = None
         
         self.min_eta = torch.tensor(min_eta, device=self.device)
         self.min_alpha_mu = torch.tensor(min_alpha_mu, device=self.device)
@@ -65,17 +76,15 @@ class MPOAgent(BaseAgent):
         self.action_type = network.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
 
-        self.network = Network(network, state_size, action_size).to(self.device)
         self.optimizer = Optimizer(optimizer, list(self.network.parameters()) + 
                                    [self.eta, self.alpha_mu, self.alpha_sigma], lr=learning_rate)
 
         self.gamma = gamma
-        self.memory = ReplayBuffer(buffer_size)
-        
+        self.memory = MultistepBuffer(buffer_size, self.n_step)
+    
+    @torch.no_grad()
     def act(self, state, training=True):
         if self.action_type == "continuous":
-#             mu, std, _ = self.network(torch.FloatTensor(state).to(self.device))
-#             std = std if training else 0
             mu, std, _ = self.network(torch.FloatTensor(state).to(self.device))
             std = std if training else torch.zeros_like(std, device=self.device) + 1e-4
 
@@ -83,119 +92,158 @@ class MPOAgent(BaseAgent):
             z = m.sample()
             action = torch.tanh(z)
             action = action.data.cpu().numpy()
+            prob = torch.exp(m.log_prob(z).sum(axis=-1, keepdims=True))
         else:
             pi, _ = self.network(torch.FloatTensor(state).to(self.device))
             m = Categorical(pi)
-            action = m.sample().data.cpu().numpy()[..., np.newaxis]
-        return action
+#             action = m.sample().data.cpu().numpy()[..., np.newaxis]
+            action = m.sample().data.cpu().unsqueeze(-1)
+#             print(action)
+#             prob = pi.gather(1, action.long()).numpy()
+            prob = pi.numpy()
+            action = action.numpy()
+        return np.concatenate([action, prob], axis=-1)
+#         return torch.cat([action, prob], axis=1)
 
     def learn(self):
-        transitions = self.memory.rollout()
+        transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
-        
-        # calculate Q_old, pi_old
-        with torch.no_grad():
-            value = self.network(state)[-1]
-            next_value = self.network(next_state)[-1]
-            delta = reward + (1 - done) * self.gamma * next_value - value
-            adv = delta.clone() 
-            for t in reversed(range(len(adv))):
-                if t > 0 and (t + 1) % self.n_step == 0:
-                    continue
-                adv[t] += (1 - done[t]) * self.gamma * self._lambda * adv[t+1]
-            adv = (adv - adv.mean()) / (adv.std() + 1e-7)
-            ret = adv + value
+        if self.action_type == 'discrete':
+#             prob_b = action[:, :, -1:] # behavior policy probability
+            prob_b = action[:, :, 1:] # behavior policy probability
+            action = action[:, :, :1]
+        elif self.action_type == 'continuous':
+            prob_b = action[:, :, -self.action_size:] # behavior policy probability
+            action = action[:, :, :-self.action_size]
             
-            if self.action_type == "continuous":
-                mu, std, _ = self.network(state)
+        if self.action_type == "continuous":
+            with torch.no_grad():
+                mu, std = self.network(state)
                 m = Normal(mu, std+1e-7)
                 z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
                 log_pi = m.log_prob(z)
                 log_pi -= torch.log(1 - action.pow(2) + 1e-7)
+                log_pi = log_pi.sum(axis=-1)
+                
                 mu_old = mu
                 std_old = std
-            else:
-                pi, _ = self.network(state)
-                pi_old = pi
-                log_pi = torch.log(pi.gather(1, action.long()))
-                log_piall_old = torch.log(pi)
-
-            log_pi_old = log_pi
-        
-        # start train iteration
-        idxs = np.arange(len(reward))
-        for _ in range(self.n_epoch):
-            np.random.shuffle(idxs)
-            for start in range(0, len(reward), self.batch_size):
-                end = start + self.batch_size
-                idx = idxs[start:end]
-
-                _state, _action, _ret, _next_state, _done, _adv, _log_pi_old =\
-                    map(lambda x: x[idx], [state, action, ret, next_state, done, adv, log_pi_old])
-                if self.action_type == "continuous":
-                    _mu_old, _std_old = map(lambda x: x[idx], [mu_old, std_old])
-                else: 
-                    _log_piall_old, _pi_old = map(lambda x: x[idx], [log_piall_old, pi_old])
-
-                # select top 50% of advantages
-                idx_tophalf = _adv > _adv.median()
-                tophalf_adv = _adv[idx_tophalf]
-                # calculate psi
-                exp_adv_eta = torch.exp(tophalf_adv / self.eta)
-                psi = exp_adv_eta / torch.sum(exp_adv_eta.detach()) # TODO: is it right to detach() the denominator here?
-
-                value = self.network(_state)[-1]
-                critic_loss = F.mse_loss(value, _ret).mean()
+                pi_old = torch.exp(log_pi)
                 
-                # calculate loss for eta
-                eta_loss = self.eta * self.eps_eta + torch.log(torch.mean(exp_adv_eta))
+                Qt_a = self.target_network.calculate_Q(state, action)
+                
+                next_mu, next_std = self.network(next_state)
+                m = Normal(next_mu, next_std+1e-7)
+                z = m.sample((self.num_sample,)) # (num_sample, batch_size, len_tr, dim_action)
+                next_action = torch.tanh(z).data.cpu().numpy()
+#                 prob_next = torch.exp(m.log_prob(z).sum(axis=-1))
+                
+                Qt_next = self.target_network.calculate_Q(next_state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), next_action) # (num_sample, batch_size, len_tr, 1)
+                
+                prob_t = pi_old
+                
+                # calculate Qret for Retrace
+                if self.ones == None: self.ones = torch.ones(prob_t.shape).to(self.device)
+                c = torch.min(self.ones, prob_t / prob_b)
+                
+                Qret = reward + Qt_next.mean(axis=0) - Qt_a
+                for i in reversed(range(reward.shape[1]-1)):
+                    Qret[:, i] += self.gamma * c[:, i+1] * Qret[:, i+1]
+                
+                Qret += Qt_a
+                
+            mu, std = self.network(state)
+            Q = self.network.calculate_Q(state, action)
+            m = Normal(mu, std+1e-7)
+            z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
+            log_pi = m.log_prob(z)
+            log_pi -= torch.log(1 - action.pow(2) + 1e-7)
+            log_pi = log_pi.sum(axis=-1)
+            pi = torch.exp(log_pi)
+            
+            z_add = m.sample((self.num_sample, )) # (num_sample, batch_size, len_tr, dim_action)
+            action_add = torch.tanh(z_add)
+            log_pi_add = m.log_prob(z_add)
+            log_pi_add -= torch.log(1 - action_add.pow(2) + 1e-7)
+            log_pi_add = log_pi_add.sum(axis=-1)
+            Q_add = self.network.calculate_Q(state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), action_add)
+            
+            critic_loss = F.mse_loss(Q, Qret).mean()
+            
+            exp_Q_eta = torch.exp(Q.detach() / self.eta)
+            exp_Q_eta_add = torch.exp(Q_add.detach() / self.eta)
+            q = pi * exp_Q_eta / torch.mean(exp_Q_eta_add.detach(), axis=0)
+            
+            actor_loss = -torch.sum(q.detach() * torch.log(pi))
+            
+            eta_loss = self.eta * self.eps_eta + \
+                       self.eta * torch.mean(torch.log(exp_Q_eta_add.mean(axis=0)))
+            
+            ss = 1. / (std**2) # (batch_size, len_tr, action_dim)
+            ss_old = 1. / (std_old ** 2)
 
-                if self.action_type == "continuous":
-                    mu, std, _ = self.network(_state)
-                    m = Normal(mu, std+1e-7)
-                    z = torch.atanh(torch.clamp(_action, -1+1e-7, 1-1e-7))
-                    log_pi = m.log_prob(z)
-                    log_pi -= torch.log(1 - _action.pow(2) + 1e-7)
-                else:
-                    pi, _ = self.network(_state)
-                    log_pi = torch.log(pi.gather(1, _action.long()))
-                    log_piall = torch.log(pi)
+            # mu
+            d_mu = mu - mu_old.detach() # (batch_size, len_tr, action_dim)
+            KLD_mu = 0.5 * torch.sum(d_mu* 1./ss_old.detach() * d_mu, axis = -1)
+            mu_loss = torch.mean(self.alpha_mu * (self.eps_alpha_mu - KLD_mu.detach()) + \
+                                 self.alpha_mu.detach() * KLD_mu)
 
-                # calculate policy loss (actor_loss)
-                tophalf_logpi = log_pi[idx_tophalf.squeeze(), :]               
-                actor_loss = -torch.sum(psi.detach().unsqueeze(1) * tophalf_logpi)
+            # sigma
+            KLD_sigma = 0.5 * (torch.sum(1./ss * ss_old.detach(), axis = -1) - \
+                               ss.shape[-1] + \
+                               torch.log(torch.prod(ss, axis = -1)/torch.prod(ss_old.detach(), axis = -1)))
+            sigma_loss = torch.mean(self.alpha_sigma * (self.eps_alpha_sigma - KLD_sigma.detach()) + \
+                                 self.alpha_sigma.detach() * KLD_sigma)
 
-                # calculate loss for alpha
-                # NOTE: assumes that std are in the same shape as mu (hence vectors)
-                #       hence each dimension of Gaussian distribution is independent
-                if self.action_type == "continuous":
-                    ss = 1. / (std**2) # (batch_size * action_dim)
-                    ss_old = 1. / (_std_old ** 2) # (batch_size * action_dim)
+            alpha_loss = mu_loss + sigma_loss
+                
+        else:
+            with torch.no_grad():
+                # calculate Q_ret using Retrace
+                _, Qt = self.target_network(state) # Q_target
+                _, Qt_next = self.target_network(next_state)
+                pi, _ = self.network(state)
+                pi_next, _ = self.network(next_state)
 
-                    # mu
-                    d_mu = mu - _mu_old.detach() # (batch_size * action_dim)
-                    KLD_mu = 0.5 * torch.sum(d_mu* 1./ss_old.detach() * d_mu, axis = 1)
-                    mu_loss = torch.mean(self.alpha_mu * (self.eps_alpha_mu - KLD_mu.detach()) + \
-                                         self.alpha_mu.detach() * KLD_mu)
+                Qt_a = Qt.gather(2, action.long()) # (batch_size, len_tr, 1)
+                prob_t = pi.gather(2, action.long()) # (batch_size, len_tr, 1), target policy probability
+#                 Qt_a = Qt # (batch_size, len_tr, action_dim)
+#                 prob_t = pi # (batch_size, len_tr, action_dim), target policy probability
+                
+                if self.ones == None: self.ones = torch.ones(prob_t.shape).to(self.device)
 
-                    # sigma
-                    KLD_sigma = 0.5 * ((torch.sum(1./ss * ss_old.detach(), axis = 1) - ss.shape[-1] + torch.log(torch.prod(ss, axis = 1)/torch.prod(ss_old.detach(), axis = 1))))
-                    sigma_loss = torch.mean(self.alpha_sigma * (self.eps_alpha_sigma - KLD_sigma.detach()) + \
-                                         self.alpha_sigma.detach() * KLD_sigma)
+                c = torch.min(self.ones, prob_t/prob_b.gather(2, action.long())) # (batch_size, len_tr, 1), prod of importance ratio and gamma
+                Qret = reward + torch.sum(pi_next * Qt_next, axis=2).unsqueeze(2) - Qt_a
+                for i in reversed(range(reward.shape[1]-1)): # along the trajectory length
+                    Qret[:, i] += self.gamma * c[:, i+1] * Qret[:, i+1]
 
-                    alpha_loss = mu_loss + sigma_loss
-                else:
-                    KLD_pi = _pi_old.detach() * (_log_pi_old.detach() - log_pi)
-                    KLD_pi = torch.sum(KLD_pi, axis = len(_pi_old.shape)-1) # TODO: need to sum over all the possible state-action pairs
-                    alpha_loss = torch.mean(self.alpha_mu * (self.eps_alpha_mu - KLD_pi.detach()) + \
-                                            self.alpha_mu.detach() * KLD_pi)
+                Qret += Qt_a
+                pi_old = pi
+                
+            pi, Q = self.network(state) # pi,Q: (batch_size, len_tr, dim_action)
+            Q_a = Q.gather(2, action.long())
+            critic_loss = F.mse_loss(Q_a, Qret).mean()
+            
+            exp_Q_eta = torch.exp(Q / self.eta)
+            q = exp_Q_eta / torch.sum(exp_Q_eta.detach(), axis = 2, keepdims=True)
+            
+            actor_loss = -torch.sum(q.detach() * torch.log(pi))
+            
+            eta_loss = self.eta * self.eps_eta + \
+                       self.eta * torch.mean(torch.log(torch.sum(pi * exp_Q_eta, axis=2)))
+            
+            KLD_pi = pi_old.detach() * (torch.log(pi_old.detach()) - torch.log(pi))
+            KLD_pi = torch.sum(KLD_pi, axis = len(pi_old.shape)-1)
+            alpha_loss = torch.mean(self.alpha_mu * (self.eps_alpha_mu - KLD_pi.detach()) + \
+                                    self.alpha_mu.detach() * KLD_pi)
 
-                loss = critic_loss + actor_loss + eta_loss + alpha_loss
+        loss = critic_loss + actor_loss + eta_loss + alpha_loss
 
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
-                self.reset_lgr_muls()
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+        self.reset_lgr_muls()
+        
+        self.num_learn += 1
 
         result = {
             'actor_loss' : actor_loss.item(),
@@ -214,17 +262,38 @@ class MPOAgent(BaseAgent):
         self.alpha_mu.data = torch.max(self.alpha_mu, self.min_alpha_mu)
         self.alpha_sigma.data = torch.max(self.alpha_sigma, self.min_alpha_sigma)
         
+    def update_target(self):
+        self.target_network.load_state_dict(self.network.state_dict())
+        
+    def save(self, path):
+        print(f"...Save model to {path}...")
+        torch.save({
+            "network" : self.network.state_dict(),
+            "optimizer" : self.optimizer.state_dict(),
+        }, os.path.join(path,"ckpt"))
+        
+    def load(self, path):
+        print(f"...Load model from {path}...")
+        checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=self.device)
+        self.network.load_state_dict(checkpoint["network"])
+        self.target_network = copy.deepcopy(self.network)
+        self.optimizer.load_state_dict(checkpoint["optimizer"])
+        
     def process(self, transitions, step):
         result = {}
+        
         # Process per step
         self.memory.store(transitions)
         delta_t = step - self.time_t
         self.time_t = step
-        self.learn_stamp += delta_t
+        self.target_update_stamp += delta_t
         
-        # Process per epi
-        if self.learn_stamp >= self.n_step :
+        if self.memory.size > self.batch_size and self.time_t >= self.start_train_step:
             result = self.learn()
-            self.learn_stamp = 0
+            
+        if self.num_learn > 0 and \
+           self.target_update_stamp > self.target_update_period:
+            self.update_target()
+            self.target_update_stamp = 0
         
         return result
