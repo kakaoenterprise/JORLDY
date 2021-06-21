@@ -11,11 +11,8 @@ class ICM(torch.nn.Module):
         
         feature_size = 256
         
-        self.fc1_sc = torch.nn.Linear(self.D_in, 256)
-        self.fc2_sc = torch.nn.Linear(256, feature_size)
-        
-        self.fc1_sn = torch.nn.Linear(self.D_in, 256)
-        self.fc2_sn = torch.nn.Linear(256, feature_size)
+        self.fc1 = torch.nn.Linear(self.D_in, 256)
+        self.fc2 = torch.nn.Linear(256, feature_size)
         
         self.inverse_fc1 = torch.nn.Linear(2*feature_size, 256)
         self.inverse_fc2 = torch.nn.Linear(256, self.D_out)
@@ -34,11 +31,11 @@ class ICM(torch.nn.Module):
             self.inverse_loss = torch.nn.MSELoss()
             
     def forward(self, s, a, s_next):
-        s = F.elu(self.fc1_sc(s))
-        s = F.elu(self.fc2_sc(s))
+        s = F.elu(self.fc1(s))
+        s = F.elu(self.fc2(s))
 
-        s_next = F.elu(self.fc1_sc(s_next))
-        s_next = F.elu(self.fc2_sc(s_next))
+        s_next = F.elu(self.fc1(s_next))
+        s_next = F.elu(self.fc2(s_next))
         
         # Forward Model
         x_forward = torch.cat((s, a), axis=1)
@@ -71,16 +68,11 @@ class ICM_CNN(torch.nn.Module):
         self.eta = eta
         self.action_type = action_type
         
-        self.conv1_sc = torch.nn.Conv2d(in_channels=self.D_in[0], out_channels=32, kernel_size=3, stride=2)
-        self.conv2_sc = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
-        self.conv3_sc = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
-        self.conv4_sc = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
-        
-        self.conv1_sn = torch.nn.Conv2d(in_channels=self.D_in[0], out_channels=32, kernel_size=3, stride=2)
-        self.conv2_sn = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
-        self.conv3_sn = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
-        self.conv4_sn = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
-        
+        self.conv1 = torch.nn.Conv2d(in_channels=self.D_in[0], out_channels=32, kernel_size=3, stride=2)
+        self.conv2 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
+        self.conv3 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
+        self.conv4 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
+
         dim1 = ((self.D_in[1] - 3)//2 + 1, (self.D_in[2] - 3)//2 + 1)
         dim2 = ((dim1[0] - 3)//2 + 1, (dim1[1] - 3)//2 + 1)
         dim3 = ((dim2[0] - 3)//2 + 1, (dim2[1] - 3)//2 + 1)
@@ -108,16 +100,16 @@ class ICM_CNN(torch.nn.Module):
         s = (s-(255.0/2))/(255.0/2)
         s_next = (s_next-(255.0/2))/(255.0/2)
         
-        s = F.elu(self.conv1_sc(s))
-        s = F.elu(self.conv2_sc(s))
-        s = F.elu(self.conv3_sc(s))
-        s = F.elu(self.conv4_sc(s))
+        s = F.elu(self.conv1(s))
+        s = F.elu(self.conv2(s))
+        s = F.elu(self.conv3(s))
+        s = F.elu(self.conv4(s))
         s = s.view(s.size(0), -1)
         
-        s_next = F.elu(self.conv1_sn(s_next))
-        s_next = F.elu(self.conv2_sn(s_next))
-        s_next = F.elu(self.conv3_sn(s_next))
-        s_next = F.elu(self.conv4_sn(s_next))
+        s_next = F.elu(self.conv1(s_next))
+        s_next = F.elu(self.conv2(s_next))
+        s_next = F.elu(self.conv3(s_next))
+        s_next = F.elu(self.conv4(s_next))
         s_next = s_next.view(s_next.size(0), -1)
         
         # Forward Model

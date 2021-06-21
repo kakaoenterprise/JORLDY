@@ -25,7 +25,7 @@ agent = {
     "beta": 0.2,
     "lamb": 0.1,
     "eta": 0.01,
-    "extrinsic_coeff": 1.0,
+    "extrinsic_coeff": 0.0,
     "intrinsic_coeff": 1.0,
 }
 

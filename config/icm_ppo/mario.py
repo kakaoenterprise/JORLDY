@@ -28,16 +28,16 @@ agent = {
     "lamb": 1.0,
     "eta": 0.01,
     "extrinsic_coeff": 1.0,
-    "intrinsic_coeff": 0.01,
+    "intrinsic_coeff": 1.0,
 }
 
 train = {
     "training" : True,
     "load_path" : None,
     "run_step" : 100000000,
-    "print_period" : 50000,
+    "print_period" : 5000,
     "save_period" : 500000,
-    "test_iteration": 10,
+    "test_iteration": 3,
     # distributed setting
     "update_period" : agent["n_step"],
     "num_worker" : 16,
