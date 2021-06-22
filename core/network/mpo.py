@@ -25,8 +25,9 @@ class ContinuousPiQ(torch.nn.Module):
     def calculate_Q(self, x, a):
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
+        x = torch.cat([x, a], axis=-1)
         
-        return self.Q(torch.cat([x, a], axis=-1))
+        return self.Q(x)
     
     
 class DiscretePiQ(torch.nn.Module):

@@ -1,4 +1,4 @@
-### PPO Hopper Config ###
+### MPO Hopper Config ###
 
 env = {
     "name": "hopper_mlagent",
@@ -7,13 +7,15 @@ env = {
 
 agent = {
     "name": "mpo",
-    "network": "continuous_pi_v",
+    "network": "continuous_pi_q",
     "optimizer": "adam",
     "learning_rate": 5e-4,
     "gamma": 0.99,
     "buffer_size": 50000,
-    "batch_size":64,
-    "n_step": 4,
+#     "batch_size": 64,
+    "batch_size": 32,
+#     "n_step": 4,
+    "n_step": 8,
     "n_epoch": 1,
     "start_train_step": 2000,
     "target_update_period": 1000,

@@ -38,6 +38,7 @@ class MPOAgent(BaseAgent):
                  ):
 
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.need_past_pi = True
         self.action_type = network.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
         self.action_size = action_size
@@ -81,11 +82,20 @@ class MPOAgent(BaseAgent):
 
         self.gamma = gamma
         self.memory = MultistepBuffer(buffer_size, self.n_step)
+        
+    def check_nan(self, v, name=""):
+        if v.isnan().any():
+            print(f"### [MPO] NaN ERROR: {name} ###")
+            print(v[v.isnan()])
     
     @torch.no_grad()
     def act(self, state, training=True):
         if self.action_type == "continuous":
-            mu, std, _ = self.network(torch.FloatTensor(state).to(self.device))
+            mu, std = self.network(torch.FloatTensor(state).to(self.device))
+            
+            self.check_nan(mu, 'MU')
+            self.check_nan(std, 'STD')
+            
             std = std if training else torch.zeros_like(std, device=self.device) + 1e-4
 
             m = Normal(mu, std)
@@ -108,22 +118,27 @@ class MPOAgent(BaseAgent):
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+
         if self.action_type == 'discrete':
 #             prob_b = action[:, :, -1:] # behavior policy probability
             prob_b = action[:, :, 1:] # behavior policy probability
             action = action[:, :, :1]
         elif self.action_type == 'continuous':
-            prob_b = action[:, :, -self.action_size:] # behavior policy probability
-            action = action[:, :, :-self.action_size]
+            prob_b = action[:, :, -1:] # behavior policy probability
+            action = action[:, :, :self.action_size]
             
         if self.action_type == "continuous":
             with torch.no_grad():
                 mu, std = self.network(state)
+                
+                self.check_nan(mu, 'MU')
+                self.check_nan(std, 'STD')
+                
                 m = Normal(mu, std+1e-7)
                 z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
                 log_pi = m.log_prob(z)
                 log_pi -= torch.log(1 - action.pow(2) + 1e-7)
-                log_pi = log_pi.sum(axis=-1)
+                log_pi = log_pi.sum(axis=-1, keepdims=True)
                 
                 mu_old = mu
                 std_old = std
@@ -134,7 +149,7 @@ class MPOAgent(BaseAgent):
                 next_mu, next_std = self.network(next_state)
                 m = Normal(next_mu, next_std+1e-7)
                 z = m.sample((self.num_sample,)) # (num_sample, batch_size, len_tr, dim_action)
-                next_action = torch.tanh(z).data.cpu().numpy()
+                next_action = torch.tanh(z)
 #                 prob_next = torch.exp(m.log_prob(z).sum(axis=-1))
                 
                 Qt_next = self.target_network.calculate_Q(next_state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), next_action) # (num_sample, batch_size, len_tr, 1)
@@ -152,19 +167,23 @@ class MPOAgent(BaseAgent):
                 Qret += Qt_a
                 
             mu, std = self.network(state)
+            
+            self.check_nan(mu, 'MU')
+            self.check_nan(std, 'STD')
+            
             Q = self.network.calculate_Q(state, action)
             m = Normal(mu, std+1e-7)
             z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
             log_pi = m.log_prob(z)
             log_pi -= torch.log(1 - action.pow(2) + 1e-7)
-            log_pi = log_pi.sum(axis=-1)
+            log_pi = log_pi.sum(axis=-1, keepdims=True)
             pi = torch.exp(log_pi)
             
             z_add = m.sample((self.num_sample, )) # (num_sample, batch_size, len_tr, dim_action)
             action_add = torch.tanh(z_add)
             log_pi_add = m.log_prob(z_add)
             log_pi_add -= torch.log(1 - action_add.pow(2) + 1e-7)
-            log_pi_add = log_pi_add.sum(axis=-1)
+            log_pi_add = log_pi_add.sum(axis=-1, keepdims=True)
             Q_add = self.network.calculate_Q(state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), action_add)
             
             critic_loss = F.mse_loss(Q, Qret).mean()
