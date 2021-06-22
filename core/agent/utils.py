@@ -47,11 +47,10 @@ class MultistepBuffer(ReplayBuffer):
         self.n_step = n_step
         
     def prepare_nstep(self, batch):
-        state = batch[0][0]
-        next_state = batch[-1][3]
-
+        state = np.stack([b[0] for b in batch], axis = 1)
         action = np.stack([b[1] for b in batch], axis = 1)
         reward = np.stack([b[2] for b in batch], axis = 1)
+        next_state = np.stack([b[3] for b in batch], axis = 1)
         done = np.stack([b[4] for b in batch], axis = 1)
 
         return (state, action, reward, next_state, done)

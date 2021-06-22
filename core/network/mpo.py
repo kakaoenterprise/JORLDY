@@ -1,9 +1,9 @@
 import torch
 import torch.nn.functional as F
 
-class ContinuousPiV(torch.nn.Module):
+class ContinuousPiQ(torch.nn.Module):
     def __init__(self, D_in, D_out, D_hidden=512):
-        super(ContinuousPiV, self).__init__()
+        super(ContinuousPiQ, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
         
@@ -29,9 +29,9 @@ class ContinuousPiV(torch.nn.Module):
         return self.Q(torch.cat([x, a], axis=-1))
     
     
-class DiscretePiV(torch.nn.Module):
+class DiscretePiQ(torch.nn.Module):
     def __init__(self, D_in, D_out, D_hidden=512):
-        super(DiscretePiV, self).__init__()
+        super(DiscretePiQ, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
         
@@ -46,9 +46,9 @@ class DiscretePiV(torch.nn.Module):
         return F.softmax(self.pi(x), dim=-1), self.Q(x)
     
     
-class ContinuousPiV_CNN(torch.nn.Module):
+class ContinuousPiQ_CNN(torch.nn.Module):
     def __init__(self, D_in, D_out, D_hidden=512):
-        super(ContinuousPiV_CNN, self).__init__()
+        super(ContinuousPiQ_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
         
@@ -78,9 +78,9 @@ class ContinuousPiV_CNN(torch.nn.Module):
         return self.mu(x), log_std.exp(), self.v(x) #TODO: v->Q????
     
     
-class DiscretePiV_CNN(torch.nn.Module):
+class DiscretePiQ_CNN(torch.nn.Module):
     def __init__(self, D_in, D_out, D_hidden=512):
-        super(DiscretePiV_CNN, self).__init__()
+        super(DiscretePiQ_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
         

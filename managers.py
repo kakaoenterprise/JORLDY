@@ -105,7 +105,11 @@ class TestManager:
                 if record and i == 0: 
                     frames.append(self.env.get_frame())
                 action = agent.act(state, training=False)
-                state, reward, done = self.env.step(action)
+#                 state, reward, done = self.env.step(action)
+                if self.env.mode ==  'discrete':
+                    state, reward, done = self.env.step(action[:, :1].astype(np.long))
+                elif self.env.mode == 'continuous':
+                    state, reward, done = self.env.step(action[:, :self.action_size])
             scores.append(self.env.score)
             
         if record:
@@ -136,6 +140,7 @@ class DistributedManager:
 class Actor:
     def __init__(self, Env, env_config, agent, id):
         self.env = Env(id=id+1, **env_config)
+        self.env_config = env_config
         self.agent = agent.set_distributed(id)
         self.state = self.env.reset()
         try:
@@ -149,7 +154,10 @@ class Actor:
         for t in range(step):
             action = self.agent.act(self.state, training=True)
             
-            next_state, reward, done = self.env.step(action[:, :self.action_size])
+            if self.env.mode ==  'discrete':
+                next_state, reward, done = self.env.step(action[:, :1].astype(np.long))
+            elif self.env.mode == 'continuous':
+                next_state, reward, done = self.env.step(action[:, :self.action_size])
                 
             transitions.append((self.state, action, reward, next_state, done))
             self.state = next_state if not done else self.env.reset()

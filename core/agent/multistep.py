@@ -17,6 +17,9 @@ class MultistepDQNAgent(DQNAgent):
 
         transitions = self.memory.sample(self.batch_size)
         state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
+        state = state[0]
+        next_state = next_state[-1]
+        
         eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action[:, 0].view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)

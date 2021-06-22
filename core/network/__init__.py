@@ -9,6 +9,7 @@ from .rnd import *
 from .sac import *
 from .reinforce import *
 from .ppo import *
+from .mpo import *
 
 class Network:
     dictionary = {
@@ -36,6 +37,10 @@ class Network:
     "discrete_pi_v": DiscretePiV,
     "continuous_pi_v_cnn": ContinuousPiV_CNN,
     "discrete_pi_v_cnn": DiscretePiV_CNN,
+    "continuous_pi_q": ContinuousPiQ,
+    "discrete_pi_q": DiscretePiQ,
+    "continuous_pi_q_cnn": ContinuousPiQ_CNN,
+    "discrete_pi_q_cnn": DiscretePiQ_CNN,
     }
     
     def __new__(self, name, *args, **kwargs):
