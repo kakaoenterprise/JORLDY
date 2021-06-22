@@ -13,7 +13,7 @@ agent = {
     "gamma": 0.99,
     "batch_size":64,
     "n_step": 200,
-    "n_epoch": 1,
+    "n_epoch": 2,
     "_lambda": 0.95,
     
     "min_eta": 1e-8,
@@ -35,7 +35,7 @@ agent = {
 train = {
     "training" : True,
     "load_path" : None,
-    "run_step" : 200000,
+    "run_step" : 100000,
     "print_period" : 1000,
     "save_period" : 10000,
     "test_iteration": 10,

@@ -147,7 +147,7 @@ class VMPOAgent(REINFORCEAgent):
                 critic_loss = F.mse_loss(value, _ret).mean()
                 
                 # calculate loss for eta
-                eta_loss = self.eta * self.eps_eta + torch.log(torch.mean(exp_adv_eta))
+                eta_loss = self.eta * self.eps_eta + self.eta * torch.log(torch.mean(exp_adv_eta))
 
                 if self.action_type == "continuous":
                     mu, std, _ = self.network(_state)
@@ -185,7 +185,7 @@ class VMPOAgent(REINFORCEAgent):
                     alpha_loss = mu_loss + sigma_loss
                 else:
                     KLD_pi = _pi_old.detach() * (_log_pi_old.detach() - log_pi)
-                    KLD_pi = torch.sum(KLD_pi, axis = len(_pi_old.shape)-1) # TODO: need to sum over all the possible state-action pairs
+                    KLD_pi = torch.sum(KLD_pi, axis = len(_pi_old.shape)-1)
                     alpha_loss = torch.mean(self.alpha_mu * (self.eps_alpha_mu - KLD_pi.detach()) + \
                                             self.alpha_mu.detach() * KLD_pi)
 

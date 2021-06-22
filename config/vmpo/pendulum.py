@@ -26,11 +26,11 @@ agent = {
 #     "eps_eta": 0.01,
 #     "eps_alpha_mu": 0.05,
 #     "eps_alpha_sigma": 5*1e-5,
-    "eps_eta": 0.02,
-    "eps_alpha_mu": 0.1,
+    "eps_eta": 0.01,
+    "eps_alpha_mu": 0.01,
     "eps_alpha_sigma": 5*1e-5,
     
-    "eta": 4.0,
+    "eta": 1.0,
     "alpha_mu": 1.0,
     "alpha_sigma": 1.0,
 }
