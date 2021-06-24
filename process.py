@@ -43,7 +43,7 @@ def manage_process(Agent, agent_config, result_queue, sync_queue,
                 metric_manager.append({"score": score})
                 statistics = metric_manager.get_statistics()
                 print(f"Step : {step} / {statistics}")
-                log_manager.write(statistics, frames, step)
+                log_manager.write(statistics, frames, score, step)
                 print_stamp = 0
             if save_stamp >= save_period or step >= run_step:
                 agent.save(log_manager.path)
