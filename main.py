@@ -51,7 +51,7 @@ if __name__ == "__main__":
             metric_manager.append({"score": score})
             statistics = metric_manager.get_statistics()
             print(f"{episode} Episode / Step : {step} / {statistics}")
-            log_manager.write(statistics, frames, step)
+            log_manager.write(statistics, frames, score, step)
 
         if config.train.training and \
             (step % config.train.save_period == 0 or step == config.train.run_step - 1):
