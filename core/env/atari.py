@@ -20,7 +20,9 @@ class Atari(BaseEnv):
                  img_height=84,
                  stack_frame=4,
                  id=0,
-                 life_key='ale.lives'
+                 life_key='ale.lives',
+                 no_op=False,
+                 reward_clip=True,
                  ):
         self.id = id
         self.render=render
@@ -38,9 +40,11 @@ class Atari(BaseEnv):
         self.state_size = [stack_frame, img_height, img_width]
         self.action_size = self.env.action_space.n
         self.score = 0
-        self.no_op_max = 30
         self.life = 0
         self.life_key = life_key
+        self.no_op = no_op
+        self.no_op_max = 30
+        self.reward_clip = reward_clip
         
         print(f"{name} Start!")
         print(f"state size: {self.state_size}")
@@ -51,14 +55,15 @@ class Atari(BaseEnv):
         state, reward, _, info = self.env.step(1)
         self.score = reward
         self.life = info[self.life_key]
-
-        for _ in range(np.random.randint(0, self.no_op_max)):
-            state, reward, _, info = self.env.step(0)
-            self.score += reward
-            if self.life != info[self.life_key]:
-                state, reward, _, _ = self.env.step(1)
+        
+        if self.no_op:
+            for _ in range(np.random.randint(0, self.no_op_max)):
+                state, reward, _, info = self.env.step(0)
                 self.score += reward
-                self.life = info[self.life_key]
+                if self.life != info[self.life_key]:
+                    state, reward, _, _ = self.env.step(1)
+                    self.score += reward
+                    self.life = info[self.life_key]
 
         state = self.img_processor.convert_img(state)
         self.stacked_state = np.tile(state, (self.stack_frame,1,1))
@@ -68,6 +73,7 @@ class Atari(BaseEnv):
     def step(self, action):
         if self.render:
             self.env.render()
+            
         next_state, reward, done, info = self.env.step(np.asscalar(action))
         self.score += reward 
         
@@ -77,10 +83,12 @@ class Atari(BaseEnv):
             self.score += _reward 
         next_state = self.img_processor.convert_img(next_state)
         self.stacked_state = np.concatenate((self.stacked_state[self.num_channel:], next_state), axis=0)
-
         
         next_state, reward, done = map(lambda x: np.expand_dims(x, 0), [self.stacked_state, [reward], [done]])
-        reward = np.clip(reward, -1., 1.)
+
+        if self.reward_clip:
+            reward = np.clip(reward, -1., 1.)
+        
         return (next_state, reward, done)
     
     def close(self):
@@ -91,7 +99,6 @@ class Atari(BaseEnv):
     
     def get_frame(self):
         return self.env.ale.getScreenRGB2()
-
 
 class Breakout(Atari):
     def __init__(self, **kwargs):
