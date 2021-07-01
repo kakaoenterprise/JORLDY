@@ -33,6 +33,8 @@ class REINFORCEAgent(BaseAgent):
 
     @torch.no_grad()
     def act(self, state, training=True):
+        self.network.train(training)
+        
         if self.action_type == "continuous":
             mu, std = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             z = torch.normal(mu, std) if training else mu
@@ -40,8 +42,8 @@ class REINFORCEAgent(BaseAgent):
             action = action.cpu().numpy()
         else:
             pi = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
-            action = torch.multinomial(pi, 1).cpu().numpy()
-        return action
+            action = torch.multinomial(pi, 1) if training else torch.argmax(pi, dim=-1, keepdim=True)
+        return action.cpu().numpy()
     
     def learn(self):
         state, action, reward = self.memory.rollout()[:3]

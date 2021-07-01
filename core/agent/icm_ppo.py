@@ -58,18 +58,17 @@ class ICMPPOAgent(PPOAgent):
         r_i, _, _ = self.icm(state, action, next_state)
         reward = self.extrinsic_coeff * reward + self.intrinsic_coeff * r_i.unsqueeze(1)
         
-        # set log_pi_old and advantage
+        # set pi_old and advantage
         with torch.no_grad():            
             if self.action_type == "continuous":
                 mu, std, value = self.network(state)
                 m = Normal(mu, std)
                 z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
-                log_pi = m.log_prob(z)
-                log_pi -= torch.log(1 - action.pow(2) + 1e-7)
+                pi = m.log_prob(z).exp()
             else:
                 pi, value = self.network(state)
-                log_pi = torch.log(pi.gather(1, action.long()))
-            log_pi_old = log_pi
+                pi = pi.gather(1, action.long())
+            pi_old = pi
             
             next_value = self.network(next_state)[-1]
             delta = reward + (1 - done) * self.gamma * next_value - value
@@ -82,37 +81,33 @@ class ICMPPOAgent(PPOAgent):
             ret = adv + value
         
         # start train iteration
+        actor_losses, critic_losses, entropy_losses = [], [], []
         idxs = np.arange(len(reward))
         for _ in range(self.n_epoch):
             np.random.shuffle(idxs)
-            for start in range(0, len(reward), self.batch_size):
-                end = start + self.batch_size
-                idx = idxs[start:end]
+            for offset in range(0, len(reward), self.batch_size):
+                idx = idxs[offset : offset + self.batch_size]
                 
-                _state, _action, _ret, _next_state, _done, _adv, _log_pi_old =\
-                    map(lambda x: x[idx], [state, action, ret, next_state, done, adv, log_pi_old])
+                _state, _action, _ret, _next_state, _done, _adv, _pi_old =\
+                    map(lambda x: x[idx], [state, action, ret, next_state, done, adv, pi_old])
 
                 if self.action_type == "continuous":
                     mu, std, value = self.network(_state)
-                    try:
-                        m = Normal(mu, std)
-                    except Exception as e:
-                        print(log_pi_old.min().item())
+                    m = Normal(mu, std)
                     z = torch.atanh(torch.clamp(_action, -1+1e-7, 1-1e-7))
-                    log_pi = m.log_prob(z)
-                    log_pi -= torch.log(1 - _action.pow(2) + 1e-7)
+                    pi = m.log_prob(z).exp()
                 else:
                     pi, value = self.network(_state)
-                    log_pi = torch.log(pi.gather(1, _action.long()))
-            
-                ratio = (log_pi.exp()/(_log_pi_old.exp() + 1e-4)).prod(1, keepdim=True)
+                    pi = pi.gather(1, _action.long())
+                
+                ratio = (pi / (_pi_old + 1e-4)).prod(1, keepdim=True)
                 surr1 = ratio * _adv
                 surr2 = torch.clamp(ratio, min=1-self.epsilon_clip, max=1+self.epsilon_clip) * _adv
                 actor_loss = -torch.min(surr1, surr2).mean() 
                 
                 critic_loss = F.mse_loss(value, _ret).mean()
                 
-                entropy_loss = -(-log_pi).mean()
+                entropy_loss = torch.log(pi + 1e-4).mean()
                 
                 # ICM
                 _, l_f, l_i = self.icm(_state, _action, _next_state)
@@ -122,12 +117,17 @@ class ICMPPOAgent(PPOAgent):
 
                 self.optimizer.zero_grad(set_to_none=True)
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.network.parameters(), 1.)
+                torch.nn.utils.clip_grad_norm_(self.network.parameters(), 1)
                 self.optimizer.step()
+                
+                actor_losses.append(actor_loss.item())
+                critic_losses.append(critic_loss.item())
+                entropy_losses.append(entropy_loss.item())
 
         result = {
-            'actor_loss' : actor_loss.item(),
-            'critic_loss' : critic_loss.item(),
+            'actor_loss' : np.mean(actor_losses),
+            'critic_loss' : np.mean(critic_losses),
+            'entropy_loss' : np.mean(entropy_losses),
             'loss' : loss.item(),
             'r_i' : r_i.mean().item(),
             'l_f': l_f.item(),
