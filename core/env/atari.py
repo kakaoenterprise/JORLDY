@@ -61,8 +61,9 @@ class Atari(BaseEnv):
                 state, reward, _, info = self.env.step(0)
                 self.score += reward
                 if self.life != info[self.life_key]:
-                    state, reward, _, _ = self.env.step(1)
-                    self.score += reward
+                    if self.life > info[self.life_key]:
+                        state, reward, _, _ = self.env.step(1)
+                        self.score += reward
                     self.life = info[self.life_key]
 
         state = self.img_processor.convert_img(state)
@@ -78,9 +79,13 @@ class Atari(BaseEnv):
         self.score += reward 
         
         if self.life != info[self.life_key] and not done:
-            next_state, _reward, _, _ = self.env.step(1)
+            if self.life > info[self.life_key]:
+                state, _reward, _, _ = self.env.step(1)
+                self.score += _reward
+                reward -= 1.
+            else:
+                reward += 1.
             self.life = info[self.life_key]
-            self.score += _reward 
         next_state = self.img_processor.convert_img(next_state)
         self.stacked_state = np.concatenate((self.stacked_state[self.num_channel:], next_state), axis=0)
         
@@ -144,6 +149,7 @@ class Mario(Atari):
     def __init__(self, **kwargs):
         super(Mario, self).__init__('SuperMarioBros-v2', life_key='life' ,**kwargs)
         self.env = JoypadSpace(self.env, SIMPLE_MOVEMENT)
+        print(f"action size changed: {self.action_size} -> {self.env.action_space.n}")
         self.action_size = self.env.action_space.n
         
     def get_frame(self):
