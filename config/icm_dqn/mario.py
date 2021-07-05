@@ -4,8 +4,8 @@ env = {
     "name": "mario",
     "render": False,
     "gray_img": True,
-    "img_width": 80,
-    "img_height": 80,
+    "img_width": 84,
+    "img_height": 84,
     "stack_frame": 4,
 }
 
@@ -22,10 +22,9 @@ agent = {
     "target_update_period": 10000,
     # Parameters for Curiosity-driven Exploration
     "icm_network": "icm_cnn",
-    "action_type": "discrete",
     "beta": 0.2,
-    "lamb": 1.0,
-    "eta": 1.0,
+    "lamb": 0.1,
+    "eta": 0.01,
     "extrinsic_coeff": 0.0,
     "intrinsic_coeff": 1.0,
 }

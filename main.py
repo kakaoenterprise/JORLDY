@@ -4,7 +4,7 @@ from core import *
 from manager import *
 
 # default_config_path = "config.YOUR_AGENT.YOUR_ENV"
-default_config_path = "config.ppo.breakout"
+default_config_path = "config.icm_dqn.mario"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -51,7 +51,7 @@ if __name__ == "__main__":
             metric_manager.append({"score": score})
             statistics = metric_manager.get_statistics()
             print(f"{episode} Episode / Step : {step} / {statistics}")
-            log_manager.write(statistics, frames, step)
+            log_manager.write(statistics, frames, score, step)
 
         if config.train.training and \
             (step % config.train.save_period == 0 or step == config.train.run_step - 1):
