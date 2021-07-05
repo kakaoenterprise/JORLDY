@@ -1,4 +1,5 @@
 import torch
+torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np 
 
@@ -10,7 +11,6 @@ class ICMDQNAgent(DQNAgent):
                 state_size,
                 action_size,
                 icm_network = 'icm',
-                action_type = 'discrete',
                 beta = 0.2,
                 lamb = 1.0,
                 eta = 0.01,
@@ -20,7 +20,7 @@ class ICMDQNAgent(DQNAgent):
                 ):
         super(ICMDQNAgent, self).__init__(state_size, action_size, **kwargs)
         
-        self.icm = Network(icm_network, state_size, action_size, eta, action_type).to(self.device)
+        self.icm = Network(icm_network, state_size, action_size, eta, 'discrete').to(self.device)
         
         self.beta = beta
         self.lamb = lamb
