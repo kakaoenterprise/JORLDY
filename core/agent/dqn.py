@@ -34,6 +34,8 @@ class DQNAgent(BaseAgent):
         self.action_size = action_size
         self.network = Network(network, state_size, action_size).to(self.device)
         self.target_network = copy.deepcopy(self.network)
+        self.learning_rate = learning_rate
+        self.opt_eps = opt_eps
         self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
         self.gamma = gamma
         self.epsilon = epsilon_init

@@ -24,8 +24,8 @@ agent = {
     "icm_network": "icm_cnn",
     "beta": 0.2,
     "lamb": 0.1,
-    "eta": 0.01,
-    "extrinsic_coeff": 0.0,
+    "eta": 0.0001,
+    "extrinsic_coeff": 1.0,
     "intrinsic_coeff": 1.0,
 }
 
@@ -35,7 +35,9 @@ train = {
     "run_step" : 100000000,
     "print_period" : 5000,
     "save_period" : 50000,
-    "test_iteration": 3,
+    "test_iteration": 1,
+    "record" : True,
+    "record_period" : 100000,
     # distributed setting
     "update_period" : 32,
     "num_worker" : 16,

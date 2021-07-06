@@ -1,4 +1,4 @@
-### DQN Mario Config ###
+### IQN Mario Config ###
 
 env = {
     "name": "mario",
@@ -10,10 +10,11 @@ env = {
 }
 
 agent = {
-    "name": "dqn",
-    "network": "dqn_cnn",
+    "name": "iqn",
+    "network": "iqn_cnn",
     "optimizer": "adam",
-    "learning_rate": 1e-4, #0.00025,
+    "opt_eps": 1e-2/32,
+    "learning_rate": 0.00005,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
@@ -22,6 +23,11 @@ agent = {
     "batch_size": 32,
     "start_train_step": 100000,
     "target_update_period": 10000,
+    
+    "num_sample": 64,
+    "embedding_dim": 64,
+    "sample_min": 0.0,
+    "sample_max": 1.0,
 }
 
 train = {
@@ -30,10 +36,8 @@ train = {
     "run_step" : 100000000,
     "print_period" : 5000,
     "save_period" : 50000,
-    "test_iteration": 1,
-    "record" : True,
-    "record_period" : 50000,
+    "test_iteration": 5,
     # distributed setting
-    "update_period" : 32,
+    "update_period" : 8,
     "num_worker" : 16,
 }

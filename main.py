@@ -4,7 +4,7 @@ from core import *
 from manager import *
 
 # default_config_path = "config.YOUR_AGENT.YOUR_ENV"
-default_config_path = "config.icm_dqn.mario"
+default_config_path = "config.icm_dqn.cartpole"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

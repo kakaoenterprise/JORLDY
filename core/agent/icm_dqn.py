@@ -5,6 +5,7 @@ import numpy as np
 
 from .dqn import DQNAgent
 from core.network import Network
+from core.optimizer import Optimizer
 
 class ICMDQNAgent(DQNAgent):
     def __init__(self,
@@ -22,12 +23,16 @@ class ICMDQNAgent(DQNAgent):
         
         self.icm = Network(icm_network, state_size, action_size, eta, 'discrete').to(self.device)
         
+        parameters = list(self.network.parameters()) + list(self.icm.parameters())
+        self.optimizer = Optimizer('adam', parameters, lr=self.learning_rate, eps=self.opt_eps)
+        
         self.beta = beta
         self.lamb = lamb
         self.eta = eta
         self.extrinsic_coeff = extrinsic_coeff
         self.intrinsic_coeff = intrinsic_coeff
-        
+    
+    @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
         
@@ -58,7 +63,6 @@ class ICMDQNAgent(DQNAgent):
                 
         # ICM
         loss_origin = F.smooth_l1_loss(q, target_q)
-
         loss = self.lamb * loss_origin + (self.beta * l_f) + ((1-self.beta) * l_i)
         
         self.optimizer.zero_grad()
