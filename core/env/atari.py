@@ -82,9 +82,6 @@ class Atari(BaseEnv):
             if self.life > info[self.life_key]:
                 state, _reward, _, _ = self.env.step(1)
                 self.score += _reward
-                reward -= 1.
-            else:
-                reward += 1.
             self.life = info[self.life_key]
         next_state = self.img_processor.convert_img(next_state)
         self.stacked_state = np.concatenate((self.stacked_state[self.num_channel:], next_state), axis=0)
