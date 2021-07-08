@@ -22,7 +22,7 @@ class Atari(BaseEnv):
                  id=0,
                  life_key='ale.lives',
                  no_op=False,
-                 reward_clip=True,
+                 reward_clip=False,
                  ):
         self.id = id
         self.render=render
