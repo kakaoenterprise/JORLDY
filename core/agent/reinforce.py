@@ -24,8 +24,9 @@ class REINFORCEAgent(BaseAgent):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_type = network.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
-
+        
         self.network = Network(network, state_size, action_size).to(self.device)
+        self.learning_rate = learning_rate
         self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate)
 
         self.gamma = gamma

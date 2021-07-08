@@ -6,6 +6,7 @@ import numpy as np
 
 from .ppo import PPOAgent
 from core.network import Network
+from core.optimizer import Optimizer
 
 class ICMPPOAgent(PPOAgent):
     def __init__(self,
@@ -43,7 +44,9 @@ class ICMPPOAgent(PPOAgent):
         self.learn_stamp = 0
         
         self.icm = Network(icm_network, state_size, action_size, eta, self.action_type).to(self.device)
-
+        parameters = list(self.network.parameters()) + list(self.icm.parameters())
+        self.optimizer = Optimizer('adam', parameters, lr=self.learning_rate)
+        
         self.beta = beta
         self.lamb = lamb
         self.eta = eta
