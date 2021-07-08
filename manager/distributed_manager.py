@@ -5,7 +5,10 @@ import ray
 
 class DistributedManager:
     def __init__(self, Env, env_config, Agent, agent_config, num_worker):
-        ray.init()
+        try:
+            ray.init(address='auto')
+        except:
+            ray.init()
         agent = Agent(**agent_config)
         num_worker = num_worker if num_worker else os.cpu_count()
         Env, env_config, agent = map(ray.put, [Env, dict(env_config), agent])
