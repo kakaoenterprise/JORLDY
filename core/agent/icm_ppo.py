@@ -149,3 +149,11 @@ class ICMPPOAgent(PPOAgent):
             self.learn_stamp = 0
         
         return result
+    
+    def save(self, path):
+        print(f"...Save model to {path}...")
+        torch.save({
+            "network" : self.network.state_dict(),
+            "icm" : self.icm.state_dict(),
+            "optimizer" : self.optimizer.state_dict(),
+        }, os.path.join(path,"ckpt"))

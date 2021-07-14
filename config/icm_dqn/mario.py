@@ -7,6 +7,7 @@ env = {
     "img_width": 84,
     "img_height": 84,
     "stack_frame": 4,
+    "reward_clip": False,
 }
 
 agent = {
@@ -22,19 +23,19 @@ agent = {
     "target_update_period": 10000,
     # Parameters for Curiosity-driven Exploration
     "icm_network": "icm_cnn",
-    "beta": 0.2,
-    "lamb": 0.1,
-    "eta": 0.0001,
+    "beta": 0.5,
+    "lamb": 1.0,
+    "eta": 0.001,
     "extrinsic_coeff": 1.0,
     "intrinsic_coeff": 1.0,
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
+    "training" : False,
+    "load_path" : './logs/mario/icm_dqn/20210705193117',
     "run_step" : 100000000,
     "print_period" : 5000,
-    "save_period" : 50000,
+    "save_period" : 100000,
     "test_iteration": 1,
     "record" : True,
     "record_period" : 100000,

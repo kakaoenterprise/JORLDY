@@ -4,7 +4,7 @@ from core import *
 from manager import *
 
 # default_config_path = "config.YOUR_AGENT.YOUR_ENV"
-default_config_path = "config.icm_dqn.cartpole"
+default_config_path = "config.icm_dqn.mario"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -32,8 +32,9 @@ if __name__ == "__main__":
     
     episode = 0
     state = env.reset()
+
     for step in range(1, config.train.run_step+1):
-        action = agent.act(state, config.train.training)
+        action = agent.act(state, config.train.training)            
         next_state, reward, done = env.step(action)
 
         if config.train.training:

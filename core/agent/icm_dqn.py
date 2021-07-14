@@ -99,3 +99,20 @@ class ICMDQNAgent(DQNAgent):
                 self.target_update_stamp = 0
         
         return result
+    
+    def save(self, path):
+        print(f"...Save model to {path}...")
+        torch.save({
+            "network" : self.network.state_dict(),
+            "icm" : self.icm.state_dict(),
+            "optimizer" : self.optimizer.state_dict(),
+        }, os.path.join(path,"ckpt"))
+        
+    def get_ri(self, state, next_state, action):
+        state = torch.FloatTensor(state).to(self.device)
+        next_state = torch.FloatTensor(next_state).to(self.device)
+        action = torch.FloatTensor(action).to(self.device)
+
+        r_i, _, _ = self.icm(state, action, next_state)
+        
+        return r_i
