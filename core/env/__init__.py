@@ -17,6 +17,8 @@ class Env:
     "asterix": Asterix,
     "assault": Assault,
     "crazyclimber": CrazyClimber,
+    "enduro": Enduro,
+    "qbert": Qbert,
     "privateeye": PrivateEye,
     "montezuma": MontezumaRevenge,
     "spaceinvaders": Spaceinvaders,

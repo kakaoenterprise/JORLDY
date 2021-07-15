@@ -134,6 +134,14 @@ class CrazyClimber(Atari):
     def __init__(self, **kwargs):
         super(CrazyClimber, self).__init__(f"CrazyClimber{COMMON_VERSION}", **kwargs)
 
+class Enduro(Atari):
+    def __init__(self, **kwargs):
+        super(Enduro, self).__init__(f"Enduro{COMMON_VERSION}", **kwargs)
+
+class Qbert(Atari):
+    def __init__(self, **kwargs):
+        super(Qbert, self).__init__(f"Qbert{COMMON_VERSION}", **kwargs)
+        
 class PrivateEye(Atari):
     def __init__(self, **kwargs):
         super(PrivateEye, self).__init__(f"PrivateEye{COMMON_VERSION}", **kwargs)
