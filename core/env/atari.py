@@ -119,7 +119,7 @@ class Seaquest(Atari):
 
 class Spaceinvaders(Atari):
     def __init__(self, **kwargs):
-        super(Spaceinvaders, self).__init__(f"Spaceinvaders{COMMON_VERSION}", **kwargs)
+        super(Spaceinvaders, self).__init__(f"SpaceInvaders{COMMON_VERSION}", **kwargs)
 
 class Alien(Atari):
     def __init__(self, **kwargs):
