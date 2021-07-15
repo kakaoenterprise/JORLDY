@@ -1,22 +1,24 @@
-### DQN BreakOut Config ###
+### DQN Atari Config ###
 
 env = {
-    "name": "breakout",
+    # "name": it should be defined in the command. ex) python main.py --config config.dqn.atari --env.name breakout
     "render": False,
     "gray_img": True,
     "img_width": 84,
     "img_height": 84,
     "stack_frame": 4,
+    "no_op": True,
+    "reward_clip": True,
 }
 
 agent = {
     "name": "dqn",
     "network": "dqn_cnn",
-    "optimizer": "adam",
-    "learning_rate": 1e-4, #0.00025,
+    "optimizer": "rmsprop",
+    "learning_rate": 2.5e-4,
     "gamma": 0.99,
     "epsilon_init": 1.0,
-    "epsilon_min": 0.01,
+    "epsilon_min": 0.1,
     "explore_step": 1000000,
     "buffer_size": 1000000,
     "batch_size": 32,
@@ -27,9 +29,9 @@ agent = {
 train = {
     "training" : True,
     "load_path" : None,
-    "run_step" : 100000000,
-    "print_period" : 5000,
-    "save_period" : 50000,
+    "run_step" : 30000000,
+    "print_period" : 10000,
+    "save_period" : 100000,
     "test_iteration": 5,
     "record" : True,
     "record_period" : 300000,
