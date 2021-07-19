@@ -18,10 +18,10 @@ if __name__ == "__main__":
     config = config_manager.config
     
     env = Env(**config.env)
-    config.agent.batch_size *= config.train.num_worker
     agent_config = {'state_size': env.state_size,
                     'action_size': env.action_size}
     agent_config.update(config.agent)
+    agent_config["batch_size"] *= config.train.num_worker
     agent = Agent(**agent_config)
     
     if config.train.load_path:

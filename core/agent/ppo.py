@@ -15,9 +15,10 @@ class PPOAgent(REINFORCEAgent):
                  n_step=100,
                  n_epoch=5,
                  _lambda=0.9,
-                 epsilon_clip=0.2,
+                 epsilon_clip=0.1,
                  vf_coef=0.5,
                  ent_coef=0.0,
+                 clip_grad_norm=1.0,
                  **kwargs,
                  ):
         super(PPOAgent, self).__init__(state_size=state_size,
@@ -31,6 +32,7 @@ class PPOAgent(REINFORCEAgent):
         self.epsilon_clip = epsilon_clip
         self.vf_coef = vf_coef
         self.ent_coef = ent_coef
+        self.clip_grad_norm = clip_grad_norm
         self.time_t = 0
         self.learn_stamp = 0
     
@@ -106,7 +108,7 @@ class PPOAgent(REINFORCEAgent):
 
                 self.optimizer.zero_grad(set_to_none=True)
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.network.parameters(), 1)
+                torch.nn.utils.clip_grad_norm_(self.network.parameters(), self.clip_grad_norm)
                 self.optimizer.step()
                 
                 pis.append(pi.min().item())

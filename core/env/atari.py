@@ -18,6 +18,7 @@ class Atari(BaseEnv):
                  life_key='ale.lives',
                  no_op=False,
                  reward_clip=False,
+                 dead_penalty=False,
                  ):
         self.id = id
         self.render=render
@@ -40,6 +41,7 @@ class Atari(BaseEnv):
         self.no_op = no_op
         self.no_op_max = 30
         self.reward_clip = reward_clip
+        self.dead_penalty = dead_penalty
         
         print(f"{name} Start!")
         print(f"state size: {self.state_size}")
@@ -59,6 +61,8 @@ class Atari(BaseEnv):
                     if self.life > info[self.life_key]:
                         state, reward, _, _ = self.env.step(1)
                         self.score += reward
+                        if self.dead_penalty:
+                            reward = -1
                     self.life = info[self.life_key]
 
         state = self.img_processor.convert_img(state)
