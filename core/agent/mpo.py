@@ -47,6 +47,7 @@ class MPOAgent(BaseAgent):
         self.target_network = copy.deepcopy(self.network)
         
         self.batch_size = batch_size
+        print(f"self.batch_size: {self.batch_size}")
         self.n_step = n_step
         self.n_epoch = n_epoch
 
@@ -85,42 +86,50 @@ class MPOAgent(BaseAgent):
         
     def check_nan(self, v, name=""):
         if v.isnan().any():
-            print(f"### [MPO] NaN ERROR: {name} ###")
+            print(f"\n### [MPO] NaN ERROR: {name} ###\n")
             print(v[v.isnan()])
+            return True
+        return False
+    
+    def check_inference(self, state, action):
+        problem = False
+        mu, std = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+        Q = self.network.calculate_Q(state, action)
+        problem = problem or self.check_nan(mu, 'MU_chk')
+        problem = problem or self.check_nan(std, 'STD_chk')
+        problem = problem or self.check_nan(Q, 'Q_chk')
+        return problem
     
     @torch.no_grad()
     def act(self, state, training=True):
+        self.network.train(training)
         if self.action_type == "continuous":
-            mu, std = self.network(torch.FloatTensor(state).to(self.device))
+            mu, std = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             
             self.check_nan(mu, 'MU')
             self.check_nan(std, 'STD')
-            
-            std = std if training else torch.zeros_like(std, device=self.device) + 1e-4
 
             m = Normal(mu, std)
-            z = m.sample()
+            z = m.sample() if training else mu
             action = torch.tanh(z)
             action = action.data.cpu().numpy()
-            prob = torch.exp(m.log_prob(z).sum(axis=-1, keepdims=True))
+            prob = m.log_prob(z).sum(axis=-1, keepdims=True)
+            prob = prob.exp().cpu().numpy()
+                
         else:
-            pi, _ = self.network(torch.FloatTensor(state).to(self.device))
-            m = Categorical(pi)
-#             action = m.sample().data.cpu().numpy()[..., np.newaxis]
-            action = m.sample().data.cpu().unsqueeze(-1)
-#             print(action)
-#             prob = pi.gather(1, action.long()).numpy()
+            pi, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+#             m = Categorical(pi)
+#             action = m.sample().data.cpu().unsqueeze(-1)
+            action = torch.multinomial(pi, 1)
             prob = pi.numpy()
-            action = action.numpy()
+            action = action.cpu().numpy()
         return np.concatenate([action, prob], axis=-1)
-#         return torch.cat([action, prob], axis=1)
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.FloatTensor(x).to(self.device), transitions)
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
 
         if self.action_type == 'discrete':
-#             prob_b = action[:, :, -1:] # behavior policy probability
             prob_b = action[:, :, 1:] # behavior policy probability
             action = action[:, :, :1]
         elif self.action_type == 'continuous':
@@ -131,13 +140,13 @@ class MPOAgent(BaseAgent):
             with torch.no_grad():
                 mu, std = self.network(state)
                 
-                self.check_nan(mu, 'MU')
-                self.check_nan(std, 'STD')
+                self.check_nan(mu, 'MU-0')
+                self.check_nan(std, 'STD-0')
                 
-                m = Normal(mu, std+1e-7)
+                m = Normal(mu, std)
                 z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
                 log_pi = m.log_prob(z)
-                log_pi -= torch.log(1 - action.pow(2) + 1e-7)
+#                 log_pi -= torch.log(1 - action.pow(2) + 1e-7)
                 log_pi = log_pi.sum(axis=-1, keepdims=True)
                 
                 mu_old = mu
@@ -145,54 +154,58 @@ class MPOAgent(BaseAgent):
                 pi_old = torch.exp(log_pi)
                 
                 Qt_a = self.target_network.calculate_Q(state, action)
+                self.check_nan(Qt_a, 'Qt_a')
                 
                 next_mu, next_std = self.network(next_state)
-                m = Normal(next_mu, next_std+1e-7)
+                m = Normal(next_mu, next_std)
                 z = m.sample((self.num_sample,)) # (num_sample, batch_size, len_tr, dim_action)
                 next_action = torch.tanh(z)
 #                 prob_next = torch.exp(m.log_prob(z).sum(axis=-1))
                 
                 Qt_next = self.target_network.calculate_Q(next_state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), next_action) # (num_sample, batch_size, len_tr, 1)
+#                 print(f"Qt_next: {Qt_next.shape}, reward: {reward.shape}")
                 
                 prob_t = pi_old
                 
                 # calculate Qret for Retrace
                 if self.ones == None: self.ones = torch.ones(prob_t.shape).to(self.device)
                 c = torch.min(self.ones, prob_t / prob_b)
+#                 c = torch.min(self.ones, prob_t / (prob_b+1e-4))
                 
                 Qret = reward + Qt_next.mean(axis=0) - Qt_a
                 for i in reversed(range(reward.shape[1]-1)):
-                    Qret[:, i] += self.gamma * c[:, i+1] * Qret[:, i+1]
+                    Qret[:, i] += self.gamma * c[:, i+1] * Qret[:, i+1] * (1-done[:,i])
                 
                 Qret += Qt_a
                 
             mu, std = self.network(state)
             
-            self.check_nan(mu, 'MU')
-            self.check_nan(std, 'STD')
+            self.check_nan(mu, 'MU-1')
+            self.check_nan(std, 'STD-1')
             
             Q = self.network.calculate_Q(state, action)
-            m = Normal(mu, std+1e-7)
+            m = Normal(mu, std)
             z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
             log_pi = m.log_prob(z)
-            log_pi -= torch.log(1 - action.pow(2) + 1e-7)
             log_pi = log_pi.sum(axis=-1, keepdims=True)
             pi = torch.exp(log_pi)
             
             z_add = m.sample((self.num_sample, )) # (num_sample, batch_size, len_tr, dim_action)
             action_add = torch.tanh(z_add)
             log_pi_add = m.log_prob(z_add)
-            log_pi_add -= torch.log(1 - action_add.pow(2) + 1e-7)
             log_pi_add = log_pi_add.sum(axis=-1, keepdims=True)
-            Q_add = self.network.calculate_Q(state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), action_add)
+            Q_add = self.target_network.calculate_Q(state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), action_add)
             
             critic_loss = F.mse_loss(Q, Qret).mean()
             
             exp_Q_eta = torch.exp(Q.detach() / self.eta)
             exp_Q_eta_add = torch.exp(Q_add.detach() / self.eta)
-            q = pi * exp_Q_eta / torch.mean(exp_Q_eta_add.detach(), axis=0)
+            q = torch.softmax(exp_Q_eta_add, axis = 0)
+#             q = exp_Q_eta_add / exp_Q_eta_add.sum(axis=0, keepdim=True)
             
-            actor_loss = -torch.sum(q.detach() * torch.log(pi))
+#             actor_loss = -torch.sum(q.detach() * torch.log(pi))
+#             actor_loss = -torch.sum(q.detach() * log_pi)
+            actor_loss = -torch.mean(q.detach() * log_pi_add)
             
             eta_loss = self.eta * self.eps_eta + \
                        self.eta * torch.mean(torch.log(exp_Q_eta_add.mean(axis=0)))
@@ -233,7 +246,7 @@ class MPOAgent(BaseAgent):
                 c = torch.min(self.ones, prob_t/prob_b.gather(2, action.long())) # (batch_size, len_tr, 1), prod of importance ratio and gamma
                 Qret = reward + torch.sum(pi_next * Qt_next, axis=2).unsqueeze(2) - Qt_a
                 for i in reversed(range(reward.shape[1]-1)): # along the trajectory length
-                    Qret[:, i] += self.gamma * c[:, i+1] * Qret[:, i+1]
+                    Qret[:, i] += self.gamma * c[:, i+1] * Qret[:, i+1] * (1-done[:,i])
 
                 Qret += Qt_a
                 pi_old = pi
@@ -245,7 +258,8 @@ class MPOAgent(BaseAgent):
             exp_Q_eta = torch.exp(Q / self.eta)
             q = exp_Q_eta / torch.sum(exp_Q_eta.detach(), axis = 2, keepdims=True)
             
-            actor_loss = -torch.sum(q.detach() * torch.log(pi))
+#             actor_loss = -torch.sum(q.detach() * torch.log(pi))
+            actor_loss = -torch.mean(q.detach() * torch.log(pi))
             
             eta_loss = self.eta * self.eps_eta + \
                        self.eta * torch.mean(torch.log(torch.sum(pi * exp_Q_eta, axis=2)))
@@ -255,14 +269,20 @@ class MPOAgent(BaseAgent):
             alpha_loss = torch.mean(self.alpha_mu * (self.eps_alpha_mu - KLD_pi.detach()) + \
                                     self.alpha_mu.detach() * KLD_pi)
 
-        loss = critic_loss + actor_loss + eta_loss + alpha_loss
+#         loss = critic_loss + actor_loss + eta_loss + alpha_loss
+#         loss = critic_loss + eta_loss + alpha_loss
+        loss = critic_loss + actor_loss
 
         self.optimizer.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.network.parameters(), 5.)
         self.optimizer.step()
         self.reset_lgr_muls()
         
         self.num_learn += 1
+        
+        if self.check_inference(state, action):
+            print(f"\n NaN occurred at step {self.num_learn} \n")
 
         result = {
             'actor_loss' : actor_loss.item(),
@@ -272,7 +292,17 @@ class MPOAgent(BaseAgent):
             'eta': self.eta.item(),
             'alpha_mu': self.alpha_mu.item(),
             'alpha_sigma': self.alpha_sigma.item(),
+#             'max_c': c.max().item(),
+            'max_probt': prob_t.cpu().numpy().max(),
+            'max_probb': prob_b.cpu().numpy().max(),
+            'min_Q': Q.detach().cpu().numpy().min(),
+            'max_Q': Q.detach().cpu().numpy().max(),
+            'min_mu': mu.detach().cpu().numpy().min(),
+            'max_mu': mu.detach().cpu().numpy().max(),
+            'min_std': std.detach().cpu().numpy().min(),
+            'max_std': std.detach().cpu().numpy().max(),
         }
+            
         return result
     
     # reset Lagrange multipliers: eta, alpha_{mu, sigma}
