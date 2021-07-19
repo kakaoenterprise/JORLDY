@@ -5,10 +5,10 @@ import imageio
 from torch.utils.tensorboard import SummaryWriter
 
 class LogManager:
-    def __init__(self, env, id, purpose=None):
+    def __init__(self, env, id, experiment=None):
         self.id=id
         now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        self.path = f"./logs/{env}/{purpose}/{id}/{now}/" if purpose else f"./logs/{env}/{id}/{now}/"
+        self.path = f"./logs/{experiment}/{env}/{id}/{now}/" if experiment else f"./logs/{env}/{id}/{now}/"
         self.writer = SummaryWriter(self.path)
         self.stamp = time.time()
         

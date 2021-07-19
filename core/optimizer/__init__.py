@@ -5,6 +5,7 @@ class Optimizer:
     "adam": torch.optim.Adam,
     "adamw": torch.optim.AdamW,
     "sgd": torch.optim.SGD,
+    "rmsprop": torch.optim.RMSprop
     }
     
     def __new__(self, name, *args, **kwargs):

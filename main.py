@@ -4,7 +4,7 @@ from core import *
 from manager import *
 
 # default_config_path = "config.YOUR_AGENT.YOUR_ENV"
-default_config_path = "config.icm_dqn.mario"
+default_config_path = "config.dqn.cartpole"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -27,7 +27,7 @@ if __name__ == "__main__":
                                config.train.record, record_period)
     metric_manager = MetricManager()
     log_id = config.train.id if config.train.id else config.agent.name
-    log_manager = LogManager(config.env.name, log_id, config.train.purpose)
+    log_manager = LogManager(config.env.name, log_id, config.train.experiment)
     config_manager.dump(log_manager.path)
     
     episode = 0

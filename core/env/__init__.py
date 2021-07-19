@@ -5,25 +5,32 @@ sys.path.append(os.path.abspath('../../'))
 from .gym_env import *
 from .atari import *
 from .ml_agent import * 
+from .nes import *
 
 class Env:
     dictionary = {
+    #gym_env
     "cartpole": CartPole,
     "pendulum": Pendulum,
     "mountaincar": MountainCar,
+    #atari
     "breakout": Breakout,
     "pong": Pong,
     "alien": Alien,
     "asterix": Asterix,
     "assault": Assault,
     "crazyclimber": CrazyClimber,
+    "enduro": Enduro,
+    "qbert": Qbert,
     "privateeye": PrivateEye,
     "montezuma": MontezumaRevenge,
     "spaceinvaders": Spaceinvaders,
     "seaquest": Seaquest,
+    #nes
+    "mario": Mario,
+    #ml_agent
     "hopper_mlagent": HopperMLAgent,
     "pong_mlagent": PongMLAgent,
-    "mario": Mario,
     }
     
     def __new__(self, name, *args, **kwargs):

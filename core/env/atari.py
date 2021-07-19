@@ -1,11 +1,6 @@
 import gym
 import numpy as np
 
-# https://pypi.org/project/gym-super-mario-bros/
-from nes_py.wrappers import JoypadSpace
-import gym_super_mario_bros
-from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
-
 from .utils import ImgProcessor
 from .base import BaseEnv
 
@@ -124,7 +119,7 @@ class Seaquest(Atari):
 
 class Spaceinvaders(Atari):
     def __init__(self, **kwargs):
-        super(Spaceinvaders, self).__init__(f"Spaceinvaders{COMMON_VERSION}", **kwargs)
+        super(Spaceinvaders, self).__init__(f"SpaceInvaders{COMMON_VERSION}", **kwargs)
 
 class Alien(Atari):
     def __init__(self, **kwargs):
@@ -134,6 +129,14 @@ class CrazyClimber(Atari):
     def __init__(self, **kwargs):
         super(CrazyClimber, self).__init__(f"CrazyClimber{COMMON_VERSION}", **kwargs)
 
+class Enduro(Atari):
+    def __init__(self, **kwargs):
+        super(Enduro, self).__init__(f"Enduro{COMMON_VERSION}", **kwargs)
+
+class Qbert(Atari):
+    def __init__(self, **kwargs):
+        super(Qbert, self).__init__(f"Qbert{COMMON_VERSION}", **kwargs)
+        
 class PrivateEye(Atari):
     def __init__(self, **kwargs):
         super(PrivateEye, self).__init__(f"PrivateEye{COMMON_VERSION}", **kwargs)
@@ -141,14 +144,3 @@ class PrivateEye(Atari):
 class MontezumaRevenge(Atari):
     def __init__(self, **kwargs):
         super(MontezumaRevenge, self).__init__(f"MontezumaRevenge{COMMON_VERSION}", **kwargs)
-        
-class Mario(Atari):
-    def __init__(self, **kwargs):
-        super(Mario, self).__init__('SuperMarioBros-v2', life_key='life' ,**kwargs)
-        self.env = JoypadSpace(self.env, SIMPLE_MOVEMENT)
-        print(f"action size changed: {self.action_size} -> {self.env.action_space.n}")
-        self.action_size = self.env.action_space.n
-        
-    def get_frame(self):
-        return np.copy(self.env.screen)
-    
