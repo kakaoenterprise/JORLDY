@@ -1,6 +1,14 @@
 import torch
 import torch.nn.functional as F
 
+# normalize observation
+# assumed state shape: (batch_size, dim_state)
+def normalize_obs(obs):
+    m = obs.mean()
+    s = obs.std()
+
+    return torch.clip((obs - m) / (s+1e-7), min=-5., max=5.)
+
 class RND(torch.nn.Module):
     def __init__(self, D_in, D_out):
         super(RND, self).__init__()
@@ -16,6 +24,7 @@ class RND(torch.nn.Module):
         self.fc2_target = torch.nn.Linear(256, feature_size)
                             
     def forward(self, s_next):
+        s_next = normalize_obs(s_next)
         p = F.elu(self.fc1_predict(s_next))
         p = F.elu(self.fc2_predict(p))
 
@@ -50,6 +59,7 @@ class RND_CNN(torch.nn.Module):
         
     def forward(self, s_next):
         s_next = s_next/255.0
+        s_next = normalize_obs(s_next)
         
         p = F.relu(self.conv1_predict(s_next))
         p = F.relu(self.conv2_predict(p))
@@ -89,6 +99,7 @@ class RND_RNN(torch.nn.Module):
         
     def forward(self, s_next):
         s_next = s_next/255.0
+        s_next = normalize_obs(s_next)
         
         p = F.relu(self.conv1_predict(s_next))
         p = F.relu(self.conv2_predict(p))

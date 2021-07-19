@@ -12,6 +12,7 @@ class ContinuousPiV(torch.nn.Module):
         self.mu = torch.nn.Linear(D_hidden, D_out)
         self.log_std = torch.nn.Linear(D_hidden, D_out)
         self.v = torch.nn.Linear(D_hidden, 1)
+        self.v_i = torch.nn.Linear(D_hidden, 1)
 
     def forward(self, x):
         x = F.relu(self.l1(x))
@@ -20,6 +21,11 @@ class ContinuousPiV(torch.nn.Module):
         mu = torch.clamp(self.mu(x), min=-5., max=5.)
         log_std = torch.tanh(self.log_std(x))
         return mu, log_std.exp(), self.v(x)
+    
+    def v_i(self, x):
+        x = F.relu(self.l1(x))
+        x = F.relu(self.l2(x))
+        return self.v_i(x)
     
     
 class DiscretePiV(torch.nn.Module):
@@ -32,11 +38,17 @@ class DiscretePiV(torch.nn.Module):
         self.l2 = torch.nn.Linear(D_hidden, D_hidden)
         self.pi = torch.nn.Linear(D_hidden, D_out)
         self.v = torch.nn.Linear(D_hidden, 1)
+        self.v_i = torch.nn.Linear(D_hidden, 1)
         
     def forward(self, x):
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
         return F.softmax(self.pi(x), dim=-1), self.v(x)
+
+    def v_i(self, x):
+        x = F.relu(self.l1(x))
+        x = F.relu(self.l2(x))
+        return self.v_i(x)
     
     
 class ContinuousPiV_CNN(torch.nn.Module):
@@ -56,6 +68,7 @@ class ContinuousPiV_CNN(torch.nn.Module):
         self.mu = torch.nn.Linear(D_hidden, D_out)
         self.log_std = torch.nn.Linear(D_hidden, D_out)
         self.v = torch.nn.Linear(D_hidden, 1)
+        self.v_i = torch.nn.Linear(D_hidden, 1)
 
     def forward(self, x):
         x = (x-(255.0/2))/(255.0/2)
@@ -69,6 +82,16 @@ class ContinuousPiV_CNN(torch.nn.Module):
         mu = torch.clamp(self.mu(x), min=-5., max=5.)
         log_std = torch.tanh(self.log_std(x))
         return mu, log_std.exp(), self.v(x)
+    
+    def v_i(self, x):
+        x = (x-(255.0/2))/(255.0/2)
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        x = x.view(x.size(0), -1)
+        
+        x = F.relu(self.fc1(x))
+        return self.v_i(x)
     
     
 class DiscretePiV_CNN(torch.nn.Module):
@@ -88,6 +111,7 @@ class DiscretePiV_CNN(torch.nn.Module):
         
         self.pi = torch.nn.Linear(D_hidden, D_out)
         self.v = torch.nn.Linear(D_hidden, 1)
+        self.v_i = torch.nn.Linear(D_hidden, 1)
         
     def forward(self, x):
         x = (x-(255.0/2))/(255.0/2)
@@ -99,3 +123,14 @@ class DiscretePiV_CNN(torch.nn.Module):
         x = F.relu(self.fc1(x))
         
         return F.softmax(self.pi(x), dim=-1), self.v(x)
+    
+    def v_i(self, x):
+        x = (x-(255.0/2))/(255.0/2)
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        x = x.view(x.size(0), -1)
+        
+        x = F.relu(self.fc1(x))
+        
+        return self.v_i(x)
