@@ -22,7 +22,6 @@ class RND(torch.nn.Module):
         self.fc2_target = torch.nn.Linear(256, feature_size)
     
     def update_rms(self, obs):
-        obs = obs/255.0
         self.rms.update(obs)
                             
     def forward(self, s_next):
