@@ -8,6 +8,9 @@ from .reinforce import REINFORCEAgent
 from core.optimizer import Optimizer
 from core.network import Network
 
+# RewardForwardFilter
+# codes from https://github.com/openai/random-network-distillation
+# line 543~552 of https://github.com/openai/random-network-distillation/blob/master/ppo_agent.py
 class RewardForwardFilter(object):
     def __init__(self, gamma):
         self.rewems = None
@@ -20,6 +23,9 @@ class RewardForwardFilter(object):
             self.rewems = self.rewems * self.gamma + rews
         return self.rewems
     
+# RunningMeanStd
+# codes from https://github.com/openai/random-network-distillation
+# modified from line 179~214 of https://github.com/openai/random-network-distillation/blob/master/mpi_util.py
 class RunningMeanStd(object):
     def __init__(self, device="", epsilon=1e-4):
         self.mean = None
