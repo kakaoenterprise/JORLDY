@@ -125,7 +125,7 @@ class RNDPPOAgent(REINFORCEAgent):
         r_i = self.rnd.forward(next_state)
         rewems = self.rff.update(r_i.detach())
         self.rff_rms.update(rewems)
-        r_i = self.intrinsic_coeff * r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
+        r_i = r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
         r_i = r_i.unsqueeze(-1)
         
         # Scaling extrinsic and intrinsic reward
@@ -179,6 +179,7 @@ class RNDPPOAgent(REINFORCEAgent):
 
                 _r_i = self.rnd.forward(_next_state)
                 _r_i = self.intrinsic_coeff * _r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
+                
                 if self.action_type == "continuous":
                     mu, std, value = self.network(_state)
                     m = Normal(mu, std)
@@ -221,7 +222,7 @@ class RNDPPOAgent(REINFORCEAgent):
             'actor_loss' : np.mean(actor_losses),
             'critic_loss' : np.mean(critic_losses),
             'entropy_loss' : np.mean(entropy_losses),
-            'r_i': self.intrinsic_coeff * np.mean(rnd_losses),
+            'r_i': np.mean(rnd_losses),
             'max_ratio' : max(ratios),
             'min_pi': min(pis),
             'min_pi_old': min(pi_olds),

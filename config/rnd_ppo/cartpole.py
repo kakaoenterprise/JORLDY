@@ -7,7 +7,7 @@ env = {
 }
 
 agent = {
-    "name":"ppo",
+    "name":"rnd_ppo",
     "network":"discrete_pi_v",
     "optimizer":"adam",
     "learning_rate": 3e-4,
@@ -21,8 +21,8 @@ agent = {
     "ent_coef": 0.0,
     # Parameters for Random Network Distillation
     "rnd_network": "rnd",
-    "gamma_i": 0.99
-    "extrinsic_coeff": 0.0,
+    "gamma_i": 0.99,
+    "extrinsic_coeff": 1.0,
     "intrinsic_coeff": 1.0,
 }
 

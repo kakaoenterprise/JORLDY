@@ -26,7 +26,7 @@ agent = {
     "ent_coef": 0.01,
     # Parameters for Random Network Distillation
     "rnd_network": "rnd_cnn",
-    "gamma_i": 0.99
+    "gamma_i": 0.99,
     "extrinsic_coeff": 0.0,
     "intrinsic_coeff": 1.0,
 }
