@@ -85,10 +85,10 @@ class RNDPPOAgent(REINFORCEAgent):
                 pi, value = self.network(state)
                 pi = pi.gather(1, action.long())
             pi_old = pi
-            v_i = self.network.v_i(state)
+            v_i = self.network.get_vi(state)
             
             next_value = self.network(next_state)[-1]
-            next_vi = self.network.v_i(next_state)
+            next_vi = self.network.get_vi(next_state)
             delta = reward + (1 - done) * self.gamma * next_value - value
             # non-episodic intrinsic reward, hence (1-done) not applied
             delta_i = r_i + self.gamma * next_vi - v_i
@@ -109,8 +109,9 @@ class RNDPPOAgent(REINFORCEAgent):
         rnd_losses = []
         pi_olds.append(pi_old.min().item())
         idxs = np.arange(len(reward))
-        for _ in range(self.n_epoch):
+        for idx_epoch in range(self.n_epoch):
             np.random.shuffle(idxs)
+            
             for offset in range(0, len(reward), self.batch_size):
                 idx = idxs[offset : offset + self.batch_size]
                 
@@ -118,6 +119,9 @@ class RNDPPOAgent(REINFORCEAgent):
                     map(lambda x: x[idx], [state, action, ret, next_state, done, adv, pi_old])
                 _ret_i, _adv_i = map(lambda x: x[idx], [ret_i, adv_i])
 
+                _r_i = self.rnd.forward(_next_state)
+                _r_i = _r_i / (_r_i.detach().std() + 1e-7)
+                
                 if self.action_type == "continuous":
                     mu, std, value = self.network(_state)
                     m = Normal(mu, std)
@@ -126,7 +130,7 @@ class RNDPPOAgent(REINFORCEAgent):
                 else:
                     pi, value = self.network(_state)
                     pi = pi.gather(1, _action.long())
-                _v_i = self.network.v_i(_state)
+                _v_i = self.network.get_vi(_state)
                 
                 ratio = (pi / (_pi_old + 1e-4)).prod(1, keepdim=True)
                 surr1 = ratio * (_adv + self.intrinsic_coeff * _adv_i)
@@ -143,18 +147,18 @@ class RNDPPOAgent(REINFORCEAgent):
                 torch.nn.utils.clip_grad_norm_(self.network.parameters(), 1)
                 self.optimizer.step()
                 
+                rnd_loss = _r_i.mean()
+                self.rnd_optimizer.zero_grad(set_to_none=True)
+                rnd_loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.rnd.parameters(), 1)
+                self.rnd_optimizer.step()
+                
                 pis.append(pi.min().item())
                 ratios.append(ratio.max().item())
                 actor_losses.append(actor_loss.item())
                 critic_losses.append(critic_loss.item())
                 entropy_losses.append(entropy_loss.item())
-                
-            rnd_loss = r_i.mean()
-            self.rnd_optimizer.zero_grad(set_to_none=True)
-            rnd_loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.network.parameters(), 1)
-            self.rnd_optimizer.step()
-            rnd_losses.append(rnd_loss.item())
+                rnd_losses.append(rnd_loss.item())
             
         result = {
             'actor_loss' : np.mean(actor_losses),

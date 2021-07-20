@@ -22,7 +22,7 @@ class ContinuousPiV(torch.nn.Module):
         log_std = torch.tanh(self.log_std(x))
         return mu, log_std.exp(), self.v(x)
     
-    def v_i(self, x):
+    def get_vi(self, x):
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
         return self.v_i(x)
@@ -45,7 +45,7 @@ class DiscretePiV(torch.nn.Module):
         x = F.relu(self.l2(x))
         return F.softmax(self.pi(x), dim=-1), self.v(x)
 
-    def v_i(self, x):
+    def get_vi(self, x):
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
         return self.v_i(x)
@@ -83,7 +83,7 @@ class ContinuousPiV_CNN(torch.nn.Module):
         log_std = torch.tanh(self.log_std(x))
         return mu, log_std.exp(), self.v(x)
     
-    def v_i(self, x):
+    def get_vi(self, x):
         x = (x-(255.0/2))/(255.0/2)
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
@@ -124,7 +124,7 @@ class DiscretePiV_CNN(torch.nn.Module):
         
         return F.softmax(self.pi(x), dim=-1), self.v(x)
     
-    def v_i(self, x):
+    def get_vi(self, x):
         x = (x-(255.0/2))/(255.0/2)
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
