@@ -124,13 +124,16 @@ class RNDPPOAgent(REINFORCEAgent):
     def learn(self):
         transitions = self.memory.rollout()
         state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
+        reward = self.extrinsic_coeff * reward
         
         # RND: calculate exploration reward, update moments of obs and r_i
         self.rnd.update_rms(next_state.detach())
         r_i = self.rnd.forward(next_state)
         rewems = self.rff.update(r_i.detach())
         self.rff_rms.update(rewems)
-        r_i = r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
+        r_i = self.intrinsic_coeff * r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
+        r_i = r_i.unsqueeze(-1)
+        print(f"shape of r_i: {r_i.shape}")
         
         # set pi_old and advantage
         with torch.no_grad():            
@@ -178,7 +181,7 @@ class RNDPPOAgent(REINFORCEAgent):
                 _ret_i, _adv_i = map(lambda x: x[idx], [ret_i, adv_i])
 
                 _r_i = self.rnd.forward(_next_state)
-                _r_i = _r_i / (_r_i.detach().std() + 1e-7)
+                _r_i = self.intrinsic_coeff * _r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
                 
                 if self.action_type == "continuous":
                     mu, std, value = self.network(_state)
@@ -191,8 +194,8 @@ class RNDPPOAgent(REINFORCEAgent):
                 _v_i = self.network.get_vi(_state)
                 
                 ratio = (pi / (_pi_old + 1e-4)).prod(1, keepdim=True)
-                surr1 = ratio * (_adv + self.intrinsic_coeff * _adv_i)
-                surr2 = torch.clamp(ratio, min=1-self.epsilon_clip, max=1+self.epsilon_clip) * (_adv + self.intrinsic_coeff * _adv_i)
+                surr1 = ratio * (_adv + _adv_i)
+                surr2 = torch.clamp(ratio, min=1-self.epsilon_clip, max=1+self.epsilon_clip) * (_adv + _adv_i)
                 actor_loss = -torch.min(surr1, surr2).mean() 
                 
                 critic_loss = F.mse_loss(value, _ret).mean() + F.mse_loss(_v_i, _ret_i).mean()

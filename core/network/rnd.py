@@ -7,10 +7,11 @@ def normalize_obs(obs, m, v):
     return torch.clip((obs - m) / (torch.sqrt(v)+1e-7), min=-5., max=5.)
 
 class RND(torch.nn.Module):
-    def __init__(self, D_in, D_out):
+    def __init__(self, D_in, D_out, rms):
         super(RND, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
+        self.rms = rms
         
         feature_size = 256
         
@@ -25,7 +26,7 @@ class RND(torch.nn.Module):
         self.rms.update(obs)
                             
     def forward(self, s_next):
-        s_next = normalize_obs(s_next)
+        s_next = normalize_obs(s_next, self.rms.mean, self.rms.var)
         p = F.elu(self.fc1_predict(s_next))
         p = F.elu(self.fc2_predict(p))
 
@@ -82,10 +83,11 @@ class RND_CNN(torch.nn.Module):
         return r_i
         
 class RND_RNN(torch.nn.Module):
-    def __init__(self, D_in, D_out):
+    def __init__(self, D_in, D_out, rms):
         super(RND_RNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
+        self.rms = rms
         
         # Predictor Networks
         self.conv1_predict = torch.nn.Conv2d(in_channels=self.D_in[0], out_channels=32, kernel_size=8, stride=4)
@@ -109,7 +111,7 @@ class RND_RNN(torch.nn.Module):
         
     def forward(self, s_next):
         s_next = s_next/255.0
-        s_next = normalize_obs(s_next)
+        s_next = normalize_obs(s_next, self.rms.mean, self.rms.var)
         
         p = F.relu(self.conv1_predict(s_next))
         p = F.relu(self.conv2_predict(p))
