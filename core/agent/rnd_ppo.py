@@ -8,6 +8,51 @@ from .reinforce import REINFORCEAgent
 from core.optimizer import Optimizer
 from core.network import Network
 
+class RewardForwardFilter(object):
+    def __init__(self, gamma):
+        self.rewems = None
+        self.gamma = gamma
+        
+    def update(self, rews):
+        if self.rewems is None:
+            self.rewems = rews
+        else:
+            self.rewems = self.rewems * self.gamma + rews
+        return self.rewems
+    
+class RunningMeanStd(object):
+    def __init__(self, device="", epsilon=1e-4):
+        self.mean = None
+        self.var = None
+        self.device=device
+        self.count = epsilon
+
+    def update(self, x):
+        shape = x.shape[1:]
+        if self.mean == None or self.var == None:
+            self.mean = torch.zeros(shape, device=self.device)
+            self.var = torch.zeros(shape, device=self.device)
+        
+        batch_mean, batch_std, batch_count = x.mean(axis=0), x.std(axis=0), x.shape[0]
+        batch_var = torch.square(batch_std)
+        self.update_from_moments(batch_mean, batch_var, batch_count)
+
+    def update_from_moments(self, batch_mean, batch_var, batch_count):
+        delta = batch_mean - self.mean
+        tot_count = self.count + batch_count
+
+        new_mean = self.mean + delta * batch_count / tot_count
+        m_a = self.var * (self.count)
+        m_b = batch_var * (batch_count)
+        M2 = m_a + m_b + torch.square(delta) * self.count * batch_count / (self.count + batch_count)
+        new_var = M2 / (self.count + batch_count)
+
+        new_count = batch_count + self.count
+
+        self.mean = new_mean
+        self.var = new_var
+        self.count = new_count
+
 class RNDPPOAgent(REINFORCEAgent):
     def __init__(self,
                  state_size,
@@ -41,17 +86,21 @@ class RNDPPOAgent(REINFORCEAgent):
         self.time_t = 0
         self.learn_stamp = 0
         
-        self.rnd = Network(rnd_network, state_size, action_size).to(self.device)
+        self.gamma_i = gamma_i
+        self.extrinsic_coeff = extrinsic_coeff
+        self.intrinsic_coeff = intrinsic_coeff
+        
+        self.rff = RewardForwardFilter(self.gamma_i)
+        self.rff_rms = RunningMeanStd(self.device)
+        self.obs_rms = RunningMeanStd(self.device)
+        
+        self.rnd = Network(rnd_network, state_size, action_size, self.obs_rms).to(self.device)
         self.rnd_optimizer = Optimizer('adam', self.rnd.parameters(), lr=self.learning_rate)
         
         # Freeze random network
         for name, param in self.rnd.named_parameters():
             if "target" in name:
                 param.requires_grad = False
-        
-        self.gamma_i = gamma_i
-        self.extrinsic_coeff = extrinsic_coeff
-        self.intrinsic_coeff = intrinsic_coeff
                 
     @torch.no_grad()
     def act(self, state, training=True):
@@ -70,9 +119,12 @@ class RNDPPOAgent(REINFORCEAgent):
         transitions = self.memory.rollout()
         state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
         
-        # calculate exploration reward
+        # RND: calculate exploration reward, update moments of obs and r_i
+        self.rnd.update_rms(next_state.detach())
         r_i = self.rnd.forward(next_state)
-        r_i = r_i / (r_i.detach().std() + 1e-7)
+        rewems = self.rff.update(r_i.detach())
+        self.rff_rms.update(rewems)
+        r_i = r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
         
         # set pi_old and advantage
         with torch.no_grad():            
@@ -91,14 +143,14 @@ class RNDPPOAgent(REINFORCEAgent):
             next_vi = self.network.get_vi(next_state)
             delta = reward + (1 - done) * self.gamma * next_value - value
             # non-episodic intrinsic reward, hence (1-done) not applied
-            delta_i = r_i + self.gamma * next_vi - v_i
+            delta_i = r_i + self.gamma_i * next_vi - v_i
             adv = delta.clone() 
             adv_i = delta_i.clone()
             for t in reversed(range(len(adv))):
                 if t > 0 and (t + 1) % self.n_step == 0:
                     continue
                 adv[t] += (1 - done[t]) * self.gamma * self._lambda * adv[t+1]
-                adv_i[t] += self.gamma * self._lambda * adv_i[t+1]
+                adv_i[t] += self.gamma_i * self._lambda * adv_i[t+1]
             adv = (adv - adv.mean()) / (adv.std() + 1e-7)
             adv_i = (adv_i - adv_i.mean()) / (adv_i.std() + 1e-7)
             ret = adv + value

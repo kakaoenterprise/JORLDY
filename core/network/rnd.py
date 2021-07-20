@@ -3,11 +3,8 @@ import torch.nn.functional as F
 
 # normalize observation
 # assumed state shape: (batch_size, dim_state)
-def normalize_obs(obs):
-    m = obs.mean()
-    s = obs.std()
-
-    return torch.clip((obs - m) / (s+1e-7), min=-5., max=5.)
+def normalize_obs(obs, m, v):    
+    return torch.clip((obs - m) / (torch.sqrt(v)+1e-7), min=-5., max=5.)
 
 class RND(torch.nn.Module):
     def __init__(self, D_in, D_out):
@@ -22,6 +19,10 @@ class RND(torch.nn.Module):
         
         self.fc1_target = torch.nn.Linear(self.D_in, 256)
         self.fc2_target = torch.nn.Linear(256, feature_size)
+    
+    def update_rms(self, obs):
+        obs = obs/255.0
+        self.rms.update(obs)
                             
     def forward(self, s_next):
         s_next = normalize_obs(s_next)
@@ -36,10 +37,11 @@ class RND(torch.nn.Module):
         return r_i
         
 class RND_CNN(torch.nn.Module):
-    def __init__(self, D_in, D_out):
+    def __init__(self, D_in, D_out, rms):
         super(RND_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
+        self.rms = rms
         
         # Predictor Networks
         self.conv1_predict = torch.nn.Conv2d(in_channels=self.D_in[0], out_channels=32, kernel_size=8, stride=4)
@@ -57,9 +59,13 @@ class RND_CNN(torch.nn.Module):
         
         feature_size = 64*dim3[0]*dim3[1]
         
+    def update_rms(self, obs):
+        obs = obs/255.0
+        self.rms.update(obs)
+        
     def forward(self, s_next):
         s_next = s_next/255.0
-        s_next = normalize_obs(s_next)
+        s_next = normalize_obs(s_next, self.rms.mean, self.rms.var)
         
         p = F.relu(self.conv1_predict(s_next))
         p = F.relu(self.conv2_predict(p))
@@ -96,6 +102,10 @@ class RND_RNN(torch.nn.Module):
         dim3 = ((dim2[0] - 3)//1 + 1, (dim2[1] - 3)//1 + 1)
         
         feature_size = 64*dim3[0]*dim3[1]
+        
+    def update_rms(self, obs):
+        obs = obs/255.0
+        self.rms.update(obs)
         
     def forward(self, s_next):
         s_next = s_next/255.0
