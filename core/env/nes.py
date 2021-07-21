@@ -1,3 +1,4 @@
+import numpy as np
 # https://pypi.org/project/gym-super-mario-bros/
 from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
