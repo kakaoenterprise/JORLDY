@@ -61,14 +61,6 @@ class RNDDQNAgent(DQNAgent):
                 network='dqn',
                 optimizer='adam',
                 learning_rate=3e-4,
-#                 opt_eps=1e-8,
-#                 gamma=0.99,
-#                 explore_step=90000,
-#                 buffer_size=50000,
-#                 batch_size=64,
-#                 start_train_step=2000,
-#                 target_update_period=500,
-                device=None,
                 # Parameters for Random Network Distillation
                 rnd_network="rnd_cnn",
                 gamma_i=0.99,
@@ -80,8 +72,6 @@ class RNDDQNAgent(DQNAgent):
                                           action_size=action_size,
                                           network=network,
                                           **kwargs)
-        
-        self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         self.gamma_i = gamma_i
         self.extrinsic_coeff = extrinsic_coeff
@@ -106,7 +96,11 @@ class RNDDQNAgent(DQNAgent):
         if training and self.memory.size < max(self.batch_size, self.start_train_step):
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            action = torch.argmax(self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device)), -1, keepdim=True).cpu().numpy()
+            qe = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+            qi = self.network.get_qi(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+            
+            action = torch.argmax(qe+qi, -1, keepdim=True).cpu().numpy()
+            
         return action
 
     def learn(self):
