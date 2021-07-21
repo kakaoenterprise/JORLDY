@@ -1,4 +1,4 @@
-### RND PPO Atari Config ###
+### RND DQN Atari Config ###
 
 env = {
     # "name": it should be defined in the command. ex) python main.py --config config.dqn.atari --env.name breakout
@@ -12,18 +12,16 @@ env = {
 }
 
 agent = {
-    "name":"rnd_ppo",
-    "network":"discrete_pi_v_cnn",
-    "optimizer":"adam",
+    "name": "rnd_dqn",
+    "network": "dqn_cnn",
+    "optimizer": "rmsprop",
     "learning_rate": 2.5e-4,
-    "gamma":0.999,
-    "batch_size":32,
-    "n_step": 128,
-    "n_epoch": 3,
-    "_lambda": 0.95,
-    "epsilon_clip": 0.1,
-    "vf_coef": 1.0,
-    "ent_coef": 0.01,
+    "gamma": 0.999,
+    "explore_step": 1000000,
+    "buffer_size": 1000000,
+    "batch_size": 32,
+    "start_train_step": 100000,
+    "target_update_period": 10000,
     # Parameters for Random Network Distillation
     "rnd_network": "rnd_cnn",
     "gamma_i": 0.99,
@@ -39,8 +37,8 @@ train = {
     "save_period" : 100000,
     "test_iteration": 5,
     "record" : True,
-    "record_period" : 200000,
+    "record_period" : 300000,
     # distributed setting
-    "update_period" : agent["n_step"],
-    "num_worker" : 8,
+    "update_period" : 32,
+    "num_worker" : 16,
 }

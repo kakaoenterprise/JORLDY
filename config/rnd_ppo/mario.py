@@ -12,7 +12,7 @@ env = {
 }
 
 agent = {
-    "name":"rnd_ppo",
+    "name":"ppo",
     "network":"discrete_pi_v_cnn",
     "optimizer":"adam",
     "learning_rate": 2.5e-4,
