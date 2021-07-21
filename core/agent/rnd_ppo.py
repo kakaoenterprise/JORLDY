@@ -117,8 +117,8 @@ class RNDPPOAgent(REINFORCEAgent):
 
     def learn(self):
         transitions = self.memory.rollout()
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
-       
+        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)      
+
         # RND: calculate exploration reward, update moments of obs and r_i
         self.rnd.update_rms(next_state.detach())
         r_i = self.rnd.forward(next_state)
