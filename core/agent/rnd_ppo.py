@@ -98,7 +98,7 @@ class RNDPPOAgent(REINFORCEAgent):
         self.rff_rms = RunningMeanStd(self.device)
         self.obs_rms = RunningMeanStd(self.device)
         
-        self.rnd = Network(rnd_network, state_size, action_size, self.obs_rms).to(self.device)
+        self.rnd = Network(rnd_network, state_size, action_size, self.obs_rms, self.rnd_normalize).to(self.device)
         self.rnd_optimizer = Optimizer('adam', self.rnd.parameters(), lr=self.learning_rate)
         
         # Freeze random network
