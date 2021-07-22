@@ -7,8 +7,9 @@ env = {
     "img_width": 84,
     "img_height": 84,
     "stack_frame": 4,
-    "no_op": True,
+#     "no_op": True,
     "reward_clip": True,
+    "dead_penalty": True,
 }
 
 agent = {
@@ -24,6 +25,7 @@ agent = {
     "epsilon_clip": 0.1,
     "vf_coef": 1.0,
     "ent_coef": 0.01,
+    "clip_grad_norm": 1.0,
 }
 
 train = {
