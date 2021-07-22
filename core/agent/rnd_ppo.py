@@ -260,7 +260,7 @@ class RNDPPOAgent(REINFORCEAgent):
         print(f"...Save model to {path}...")
         torch.save({
             "network" : self.network.state_dict(),
-            "rnd" : self.rnd_network.state_dict(),
+            "rnd" : self.rnd.state_dict(),
             "optimizer" : self.optimizer.state_dict(),
             "rnd_optimizer" : self.rnd_optimizer.state_dict(),
         }, os.path.join(path,"ckpt"))
