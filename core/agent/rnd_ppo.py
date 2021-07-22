@@ -65,11 +65,13 @@ class RNDPPOAgent(REINFORCEAgent):
                  epsilon_clip=0.2,
                  vf_coef=0.5,
                  ent_coef=0.0,
+                 use_standardization=False,
                  # Parameters for Random Network Distillation
                  rnd_network="rnd_cnn",
                  gamma_i=0.99,
                  extrinsic_coeff=1.0,
                  intrinsic_coeff=1.0,
+                 rnd_normalize=True,
                  **kwargs,
                  ):
         super(RNDPPOAgent, self).__init__(state_size=state_size,
@@ -85,10 +87,12 @@ class RNDPPOAgent(REINFORCEAgent):
         self.ent_coef = ent_coef
         self.time_t = 0
         self.learn_stamp = 0
+        self.use_standardization = use_standardization
         
         self.gamma_i = gamma_i
         self.extrinsic_coeff = extrinsic_coeff
         self.intrinsic_coeff = intrinsic_coeff
+        self.rnd_normalize = rnd_normalize
         
         self.rff = RewardForwardFilter(self.gamma_i)
         self.rff_rms = RunningMeanStd(self.device)
@@ -124,7 +128,7 @@ class RNDPPOAgent(REINFORCEAgent):
         r_i = self.rnd.forward(next_state)
         rewems = self.rff.update(r_i.detach())
         self.rff_rms.update(rewems)
-        r_i = r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
+        if self.rnd_normalize: r_i = r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
         r_i = r_i.unsqueeze(-1)
         
         # Scaling extrinsic and intrinsic reward
@@ -156,8 +160,9 @@ class RNDPPOAgent(REINFORCEAgent):
                     continue
                 adv[t] += (1 - done[t]) * self.gamma * self._lambda * adv[t+1]
                 adv_i[t] += self.gamma_i * self._lambda * adv_i[t+1]
-            adv = (adv - adv.mean()) / (adv.std() + 1e-7)
-            adv_i = (adv_i - adv_i.mean()) / (adv_i.std() + 1e-7)
+            if self.use_standardization:
+                adv = (adv - adv.mean(dim=1, keepdim=True)) / (adv.std(dim=1, keepdim=True) + 1e-7)
+                adv_i = (adv_i - adv_i.mean(dim=1, keepdim=True)) / (adv_i.std(dim=1, keepdim=True) + 1e-7)
             ret = adv + value
             ret_i = adv_i + v_i
         
@@ -177,7 +182,7 @@ class RNDPPOAgent(REINFORCEAgent):
                 _ret_i, _adv_i = map(lambda x: x[idx], [ret_i, adv_i])
 
                 _r_i = self.rnd.forward(_next_state)
-                _r_i = self.intrinsic_coeff * _r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
+                if self.rnd_normalize: _r_i = self.intrinsic_coeff * _r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
                 
                 if self.action_type == "continuous":
                     mu, std, value = self.network(_state)
@@ -186,6 +191,7 @@ class RNDPPOAgent(REINFORCEAgent):
                     pi = m.log_prob(z).exp()
                 else:
                     pi, value = self.network(_state)
+                    m = Categorical(pi)
                     pi = pi.gather(1, _action.long())
                 _v_i = self.network.get_vi(_state)
                 
@@ -196,7 +202,7 @@ class RNDPPOAgent(REINFORCEAgent):
                 
                 critic_loss = F.mse_loss(value, _ret).mean() + F.mse_loss(_v_i, _ret_i).mean()
                 
-                entropy_loss = torch.log(pi + 1e-4).mean()
+                entropy_loss = -m.entropy().mean()
                 loss = actor_loss + self.vf_coef * critic_loss + self.ent_coef * entropy_loss
                 
                 self.optimizer.zero_grad(set_to_none=True)
