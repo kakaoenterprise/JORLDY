@@ -214,13 +214,13 @@ class RNDPPOAgent(REINFORCEAgent):
                 
                 self.optimizer.zero_grad(set_to_none=True)
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.network.parameters(), 1)
+                torch.nn.utils.clip_grad_norm_(self.network.parameters(), self.clip_grad_norm)
                 self.optimizer.step()
                 
                 rnd_loss = _r_i.mean()
                 self.rnd_optimizer.zero_grad(set_to_none=True)
                 rnd_loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.rnd.parameters(), 1)
+                torch.nn.utils.clip_grad_norm_(self.rnd.parameters(), self.clip_grad_norm)
                 self.rnd_optimizer.step()
                 
                 pis.append(pi.min().item())
