@@ -87,15 +87,12 @@ class Atari(BaseEnv):
         next_state = self.img_processor.convert_img(next_state)
         self.stacked_state = np.concatenate((self.stacked_state[self.num_channel:], next_state), axis=0)
         
-        if self.reward_scale:
-            reward = reward / self.reward_scale
+        if self.reward_clip:
+            reward = reward / self.reward_scale if self.reward_scale else np.tanh(reward)
         
         if dead and self.dead_penalty:
             reward = -1
             
-        if self.reward_clip:
-            reward = np.clip(reward, -1., 1.)
-        
         next_state, reward, done = map(lambda x: np.expand_dims(x, 0), [self.stacked_state, [reward], [done]])
         return (next_state, reward, done)
     
