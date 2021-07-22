@@ -32,7 +32,7 @@ agent = {
 
 train = {
     "training" : False,
-    "load_path" : './logs/mario/icm_dqn/20210705193117',
+    "load_path" : None,
     "run_step" : 100000000,
     "print_period" : 5000,
     "save_period" : 100000,

@@ -3,6 +3,7 @@ torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np
 import copy
+import os
 
 from core.network import Network
 from core.optimizer import Optimizer
@@ -66,6 +67,8 @@ class RNDDQNAgent(DQNAgent):
                 gamma_i=0.99,
                 extrinsic_coeff=1.0,
                 intrinsic_coeff=1.0,
+                 obs_normalize=True,
+                 ri_normalize=True,
                 **kwargs,
                 ):
         super(RNDDQNAgent, self).__init__(state_size=state_size,
@@ -77,11 +80,14 @@ class RNDDQNAgent(DQNAgent):
         self.extrinsic_coeff = extrinsic_coeff
         self.intrinsic_coeff = intrinsic_coeff
         
+        self.obs_normalize = obs_normalize
+        self.ri_normalize = ri_normalize
+        
         self.rff = RewardForwardFilter(self.gamma_i)
         self.rff_rms = RunningMeanStd(self.device)
         self.obs_rms = RunningMeanStd(self.device)
         
-        self.rnd = Network(rnd_network, state_size, action_size, self.obs_rms).to(self.device)
+        self.rnd = Network(rnd_network, state_size, action_size, self.obs_normalize).to(self.device)
         self.rnd_optimizer = Optimizer('adam', self.rnd.parameters(), lr=learning_rate)
         
         # Freeze random network
@@ -114,7 +120,7 @@ class RNDDQNAgent(DQNAgent):
         r_i = self.rnd.forward(next_state)
         rewems = self.rff.update(r_i.detach())
         self.rff_rms.update(rewems)
-        r_i = r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
+        if self.ri_normalize: r_i = r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
         r_i = r_i.unsqueeze(-1)
         
         r_i *= self.intrinsic_coeff
@@ -156,7 +162,7 @@ class RNDDQNAgent(DQNAgent):
     
     def process(self, transitions, step):
         result = {}
-
+                
         # Process per step
         self.memory.store(transitions)
         delta_t = step - self.time_t
@@ -173,3 +179,25 @@ class RNDDQNAgent(DQNAgent):
                 self.target_update_stamp = 0
 
         return result
+    
+    def save(self, path):
+        print(f"...Save model to {path}...")
+        torch.save({
+            "network" : self.network.state_dict(),
+            "rnd" : self.rnd_network.state_dict(),
+            "optimizer" : self.optimizer.state_dict(),
+            "rnd_optimizer" : self.rnd_optimizer.state_dict(),
+        }, os.path.join(path,"ckpt"))
+
+    def load(self, path):
+        print(f"...Load model from {path}...")
+        checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=self.device)
+        self.network.load_state_dict(checkpoint["network"])
+        self.rnd_network.load_state_dict(checkpoint["rnd"])
+        self.optimizer.load_state_dict(checkpoint["optimizer"])
+        self.rnd_optimizer.load_state_dict(checkpoint["rnd_optimizer"])
+        
+    def get_ri(self, next_state):
+        r_i = self.rnd.forward(next_state)
+        
+        return r_i

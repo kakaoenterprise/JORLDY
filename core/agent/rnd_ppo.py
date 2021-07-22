@@ -3,6 +3,7 @@ torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 from torch.distributions import Normal, Categorical
 import numpy as np
+import os
 
 from .reinforce import REINFORCEAgent
 from core.optimizer import Optimizer
@@ -71,7 +72,8 @@ class RNDPPOAgent(REINFORCEAgent):
                  gamma_i=0.99,
                  extrinsic_coeff=1.0,
                  intrinsic_coeff=1.0,
-                 rnd_normalize=True,
+                 obs_normalize=True,
+                 ri_normalize=True,
                  **kwargs,
                  ):
         super(RNDPPOAgent, self).__init__(state_size=state_size,
@@ -92,13 +94,15 @@ class RNDPPOAgent(REINFORCEAgent):
         self.gamma_i = gamma_i
         self.extrinsic_coeff = extrinsic_coeff
         self.intrinsic_coeff = intrinsic_coeff
-        self.rnd_normalize = rnd_normalize
+        
+        self.obs_normalize = obs_normalize
+        self.ri_normalize = ri_normalize
         
         self.rff = RewardForwardFilter(self.gamma_i)
         self.rff_rms = RunningMeanStd(self.device)
         self.obs_rms = RunningMeanStd(self.device)
         
-        self.rnd = Network(rnd_network, state_size, action_size, self.obs_rms, self.rnd_normalize).to(self.device)
+        self.rnd = Network(rnd_network, state_size, action_size, self.obs_rms, self.obs_normalize).to(self.device)
         self.rnd_optimizer = Optimizer('adam', self.rnd.parameters(), lr=self.learning_rate)
         
         # Freeze random network
@@ -128,7 +132,7 @@ class RNDPPOAgent(REINFORCEAgent):
         r_i = self.rnd.forward(next_state)
         rewems = self.rff.update(r_i.detach())
         self.rff_rms.update(rewems)
-        if self.rnd_normalize: r_i = r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
+        if self.ri_normalize: r_i = r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
         r_i = r_i.unsqueeze(-1)
         
         # Scaling extrinsic and intrinsic reward
@@ -182,7 +186,8 @@ class RNDPPOAgent(REINFORCEAgent):
                 _ret_i, _adv_i = map(lambda x: x[idx], [ret_i, adv_i])
 
                 _r_i = self.rnd.forward(_next_state)
-                if self.rnd_normalize: _r_i = self.intrinsic_coeff * _r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
+                if self.ri_normalize: _r_i = _r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
+                _r_i = self.intrinsic_coeff * _r_i
                 
                 if self.action_type == "continuous":
                     mu, std, value = self.network(_state)
@@ -248,6 +253,20 @@ class RNDPPOAgent(REINFORCEAgent):
             self.learn_stamp = 0
         
         return result
-    
 
-        
+    def save(self, path):
+        print(f"...Save model to {path}...")
+        torch.save({
+            "network" : self.network.state_dict(),
+            "rnd" : self.rnd_network.state_dict(),
+            "optimizer" : self.optimizer.state_dict(),
+            "rnd_optimizer" : self.rnd_optimizer.state_dict(),
+        }, os.path.join(path,"ckpt"))
+
+    def load(self, path):
+        print(f"...Load model from {path}...")
+        checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=self.device)
+        self.network.load_state_dict(checkpoint["network"])
+        self.rnd_network.load_state_dict(checkpoint["rnd"])
+        self.optimizer.load_state_dict(checkpoint["optimizer"])
+        self.rnd_optimizer.load_state_dict(checkpoint["rnd_optimizer"])

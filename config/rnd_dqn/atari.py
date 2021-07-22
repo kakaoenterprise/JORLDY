@@ -27,6 +27,8 @@ agent = {
     "gamma_i": 0.99,
     "extrinsic_coeff": 0.0,
     "intrinsic_coeff": 1.0,
+    "obs_normalize": False,
+    "ri_normalize": False,
 }
 
 train = {

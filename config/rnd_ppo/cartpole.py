@@ -19,11 +19,14 @@ agent = {
     "epsilon_clip": 0.1,
     "vf_coef": 0.5,
     "ent_coef": 0.0,
+    "clip_grad_norm": 1.0,
     # Parameters for Random Network Distillation
     "rnd_network": "rnd",
     "gamma_i": 0.99,
     "extrinsic_coeff": 1.0,
     "intrinsic_coeff": 1.0,
+    "obs_normalize": False,
+    "ri_normalize": False,
 }
 
 train = {

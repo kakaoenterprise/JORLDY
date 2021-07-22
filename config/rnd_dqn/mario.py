@@ -25,11 +25,13 @@ agent = {
     "gamma_i": 0.99,
     "extrinsic_coeff": 1.0,
     "intrinsic_coeff": 1.0,
+    "obs_normalize": False,
+    "ri_normalize": False,
 }
 
 train = {
     "training" : True,
-    "load_path" : None,
+    "load_path" : './logs/mario/rnd_dqn/20210721143654',
     "run_step" : 100000000,
     "print_period" : 5000,
     "save_period" : 50000,

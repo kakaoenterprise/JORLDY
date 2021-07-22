@@ -4,11 +4,12 @@ env = {
     "name": "mario",
     "render": False,
     "gray_img": True,
-    "img_width": 80,
-    "img_height": 80,
+    "img_width": 84,
+    "img_height": 84,
     "stack_frame": 4,
-    "no_op": True,
-    "reward_clip": False,
+#     "no_op": True,
+    "reward_clip": True,
+    "dead_penalty": True,
 }
 
 agent = {
@@ -16,7 +17,7 @@ agent = {
     "network":"discrete_pi_v_cnn",
     "optimizer":"adam",
     "learning_rate": 2.5e-4,
-    "gamma":0.999,
+    "gamma":0.99,
     "batch_size":32,
     "n_step": 128,
     "n_epoch": 3,
@@ -24,6 +25,7 @@ agent = {
     "epsilon_clip": 0.1,
     "vf_coef": 1.0,
     "ent_coef": 0.01,
+    "clip_grad_norm": 1.0,
 }
 
 train = {
@@ -34,7 +36,7 @@ train = {
     "save_period" : 100000,
     "test_iteration": 1,
     "record" : True,
-    "record_period" : 200000,
+    "record_period" : 250000,
     # distributed setting
     "update_period" : agent["n_step"],
     "num_worker" : 8,
