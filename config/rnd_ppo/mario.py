@@ -4,11 +4,12 @@ env = {
     "name": "mario",
     "render": False,
     "gray_img": True,
-    "img_width": 80,
-    "img_height": 80,
+    "img_width": 84,
+    "img_height": 84,
     "stack_frame": 4,
-    "no_op": True,
-    "reward_clip": False,
+#     "no_op": True,
+    "reward_clip": True,
+    "dead_penalty": False,
 }
 
 agent = {

@@ -9,7 +9,7 @@ env = {
     "stack_frame": 4,
 #     "no_op": True,
     "reward_clip": True,
-    "dead_penalty": True,
+    "dead_penalty": False,
 }
 
 agent = {

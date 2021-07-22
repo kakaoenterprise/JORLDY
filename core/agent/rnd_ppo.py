@@ -66,6 +66,7 @@ class RNDPPOAgent(REINFORCEAgent):
                  epsilon_clip=0.2,
                  vf_coef=0.5,
                  ent_coef=0.0,
+                 clip_grad_norm=1.0,
                  use_standardization=False,
                  # Parameters for Random Network Distillation
                  rnd_network="rnd_cnn",
@@ -89,6 +90,7 @@ class RNDPPOAgent(REINFORCEAgent):
         self.ent_coef = ent_coef
         self.time_t = 0
         self.learn_stamp = 0
+        self.clip_grad_norm = clip_grad_norm
         self.use_standardization = use_standardization
         
         self.gamma_i = gamma_i
