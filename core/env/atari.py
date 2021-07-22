@@ -18,6 +18,7 @@ class Atari(BaseEnv):
                  life_key='ale.lives',
                  no_op=False,
                  reward_clip=False,
+                 reward_scale=None,
                  dead_penalty=False,
                  ):
         self.id = id
@@ -41,6 +42,7 @@ class Atari(BaseEnv):
         self.no_op = no_op
         self.no_op_max = 30
         self.reward_clip = reward_clip
+        self.reward_scale = reward_scale
         self.dead_penalty = dead_penalty
         
         print(f"{name} Start!")
@@ -61,8 +63,6 @@ class Atari(BaseEnv):
                     if self.life > info[self.life_key]:
                         state, reward, _, _ = self.env.step(1)
                         self.score += reward
-                        if self.dead_penalty:
-                            reward = -1
                     self.life = info[self.life_key]
 
         state = self.img_processor.convert_img(state)
@@ -77,19 +77,23 @@ class Atari(BaseEnv):
         next_state, reward, done, info = self.env.step(np.asscalar(action))
         self.score += reward 
         
+        dead=False
         if self.life != info[self.life_key] and not done:
             if self.life > info[self.life_key]:
                 state, _reward, _, _ = self.env.step(1)
                 self.score += _reward
+                dead = True
             self.life = info[self.life_key]
         next_state = self.img_processor.convert_img(next_state)
         self.stacked_state = np.concatenate((self.stacked_state[self.num_channel:], next_state), axis=0)
         
-        next_state, reward, done = map(lambda x: np.expand_dims(x, 0), [self.stacked_state, [reward], [done]])
-
         if self.reward_clip:
-            reward = np.clip(reward, -1., 1.)
+            reward = reward / self.reward_scale if self.reward_scale else np.tanh(reward)
         
+        if dead and self.dead_penalty:
+            reward = -1
+            
+        next_state, reward, done = map(lambda x: np.expand_dims(x, 0), [self.stacked_state, [reward], [done]])
         return (next_state, reward, done)
     
     def close(self):
