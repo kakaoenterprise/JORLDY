@@ -133,8 +133,6 @@ class DQNAgent(BaseAgent):
         self.target_network = copy.deepcopy(self.network)
         self.optimizer.load_state_dict(checkpoint["optimizer"])
     
-    def set_distributed(self, id):
-        while id >= 1.0:
-            id /= 10.
-        self.epsilon = id 
+    def set_distributed(self, id, num_worker):
+        self.epsilon = id / num_worker
         return self
