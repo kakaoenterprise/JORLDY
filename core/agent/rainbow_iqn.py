@@ -7,7 +7,7 @@ import time
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import RainbowBuffer
+from .utils import PERMultistepBuffer
 from .rainbow import RainbowAgent
 
 class RainbowIQNAgent(RainbowAgent):
@@ -71,7 +71,7 @@ class RainbowIQNAgent(RainbowAgent):
         self.sample_max = sample_max
         
         # MultiStep
-        self.memory = RainbowBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
+        self.memory = PERMultistepBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
         
     @torch.no_grad()
     def act(self, state, training=True):

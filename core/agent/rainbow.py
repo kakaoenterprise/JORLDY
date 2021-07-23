@@ -6,7 +6,7 @@ import copy
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import RainbowBuffer
+from .utils import PERMultistepBuffer
 from .dqn import DQNAgent
 
 class RainbowAgent(DQNAgent):
@@ -68,7 +68,7 @@ class RainbowAgent(DQNAgent):
         self.num_support = num_support
         
         # MultiStep
-        self.memory = RainbowBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
+        self.memory = PERMultistepBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
         
         # C51
         self.delta_z = (self.v_max - self.v_min) / (self.num_support - 1)
