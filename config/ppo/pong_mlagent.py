@@ -27,6 +27,7 @@ train = {
     "print_period" : 1000,
     "save_period" : 10000,
     "test_iteration": 10,
+    "distributed_batch_size" : 256,
     "update_period" : agent["n_step"],
     "num_worker" : 16,
 }

@@ -36,6 +36,7 @@ train = {
     "record" : True,
     "record_period" : 300000,
     # distributed setting
+    "distributed_batch_size" : 256,
     "update_period" : agent["n_step"],
     "num_worker" : 8,
 }
