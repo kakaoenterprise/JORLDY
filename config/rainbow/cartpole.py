@@ -9,8 +9,6 @@ env = {
 agent = {
     "name": "rainbow",
     "network": "rainbow",
-    "optimizer": "adam",
-    "learning_rate": 0.0000625,
     "gamma": 0.99,
     "explore_step": 20000,
     "buffer_size": 50000,
@@ -29,6 +27,11 @@ agent = {
     "v_min": -10,
     "v_max": 10,
     "num_support": 51
+}
+
+optim = {
+    "name": "adam",
+    "lr": 2.5e-4/4,
 }
 
 train = {

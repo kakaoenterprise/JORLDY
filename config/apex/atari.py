@@ -14,12 +14,10 @@ env = {
 agent = {
     "name": "apex",
     "network": "dueling_cnn",
-    "optimizer": "rmsprop",
-    "opt_eps": 1.5e-7,
-    "learning_rate": 0.00025/4,
     "gamma": 0.99,
     "buffer_size": 1000000,
     "batch_size": 32,
+    "clip_grad_norm": 40.0,
     "start_train_step": 50000,
     "target_update_period": 2500,
     # MultiStep
@@ -28,6 +26,13 @@ agent = {
     "alpha": 0.6,
     "beta": 0.4,
     "uniform_sample_prob": 1e-3,
+}
+
+optim = {
+    "name": "rmsprop",
+    "eps": 1.5e-7,
+    "lr": 2.5e-4/4,
+    "centered": True,
 }
 
 train = {
@@ -41,6 +46,6 @@ train = {
     "record_period" : 300000,
     # distributed setting
     "distributed_batch_size" : 512,
-    "update_period" : 50,
+    "update_period" : 8,
     "num_worker" : 32,
 }

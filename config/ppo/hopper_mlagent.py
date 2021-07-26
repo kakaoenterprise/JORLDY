@@ -8,8 +8,6 @@ env = {
 agent = {
     "name": "ppo",
     "network": "continuous_pi_v",
-    "optimizer": "adam",
-    "learning_rate": 2.5e-4,
     "gamma": 0.99,
     "batch_size":32,
     "n_step": 128,
@@ -18,6 +16,11 @@ agent = {
     "epsilon_clip": 0.1,
     "vf_coef": 1.0,
     "ent_coef": 0.01,
+}
+
+optim = {
+    "name": "adam",
+    "lr": 2.5e-4,
 }
 
 train = {
