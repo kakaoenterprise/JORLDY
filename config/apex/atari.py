@@ -1,4 +1,4 @@
-### PPO Atari Config ###
+### Ape-X Atari Config ###
 
 env = {
     # "name": it should be defined in the command. ex) python main.py --config config.dqn.atari --env.name breakout
@@ -7,25 +7,27 @@ env = {
     "img_width": 84,
     "img_height": 84,
     "stack_frame": 4,
-#     "no_op": True,
+    "no_op": True,
     "reward_clip": True,
-    "dead_penalty": True,
 }
 
 agent = {
-    "name":"ppo",
-    "network":"discrete_pi_v_cnn",
-    "optimizer":"adam",
-    "learning_rate": 2.5e-4,
-    "gamma":0.99,
-    "batch_size":32,
-    "n_step": 128,
-    "n_epoch": 3,
-    "_lambda": 0.95,
-    "epsilon_clip": 0.1,
-    "vf_coef": 1.0,
-    "ent_coef": 0.01,
-    "clip_grad_norm": 1.0,
+    "name": "apex",
+    "network": "dueling_cnn",
+    "optimizer": "rmsprop",
+    "opt_eps": 1.5e-7,
+    "learning_rate": 0.00025/4,
+    "gamma": 0.99,
+    "buffer_size": 1000000,
+    "batch_size": 32,
+    "start_train_step": 50000,
+    "target_update_period": 2500,
+    # MultiStep
+    "n_step": 3,
+    # PER
+    "alpha": 0.6,
+    "beta": 0.4,
+    "uniform_sample_prob": 1e-3,
 }
 
 train = {
@@ -38,7 +40,7 @@ train = {
     "record" : True,
     "record_period" : 300000,
     # distributed setting
-    "distributed_batch_size" : 256,
-    "update_period" : agent["n_step"],
-    "num_worker" : 8,
+    "distributed_batch_size" : 512,
+    "update_period" : 50,
+    "num_worker" : 32,
 }
