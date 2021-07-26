@@ -17,6 +17,7 @@ if __name__ == "__main__":
     env = Env(**config.env)
     agent = Agent(state_size=env.state_size,
                   action_size=env.action_size,
+                  optim_config=config.optim,
                   **config.agent)
 
     if config.train.load_path:

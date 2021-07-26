@@ -15,10 +15,8 @@ class DQNAgent(BaseAgent):
     def __init__(self,
                 state_size,
                 action_size,
+                optim_config={'name':'adam'},
                 network='dqn',
-                optimizer='adam',
-                learning_rate=3e-4,
-                opt_eps=1e-8,
                 gamma=0.99,
                 epsilon_init=1.0,
                 epsilon_min=0.1,
@@ -34,7 +32,7 @@ class DQNAgent(BaseAgent):
         self.action_size = action_size
         self.network = Network(network, state_size, action_size).to(self.device)
         self.target_network = copy.deepcopy(self.network)
-        self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
+        self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma
         self.epsilon = epsilon_init
         self.epsilon_init = epsilon_init
