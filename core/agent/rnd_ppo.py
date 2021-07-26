@@ -9,51 +9,6 @@ from .reinforce import REINFORCEAgent
 from core.optimizer import Optimizer
 from core.network import Network
 
-class RewardForwardFilter(object):
-    def __init__(self, gamma):
-        self.rewems = None
-        self.gamma = gamma
-        
-    def update(self, rews):
-        if self.rewems is None:
-            self.rewems = rews
-        else:
-            self.rewems = self.rewems * self.gamma + rews
-        return self.rewems
-    
-class RunningMeanStd(object):
-    def __init__(self, device="", epsilon=1e-4):
-        self.mean = None
-        self.var = None
-        self.device=device
-        self.count = epsilon
-
-    def update(self, x):
-        shape = x.shape[1:]
-        if self.mean == None or self.var == None:
-            self.mean = torch.zeros(shape, device=self.device)
-            self.var = torch.zeros(shape, device=self.device)
-        
-        batch_mean, batch_std, batch_count = x.mean(axis=0), x.std(axis=0), x.shape[0]
-        batch_var = torch.square(batch_std)
-        self.update_from_moments(batch_mean, batch_var, batch_count)
-
-    def update_from_moments(self, batch_mean, batch_var, batch_count):
-        delta = batch_mean - self.mean
-        tot_count = self.count + batch_count
-
-        new_mean = self.mean + delta * batch_count / tot_count
-        m_a = self.var * (self.count)
-        m_b = batch_var * (batch_count)
-        M2 = m_a + m_b + torch.square(delta) * self.count * batch_count / (self.count + batch_count)
-        new_var = M2 / (self.count + batch_count)
-
-        new_count = batch_count + self.count
-
-        self.mean = new_mean
-        self.var = new_var
-        self.count = new_count
-
 class RNDPPOAgent(REINFORCEAgent):
     def __init__(self,
                  state_size,
@@ -100,11 +55,10 @@ class RNDPPOAgent(REINFORCEAgent):
         self.obs_normalize = obs_normalize
         self.ri_normalize = ri_normalize
         
-        self.rff = RewardForwardFilter(self.gamma_i)
-        self.rff_rms = RunningMeanStd(self.device)
-        self.obs_rms = RunningMeanStd(self.device)
-        
-        self.rnd = Network(rnd_network, state_size, action_size, self.obs_rms, self.obs_normalize).to(self.device)
+        self.rnd = Network(rnd_network, state_size, action_size, batch_size, self.device, 
+                           self.gamma_i, 
+                           self.ri_normalize, 
+                           self.obs_normalize).to(self.device)
         self.rnd_optimizer = Optimizer('adam', self.rnd.parameters(), lr=self.learning_rate)
         
         # Freeze random network
@@ -130,11 +84,8 @@ class RNDPPOAgent(REINFORCEAgent):
         state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)      
 
         # RND: calculate exploration reward, update moments of obs and r_i
-        self.rnd.update_rms(next_state.detach())
-        r_i = self.rnd.forward(next_state)
-        rewems = self.rff.update(r_i.detach())
-        self.rff_rms.update(rewems)
-        if self.ri_normalize: r_i = r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
+        self.rnd.update_rms(next_state.detach(), 'obs')
+        r_i = self.rnd.forward(next_state, update_ri=True)
         r_i = r_i.unsqueeze(-1)
         
         # Scaling extrinsic and intrinsic reward
@@ -187,9 +138,7 @@ class RNDPPOAgent(REINFORCEAgent):
                     map(lambda x: x[idx], [state, action, ret, next_state, done, adv, pi_old])
                 _ret_i, _adv_i = map(lambda x: x[idx], [ret_i, adv_i])
 
-                _r_i = self.rnd.forward(_next_state)
-                if self.ri_normalize: _r_i = _r_i / (torch.sqrt(self.rff_rms.var) + 1e-7)
-                _r_i = self.intrinsic_coeff * _r_i
+                _r_i = self.rnd.forward(_next_state) * self.intrinsic_coeff
                 
                 if self.action_type == "continuous":
                     mu, std, value = self.network(_state)
@@ -255,6 +204,36 @@ class RNDPPOAgent(REINFORCEAgent):
             self.learn_stamp = 0
         
         return result
+    
+    def sync_in(self, weights, values_rnd):
+#     def sync_in(self, weights):
+        self.network.load_state_dict(weights)
+        self.rnd.load_state_dict(values_rnd["rnd"])
+        self.rnd.rms['obs'].load(values_rnd["rnd_rms_obs"], device=self.device)
+        self.rnd.rms['ri'].load(values_rnd["rnd_rms_ri"], device=self.device)
+        self.rnd.rff.load(values_rnd["rnd_rff"], device=self.device)
+    
+    def sync_out(self, device="cpu"):
+        weights = self.network.state_dict()
+        for k, v in weights.items():
+            weights[k] = v.to(device) 
+            
+        # RND
+        w_rnd = self.rnd.state_dict()
+        for k, v in w_rnd.items():
+            w_rnd[k] = v.to(device)
+        values_rnd = {
+            "rnd" : w_rnd,
+            "rnd_rms_obs": self.rnd.rms['obs'].save(),
+            "rnd_rms_ri": self.rnd.rms['ri'].save(),
+            "rnd_rff": self.rnd.rff.save(),
+        }
+                    
+        sync_item ={
+            "weights": weights,
+            "values_rnd": values_rnd,
+        }
+        return sync_item
 
     def save(self, path):
         print(f"...Save model to {path}...")
@@ -263,12 +242,18 @@ class RNDPPOAgent(REINFORCEAgent):
             "rnd" : self.rnd.state_dict(),
             "optimizer" : self.optimizer.state_dict(),
             "rnd_optimizer" : self.rnd_optimizer.state_dict(),
+            "rnd_rms_obs": self.rnd.rms['obs'].save(),
+            "rnd_rms_ri": self.rnd.rms['ri'].save(),
+            "rnd_rff": self.rnd.rff.save(),
         }, os.path.join(path,"ckpt"))
 
     def load(self, path):
         print(f"...Load model from {path}...")
         checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=self.device)
         self.network.load_state_dict(checkpoint["network"])
-        self.rnd_network.load_state_dict(checkpoint["rnd"])
+        self.rnd.load_state_dict(checkpoint["rnd"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
         self.rnd_optimizer.load_state_dict(checkpoint["rnd_optimizer"])
+        self.rnd.rms['obs'].load(checkpoint["rnd_rms_obs"], device=self.device)
+        self.rnd.rms['ri'].load(checkpoint["rnd_rms_ri"], device=self.device)
+        self.rnd.rff.load(checkpoint["rnd_rff"], device=self.device)
