@@ -7,7 +7,7 @@ from manager import *
 from process import *
 
 # default_config_path = "config.YOUR_AGENT.YOUR_ENV"
-default_config_path = "config.ppo.breakout"
+default_config_path = "config.dqn.cartpole"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -18,10 +18,10 @@ if __name__ == "__main__":
     config = config_manager.config
     
     env = Env(**config.env)
-    config.agent.batch_size *= config.train.num_worker
     agent_config = {'state_size': env.state_size,
                     'action_size': env.action_size}
     agent_config.update(config.agent)
+    agent_config["batch_size"] *= config.train.num_worker
     agent = Agent(**agent_config)
     
     if config.train.load_path:
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     record_period = config.train.record_period if config.train.record_period else config.train.run_step//10
     test_manager_config = (Env(**config.env), config.train.test_iteration, config.train.record, record_period)
     log_id = config.train.id if config.train.id else config.agent.name
-    log_manager_config = (config.env.name, log_id, config.train.purpose)
+    log_manager_config = (config.env.name, log_id, config.train.experiment)
     agent_config['device'] = "cpu"
     manage = mp.Process(target=manage_process,
                         args=(Agent, agent_config, result_queue, manage_sync_queue,
