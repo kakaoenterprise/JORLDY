@@ -9,8 +9,6 @@ env = {
 agent = {
     "name": "dqn",
     "network": "dqn",
-    "optimizer": "adam",
-    "learning_rate": 0.0005,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
@@ -19,6 +17,11 @@ agent = {
     "batch_size": 32,
     "start_train_step": 2000,
     "target_update_period": 1000,
+}
+
+optim = {
+    "name": "adam",
+    "lr": 0.0005,
 }
 
 train = {

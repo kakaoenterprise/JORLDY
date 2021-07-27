@@ -14,8 +14,6 @@ env = {
 agent = {
     "name": "multistep",
     "network": "dqn_cnn",
-    "optimizer": "adam",
-    "learning_rate": 2.5e-4
     "gamma": 0.99,
     "n_step": 4,
     "epsilon_init": 1.0,
@@ -25,6 +23,11 @@ agent = {
     "batch_size": 32,
     "start_train_step": 100000,
     "target_update_period": 10000,
+}
+
+optim = {
+    "name": "adam",
+    "lr": 2.5e-4,
 }
 
 train = {

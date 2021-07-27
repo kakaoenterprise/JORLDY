@@ -15,9 +15,7 @@ class RainbowIQNAgent(RainbowAgent):
                 state_size,
                 action_size,
                 network='rainbow_iqn',
-                optimizer='adam',
-                learning_rate=3e-4,
-                opt_eps=1e-8,
+                optim_config={'name':'adam'},
                 gamma=0.99,
                 explore_step=90000,
                 buffer_size=50000,
@@ -38,12 +36,11 @@ class RainbowIQNAgent(RainbowAgent):
                 sample_max = 1.0,
                 device = None,
                 ):
-        
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size        
         self.network = Network(network, state_size, action_size, embedding_dim, num_sample, self.device).to(self.device)
         self.target_network = copy.deepcopy(self.network)
-        self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
+        self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma
         self.explore_step = explore_step
         self.batch_size = batch_size

@@ -16,8 +16,7 @@ class REINFORCEAgent(BaseAgent):
                  state_size,
                  action_size,
                  network="discrete_policy",
-                 optimizer="adam",
-                 learning_rate=1e-4,
+                 optim_config={'name':'adam'},
                  gamma=0.99,
                  device=None,
                  ):
@@ -26,7 +25,7 @@ class REINFORCEAgent(BaseAgent):
         assert self.action_type in ["continuous", "discrete"]
 
         self.network = Network(network, state_size, action_size).to(self.device)
-        self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate)
+        self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
 
         self.gamma = gamma
         self.memory = Rollout()
