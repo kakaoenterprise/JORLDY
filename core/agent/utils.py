@@ -186,7 +186,7 @@ class Rollout(ReplayBuffer):
         return (state, action, reward, next_state, done)
     
 # Reference: https://github.com/LeejwUniverse/following_deepmid/tree/master/jungwoolee_pytorch/100%20Algorithm_For_RL/01%20sum_tree
-class RainbowBuffer(ReplayBuffer):
+class PERMultistepBuffer(ReplayBuffer):
     def __init__(self, buffer_size, n_step, uniform_sample_prob=1e-3):
         self.buffer_size = buffer_size 
         self.tree_size = (buffer_size * 2) - 1

@@ -19,7 +19,8 @@ if __name__ == "__main__":
     
     env = Env(**config.env)
     agent_config = {'state_size': env.state_size,
-                    'action_size': env.action_size}
+                    'action_size': env.action_size,
+                    'optim_config': config.optim}
     agent_config.update(config.agent)
     agent = Agent(**agent_config)
     

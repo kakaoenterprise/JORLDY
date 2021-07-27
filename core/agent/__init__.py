@@ -14,6 +14,7 @@ from .rnd_dqn import RNDDQNAgent
 from .reinforce import REINFORCEAgent
 from .ppo import PPOAgent
 from .multistep import MultistepDQNAgent
+from .apex import ApeXAgent
 
 import sys, os
 sys.path.append(os.path.abspath('../../'))
@@ -37,6 +38,7 @@ class Agent:
     "rnd_dqn": RNDDQNAgent,
     "reinforce": REINFORCEAgent,
     "ppo": PPOAgent,
+    "apex": ApeXAgent,
     }
     
     def __new__(self, name, *args, **kwargs):

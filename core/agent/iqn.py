@@ -13,9 +13,7 @@ class IQNAgent(DQNAgent):
                 state_size,
                 action_size,
                 network='iqn',
-                optimizer='adam',
-                learning_rate=3e-4,
-                opt_eps=1e-8,
+                optim_config={'name':'adam'},
                 num_sample=64,
                 embedding_dim=64,
                 sample_min=0.0,
@@ -26,7 +24,7 @@ class IQNAgent(DQNAgent):
         
         self.network = Network(network, state_size, action_size, embedding_dim, num_sample).to(self.device)
         self.target_network = copy.deepcopy(self.network)
-        self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
+        self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         
         self.action_size = action_size
         self.num_support = num_sample
