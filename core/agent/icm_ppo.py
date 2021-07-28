@@ -26,8 +26,7 @@ class ICMPPOAgent(PPOAgent):
                                           action_size=action_size,
                                           **kwargs)
         self.icm = Network(icm_network, state_size, action_size, eta, self.action_type).to(self.device)
-        parameters = list(self.network.parameters()) + list(self.icm.parameters())
-        self.optimizer = Optimizer('adam', parameters, lr=self.learning_rate)
+        self.optimizer.add_param_group({'params':self.icm.parameters()})
         
         self.beta = beta
         self.lamb = lamb

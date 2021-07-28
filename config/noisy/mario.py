@@ -12,14 +12,17 @@ env = {
 agent = {
     "name": "noisy",
     "network": "noisy_cnn",
-    "optimizer": "adam",
-    "learning_rate": 5e-4,
     "gamma": 0.99,
     "explore_step": 1000000,
     "buffer_size": 100000,
     "batch_size": 32,
     "start_train_step": 50000,
     "target_update_period": 10000,
+}
+
+optim = {
+    "name": "adam",
+    "lr": 5e-4,
 }
 
 train = {
