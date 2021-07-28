@@ -19,7 +19,7 @@ class Nes(Atari):
 class Mario(Nes):
     def __init__(self, **kwargs):
         reward_scale = 15.
-        super(Mario, self).__init__('SuperMarioBros-v2', reward_scale=reward_scale, **kwargs)
+        super(Mario, self).__init__('SuperMarioBros-v0', reward_scale=reward_scale, **kwargs)
 
 if __name__=="__main__":
     env = Mario()
