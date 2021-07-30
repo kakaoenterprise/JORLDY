@@ -112,14 +112,18 @@ class RNDPPOAgent(REINFORCEAgent):
             delta_i = r_i + self.gamma_i * next_vi - v_i
             adv = delta.clone() 
             adv_i = delta_i.clone()
-            for t in reversed(range(len(adv))):
-                if t > 0 and (t + 1) % self.n_step == 0:
-                    continue
-                adv[t] += (1 - done[t]) * self.gamma * self._lambda * adv[t+1]
-                adv_i[t] += self.gamma_i * self._lambda * adv_i[t+1]
+            adv, adv_i, done = adv.view(-1, self.n_step), adv_i.view(-1, self.n_step), done.view(-1, self.n_step)
+            for t in reversed(range(self.n_step - 1)):
+                adv[:, t] += (1 - done[:, t]) * self.gamma * self._lambda * adv[:, t+1]
+                adv_i[:, t] += self.gamma_i * self._lambda * adv_i[:, t+1]
+                
             if self.use_standardization:
                 adv = (adv - adv.mean(dim=1, keepdim=True)) / (adv.std(dim=1, keepdim=True) + 1e-7)
                 adv_i = (adv_i - adv_i.mean(dim=1, keepdim=True)) / (adv_i.std(dim=1, keepdim=True) + 1e-7)
+            adv = adv.view(-1, 1)
+            adv_i = adv_i.view(-1, 1)
+            done = done.view(-1, 1)
+            
             ret = adv + value
             ret_i = adv_i + v_i
         
