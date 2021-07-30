@@ -13,7 +13,6 @@ class RewardForwardFilter(object):
             self.rewems = self.rewems.repeat(rews.shape[0] // self.rewems.shape[0])
         
         self.rewems = self.rewems * self.gamma + rews
-#         print(f"[RewardForwardFilter] self.rewems: {self.rewems}")
         return self.rewems
     
     def save(self):
@@ -61,7 +60,6 @@ class RunningMeanStd(object):
         self.mean = new_mean
         self.var = new_var
         self.count = new_count
-#         print(f"[RunningMeanStd] self.mean: {self.mean} | self.var: {self.var} | self.count: {self.count}")
         
     def save(self):
         return {
