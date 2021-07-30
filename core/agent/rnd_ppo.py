@@ -5,24 +5,14 @@ from torch.distributions import Normal, Categorical
 import numpy as np
 import os
 
-from .reinforce import REINFORCEAgent
+from .ppo import PPOAgent
 from core.optimizer import Optimizer
 from core.network import Network
 
-class RNDPPOAgent(REINFORCEAgent):
+class RNDPPOAgent(PPOAgent):
     def __init__(self,
                  state_size,
                  action_size,
-                 network="discrete_pi_v",
-                 batch_size=32,
-                 n_step=100,
-                 n_epoch=5,
-                 _lambda=0.9,
-                 epsilon_clip=0.2,
-                 vf_coef=0.5,
-                 ent_coef=0.0,
-                 clip_grad_norm=1.0,
-                 use_standardization=False,
                  # Parameters for Random Network Distillation
                  rnd_network="rnd_cnn",
                  gamma_i=0.99,
@@ -30,23 +20,12 @@ class RNDPPOAgent(REINFORCEAgent):
                  intrinsic_coeff=1.0,
                  obs_normalize=True,
                  ri_normalize=True,
+                 batch_norm=True,
                  **kwargs,
                  ):
         super(RNDPPOAgent, self).__init__(state_size=state_size,
                                           action_size=action_size,
-                                          network=network,
                                           **kwargs)
-        self.batch_size = batch_size
-        self.n_step = n_step
-        self.n_epoch = n_epoch
-        self._lambda = _lambda
-        self.epsilon_clip = epsilon_clip
-        self.vf_coef = vf_coef
-        self.ent_coef = ent_coef
-        self.time_t = 0
-        self.learn_stamp = 0
-        self.clip_grad_norm = clip_grad_norm
-        self.use_standardization = use_standardization
         
         self.gamma_i = gamma_i
         self.extrinsic_coeff = extrinsic_coeff
@@ -54,30 +33,19 @@ class RNDPPOAgent(REINFORCEAgent):
         
         self.obs_normalize = obs_normalize
         self.ri_normalize = ri_normalize
+        self.batch_norm = batch_norm
         
-        self.rnd = Network(rnd_network, state_size, action_size, batch_size, self.device, 
+        self.rnd = Network(rnd_network, state_size, action_size, self.batch_size, self.device, 
                            self.gamma_i, 
                            self.ri_normalize, 
-                           self.obs_normalize).to(self.device)
+                           self.obs_normalize,
+                           self.batch_norm).to(self.device)
         self.rnd_optimizer = Optimizer('adam', self.rnd.parameters(), lr=self.learning_rate)
         
         # Freeze random network
         for name, param in self.rnd.named_parameters():
             if "target" in name:
                 param.requires_grad = False
-                
-    @torch.no_grad()
-    def act(self, state, training=True):
-        self.network.train(training)
-        
-        if self.action_type == "continuous":
-            mu, std, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
-            z = torch.normal(mu, std) if training else mu
-            action = torch.tanh(z)
-        else:
-            pi, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
-            action = torch.multinomial(pi, 1) if training else torch.argmax(pi, dim=-1, keepdim=True)
-        return action.cpu().numpy()
 
     def learn(self):
         transitions = self.memory.rollout()
@@ -192,21 +160,6 @@ class RNDPPOAgent(REINFORCEAgent):
             'min_pi': min(pis),
             'min_pi_old': min(pi_olds),
         }
-        return result
-
-    def process(self, transitions, step):
-        result = {}
-        # Process per step
-        self.memory.store(transitions)
-        delta_t = step - self.time_t
-        self.time_t = step
-        self.learn_stamp += delta_t
-        
-        # Process per epi
-        if self.learn_stamp >= self.n_step :
-            result = self.learn()
-            self.learn_stamp = 0
-        
         return result
     
     def sync_in(self, weights, values_rnd):

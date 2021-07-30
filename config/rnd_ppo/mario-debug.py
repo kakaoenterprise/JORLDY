@@ -38,7 +38,7 @@ agent = {
 
 train = {
     "training" : True,
-    "load_path" : "./logs/mario/rnd_ppo/20210726152042/",
+    "load_path" : "./logs/mario/rnd_ppo/20210727161246/",
     "run_step" : 30000000,
     "print_period" : 10000,
     "save_period" : 100000,

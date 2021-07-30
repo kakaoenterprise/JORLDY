@@ -16,7 +16,7 @@ agent = {
     "name":"rnd_ppo",
     "network":"discrete_pi_v_cnn",
     "optimizer":"adam",
-    "learning_rate": 2.5e-4,
+    "learning_rate": 0.0001,
     "gamma":0.99,
     "batch_size":32,
     "n_step": 128,
@@ -24,15 +24,17 @@ agent = {
     "_lambda": 0.95,
     "epsilon_clip": 0.1,
     "vf_coef": 1.0,
-    "ent_coef": 0.01,
+    "ent_coef": 0.001,
     "clip_grad_norm": 1.0,
+    "use_standardization": False,
     # Parameters for Random Network Distillation
     "rnd_network": "rnd_cnn",
     "gamma_i": 0.99,
-    "extrinsic_coeff": 1.0,
-    "intrinsic_coeff": 1.0,
+    "extrinsic_coeff": 0.0,
+    "intrinsic_coeff": 10.0,
     "obs_normalize": True,
     "ri_normalize": True,
+    "batch_norm": True,
 }
 
 train = {
@@ -46,5 +48,5 @@ train = {
     "record_period" : 200000,
     # distributed setting
     "update_period" : agent["n_step"],
-    "num_worker" : 8,
+    "num_worker" : 32,
 }

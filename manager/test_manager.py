@@ -23,7 +23,7 @@ class TestManager:
                 # record first iteration
                 if record and i == 0: 
                     frames.append(self.env.get_frame())
-                action = agent.act(state, training=False)
+                action = agent.act(state, training=True)
                 state, reward, done = self.env.step(action)
             scores.append(self.env.score)
             
