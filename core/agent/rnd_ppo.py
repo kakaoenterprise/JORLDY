@@ -30,6 +30,7 @@ class RNDPPOAgent(REINFORCEAgent):
                  intrinsic_coeff=1.0,
                  obs_normalize=True,
                  ri_normalize=True,
+                 batch_norm=True,
                  **kwargs,
                  ):
         super(RNDPPOAgent, self).__init__(state_size=state_size,
@@ -54,11 +55,13 @@ class RNDPPOAgent(REINFORCEAgent):
         
         self.obs_normalize = obs_normalize
         self.ri_normalize = ri_normalize
+        self.batch_norm = batch_norm
         
         self.rnd = Network(rnd_network, state_size, action_size, batch_size, self.device, 
                            self.gamma_i, 
                            self.ri_normalize, 
-                           self.obs_normalize).to(self.device)
+                           self.obs_normalize,
+                           self.batch_norm).to(self.device)
         self.rnd_optimizer = Optimizer('adam', self.rnd.parameters(), lr=self.learning_rate)
         
         # Freeze random network
