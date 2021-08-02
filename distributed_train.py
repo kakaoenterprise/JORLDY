@@ -33,6 +33,7 @@ if __name__ == "__main__":
     interact_sync_queue = mp.Queue(1)
     result_queue = mp.Queue()
     manage_sync_queue = mp.Queue(1)
+    path_queue = mp.Queue(1)
     
     record_period = config.train.record_period if config.train.record_period else config.train.run_step//10
     test_manager_config = (Env(**config.env), config.train.test_iteration, config.train.record, record_period)
@@ -40,8 +41,9 @@ if __name__ == "__main__":
     log_manager_config = (config.env.name, log_id, config.train.experiment)
     agent_config['device'] = "cpu"
     manage = mp.Process(target=manage_process,
-                        args=(Agent, agent_config, result_queue, manage_sync_queue,
-                              config.train.run_step, config.train.print_period, config.train.save_period,
+                        args=(Agent, agent_config,
+                              result_queue, manage_sync_queue, path_queue,
+                              config.train.run_step, config.train.print_period,
                               MetricManager, TestManager, test_manager_config,
                               LogManager, log_manager_config, config_manager))
     distributed_manager_config = (Env, config.env, Agent, agent_config, config.train.num_worker)
@@ -52,10 +54,12 @@ if __name__ == "__main__":
     manage.start()
     interact.start()
     try:
-        step, print_stamp = 0, 0
+        save_path = path_queue.get()
+        step, print_stamp, save_stamp = 0, 0, 0
         while step < config.train.run_step:
             step += config.train.update_period
             print_stamp += config.train.update_period
+            save_stamp += config.train.update_period
             try: interact_sync_queue.get_nowait()
             except: pass
             interact_sync_queue.put(agent.sync_out())
@@ -67,6 +71,9 @@ if __name__ == "__main__":
                 except: pass
                 manage_sync_queue.put(agent.sync_out())
                 print_stamp = 0
+            if save_stamp >= config.train.save_period or step >= config.train.run_step:
+                agent.save(save_path)
+                save_stamp = 0
     except Exception as e:
         traceback.print_exc()
         interact.terminate()
