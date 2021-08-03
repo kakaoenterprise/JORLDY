@@ -13,7 +13,7 @@ env = {
 }
 
 agent = {
-    "name":"ppo",
+    "name":"icm_ppo",
     "network":"discrete_pi_v_cnn",
     "gamma":0.99,
     "batch_size":32,
@@ -28,7 +28,7 @@ agent = {
     "icm_network": "icm_cnn",
     "beta": 0.2,
     "lamb": 1.0,
-    "eta": 0.01,
+    "eta": 0.1,
     "extrinsic_coeff": 1.0,
     "intrinsic_coeff": 1.0,
 }
@@ -48,6 +48,7 @@ train = {
     "record" : True,
     "record_period" : 300000,
     # distributed setting
+    "distributed_batch_size": 1024,
     "update_period" : agent["n_step"],
-    "num_worker" : 8,
+    "num_worker" : 32,
 }

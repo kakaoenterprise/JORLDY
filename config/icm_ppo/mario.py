@@ -22,7 +22,7 @@ agent = {
     "_lambda": 0.95,
     "epsilon_clip": 0.1,
     "vf_coef": 1.0,
-    "ent_coef": 0.01,
+    "ent_coef": 0.1,
     "clip_grad_norm": 1.0,
     # Parameters for Curiosity-driven Exploration
     "icm_network": "icm_cnn",
@@ -40,7 +40,7 @@ optim = {
 
 train = {
     "training" : True,
-    "load_path" : None,
+    "load_path" : None, #"./logs/mario/icm_ppo/20210729225927/",#
     "run_step" : 30000000,
     "print_period" : 50000,
     "save_period" : 500000,
@@ -48,6 +48,7 @@ train = {
     "record": True,
     "record_period": 300000,
     # distributed setting
+    "distributed_batch_size": 1024,
     "update_period" : agent["n_step"],
     "num_worker" : 32,
 }
