@@ -7,7 +7,6 @@ import numpy as np
 
 from .ppo import PPOAgent
 from core.network import Network
-from core.optimizer import Optimizer
 
 class ICMPPOAgent(PPOAgent):
     def __init__(self,
