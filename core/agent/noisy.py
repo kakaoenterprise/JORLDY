@@ -10,33 +10,8 @@ from .utils import ReplayBuffer
 from .dqn import DQNAgent
 
 class NoisyAgent(DQNAgent):
-    def __init__(self,
-                state_size,
-                action_size,
-                network='noisy',
-                optim_config={'name':'adam'},
-                gamma=0.99,
-                explore_step=90000,
-                buffer_size=50000,
-                batch_size=64,
-                start_train_step=2000,
-                target_update_period=500,
-                 device=None,
-                 ):
-        self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.action_size = action_size
-        self.network = Network(network, state_size, action_size, self.device).to(self.device)
-        self.target_network = copy.deepcopy(self.network)
-        self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
-        self.gamma = gamma
-        self.explore_step = explore_step
-        self.memory = ReplayBuffer(buffer_size)
-        self.batch_size = batch_size
-        self.start_train_step = start_train_step
-        self.target_update_period = target_update_period
-        self.target_update_stamp = 0
-        self.num_learn = 0
-        self.time_t = 0
+    def __init__(self,**kwargs):
+        super(NoisyAgent, self).__init__(**kwargs)
         
     @torch.no_grad()
     def act(self, state, training=True):
@@ -68,7 +43,7 @@ class NoisyAgent(DQNAgent):
         self.optimizer.step()
         
         self.num_learn += 1
-
+        
         result = {
             "loss" : loss.item(),
             "max_Q": max_Q,
