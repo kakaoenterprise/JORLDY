@@ -72,7 +72,7 @@ class Noisy(torch.nn.Module):
         return noisy_l(x, self.mu_w, self.sig_w, self.mu_b, self.sig_b, is_train)
     
 class Noisy_CNN(torch.nn.Module):
-    def __init__(self, D_in, D_out):
+    def __init__(self, D_in, D_out, D_hidden=512):
         super(Noisy_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
@@ -83,10 +83,10 @@ class Noisy_CNN(torch.nn.Module):
         dim2 = ((dim1[0] - 4)//2 + 1, (dim1[1] - 4)//2 + 1)
         self.conv3 = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
         dim3 = ((dim2[0] - 3)//1 + 1, (dim2[1] - 3)//1 + 1)
-        self.fc = torch.nn.Linear(64*dim3[0]*dim3[1], 512)
+        self.fc = torch.nn.Linear(64*dim3[0]*dim3[1], D_hidden)
         
-        self.mu_w1, self.sig_w1, self.mu_b1, self.sig_b1 = init_weights((512, 512))
-        self.mu_w2, self.sig_w2, self.mu_b2, self.sig_b2 = init_weights((512, self.D_out))
+        self.mu_w1, self.sig_w1, self.mu_b1, self.sig_b1 = init_weights((D_hidden, D_hidden))
+        self.mu_w2, self.sig_w2, self.mu_b2, self.sig_b2 = init_weights((D_hidden, self.D_out))
         
     def forward(self, x, is_train):
         x = (x-(255.0/2))/(255.0/2)

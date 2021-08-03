@@ -4,7 +4,7 @@ import numpy as np
 from .noisy import noisy_l, init_weights
 
 class Rainbow_IQN(torch.nn.Module):
-    def __init__(self, D_in, D_out, D_em, N_sample, D_hidden=128):
+    def __init__(self, D_in, D_out, D_em, N_sample, D_hidden=512):
         super(Rainbow_IQN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
@@ -60,7 +60,7 @@ class Rainbow_IQN(torch.nn.Module):
         
     
 class Rainbow_IQN_CNN(torch.nn.Module):
-    def __init__(self, D_in, D_out, D_em, N_sample):
+    def __init__(self, D_in, D_out, D_em, N_sample, D_hidden=512):
         super(Rainbow_IQN_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
@@ -78,13 +78,13 @@ class Rainbow_IQN_CNN(torch.nn.Module):
         
         self.sample_embed = torch.nn.Linear(D_em, 64*dim3[0]*dim3[1])
         
-        self.l1 = torch.nn.Linear(64*dim3[0]*dim3[1], 512)
+        self.l1 = torch.nn.Linear(64*dim3[0]*dim3[1], D_hidden)
         
-        self.mu_w_a1, self.sig_w_a1, self.mu_b_a1, self.sig_b_a1 = init_weights((512, 512))
-        self.mu_w_v1, self.sig_w_v1, self.mu_b_v1, self.sig_b_v1 = init_weights((512, 512))
+        self.mu_w_a1, self.sig_w_a1, self.mu_b_a1, self.sig_b_a1 = init_weights((D_hidden, D_hidden))
+        self.mu_w_v1, self.sig_w_v1, self.mu_b_v1, self.sig_b_v1 = init_weights((D_hidden, D_hidden))
         
-        self.mu_w_a2, self.sig_w_a2, self.mu_b_a2, self.sig_b_a2 = init_weights((512, self.D_out))
-        self.mu_w_v2, self.sig_w_v2, self.mu_b_v2, self.sig_b_v2 = init_weights((512, 1))
+        self.mu_w_a2, self.sig_w_a2, self.mu_b_a2, self.sig_b_a2 = init_weights((D_hidden, self.D_out))
+        self.mu_w_v2, self.sig_w_v2, self.mu_b_v2, self.sig_b_v2 = init_weights((D_hidden, 1))
         
     def forward(self, x, is_train, tau_min=0, tau_max=1):
         x = (x-(255.0/2))/(255.0/2)
