@@ -1,4 +1,4 @@
-### Noisy DQN Atari Config ###
+### Noisy DQN Mario Config ###
 
 env = {
     "name": "mario",
@@ -7,8 +7,6 @@ env = {
     "img_width": 84,
     "img_height": 84,
     "stack_frame": 4,
-    "no_op": True,
-    "reward_clip": True,
 }
 
 agent = {
@@ -40,3 +38,4 @@ train = {
     "update_period" : 32,
     "num_worker" : 16,
 }
+
