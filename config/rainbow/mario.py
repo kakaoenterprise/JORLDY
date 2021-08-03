@@ -1,4 +1,4 @@
-### Noisy DQN Mario Config ###
+### Rainbow DQN Atari Config ###
 
 env = {
     "name": "mario",
@@ -7,22 +7,35 @@ env = {
     "img_width": 84,
     "img_height": 84,
     "stack_frame": 4,
+    "no_op": True,
+    "reward_clip": True,
 }
 
 agent = {
-    "name": "noisy",
-    "network": "noisy_cnn",
+    "name": "rainbow",
+    "network": "rainbow_cnn",
     "gamma": 0.99,
     "explore_step": 1000000,
     "buffer_size": 1000000,
     "batch_size": 32,
     "start_train_step": 100000,
     "target_update_period": 10000,
+    # MultiStep
+    "n_step": 3,
+    # PER
+    "alpha": 0.6,
+    "beta": 0.4,
+    "learn_period": 4,
+    "uniform_sample_prob": 1e-3,
+    # C51
+    "v_min": -10,
+    "v_max": 10,
+    "num_support": 51
 }
 
 optim = {
     "name": "adam",
-    "lr": 2.5e-4,
+    "lr": 2.5e-4/4,
 }
 
 train = {
@@ -38,4 +51,3 @@ train = {
     "update_period" : 32,
     "num_worker" : 16,
 }
-

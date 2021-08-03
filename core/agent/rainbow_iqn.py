@@ -38,7 +38,7 @@ class RainbowIQNAgent(RainbowAgent):
                 ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size        
-        self.network = Network(network, state_size, action_size, embedding_dim, num_sample, self.device).to(self.device)
+        self.network = Network(network, state_size, action_size, embedding_dim, num_sample).to(self.device)
         self.target_network = copy.deepcopy(self.network)
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma

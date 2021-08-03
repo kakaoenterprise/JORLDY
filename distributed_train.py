@@ -89,4 +89,5 @@ if __name__ == "__main__":
         interact_sync_queue.close()
         result_queue.close()
         manage_sync_queue.close()
+        path_queue.close()
         env.close()
