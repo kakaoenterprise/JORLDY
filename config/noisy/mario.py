@@ -1,4 +1,4 @@
-### ICM DQN Mario Config ###
+### Noisy DQN Mario Config ###
 
 env = {
     "name": "mario",
@@ -10,32 +10,29 @@ env = {
 }
 
 agent = {
-    "name": "icm_dqn",
-    "network": "dqn_cnn",
-    "optimizer": "adam",
-    "learning_rate": 0.00025,
+    "name": "noisy",
+    "network": "noisy_cnn",
     "gamma": 0.99,
     "explore_step": 1000000,
     "buffer_size": 100000,
     "batch_size": 32,
-    "start_train_step": 25000,
+    "start_train_step": 50000,
     "target_update_period": 10000,
-    # Parameters for Curiosity-driven Exploration
-    "icm_network": "icm_cnn",
-    "beta": 0.2,
-    "lamb": 0.1,
-    "eta": 0.01,
-    "extrinsic_coeff": 0.0,
-    "intrinsic_coeff": 1.0,
+}
+
+optim = {
+    "name": "adam",
+    "lr": 5e-4,
 }
 
 train = {
     "training" : True,
     "load_path" : None,
     "run_step" : 100000000,
-    "print_period" : 5000,
+    "print_period" : 10000,
     "save_period" : 50000,
     "test_iteration": 3,
+    "record" : True,
     # distributed setting
     "update_period" : 32,
     "num_worker" : 16,
