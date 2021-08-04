@@ -4,9 +4,9 @@ import torch.nn.functional as F
 
 from .dqn import DQNAgent
 
-class DoubleDQNAgent(DQNAgent):
+class DoubleAgent(DQNAgent):
     def __init__(self, **kwargs):
-        super(DoubleDQNAgent, self).__init__(**kwargs)
+        super(DoubleAgent, self).__init__(**kwargs)
 
     def learn(self):        
         transitions = self.memory.sample(self.batch_size)

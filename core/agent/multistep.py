@@ -5,9 +5,9 @@ import torch.nn.functional as F
 from .utils import MultistepBuffer
 from .dqn import DQNAgent
 
-class MultistepDQNAgent(DQNAgent):
+class MultistepAgent(DQNAgent):
     def __init__(self, n_step = 5, **kwargs):
-        super(MultistepDQNAgent, self).__init__(**kwargs)
+        super(MultistepAgent, self).__init__(**kwargs)
         self.n_step = n_step
         self.memory = MultistepBuffer(self.buffer_size, self.n_step)
     

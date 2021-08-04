@@ -8,7 +8,7 @@ import numpy as np
 from .ppo import PPOAgent
 from core.network import Network
 
-class ICMPPOAgent(PPOAgent):
+class ICM_PPOAgent(PPOAgent):
     def __init__(self,
                  state_size,
                  action_size,
