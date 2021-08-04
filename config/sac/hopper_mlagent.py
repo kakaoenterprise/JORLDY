@@ -5,7 +5,7 @@ env = {
 
 agent = {
     "name":"sac",
-    "actor":"sac_actor",
+    "actor":"continuous_policy",
     "critic":"sac_critic",
     "use_dynamic_alpha":True,
     "gamma":0.99,

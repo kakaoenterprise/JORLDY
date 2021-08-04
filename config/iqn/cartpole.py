@@ -1,4 +1,4 @@
-### IQN CratPole Config ###
+### IQN CartPole Config ###
 
 env = {
     "name":"cartpole",
