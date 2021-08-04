@@ -1,59 +1,24 @@
-from .dqn import *
-from .dueling import *
-from .noisy import * 
-from .rainbow import * 
-from .rainbow_iqn import *
-from .iqn import *
-from .icm import * 
-from .rnd import *
-from .sac import *
-from .reinforce import *
-from .ppo import *
+import os, sys, inspect, re
+
+file_list = os.listdir(__name__.replace(".","/"))
+module_list = [file.replace(".py", "") for file in file_list 
+               if file.endswith(".py") and file.replace(".py","") not in ["__init__", "base", "utils"]]
+class_dict = {}
+for module in module_list:
+    module_path = f"{__name__}.{module}"
+    __import__(module_path, fromlist=[None])
+    for class_name, _class in inspect.getmembers(sys.modules[module_path], inspect.isclass):
+        naming_rule = lambda x: re.sub('([a-z])([A-Z])', r'\1_\2', x).lower()
+        class_dict[naming_rule(class_name)] = _class
 
 class Network:
-    dictionary = {
-    "dqn": DQN,
-    "dqn_cnn": DQN_CNN,
-    "dueling": Dueling,
-    "dueling_cnn": Dueling_CNN,
-    "noisy": Noisy, 
-    "noisy_cnn": Noisy_CNN,
-    "rainbow": Rainbow,
-    "rainbow_cnn": Rainbow_CNN,
-    "rainbow_iqn": Rainbow_IQN,
-    "rainbow_iqn_cnn": Rainbow_IQN_CNN,
-    "iqn": IQN,
-    "iqn_cnn": IQN_CNN,
-    "icm": ICM,
-    "icm_cnn": ICM_CNN,
-    "rnd": RND,
-    "rnd_cnn": RND_CNN,
-    "sac_actor": SACActor,
-    "sac_critic": SACCritic,
-    "continuous_policy": ContinuousPolicy,
-    "discrete_policy": DiscretePolicy,
-    "continuous_pi_v": ContinuousPiV,
-    "discrete_pi_v": DiscretePiV,
-    "continuous_pi_v_cnn": ContinuousPiV_CNN,
-    "discrete_pi_v_cnn": DiscretePiV_CNN,
-    }
-    
     def __new__(self, name, *args, **kwargs):
         expected_type = str
         if type(name) != expected_type:
             print("### name variable must be string! ###")
             raise Exception
         name = name.lower()
-        if not name in self.dictionary.keys():
-            print(f"### can use only follows {[opt for opt in self.dictionary.keys()]}")
+        if not name in class_dict.keys():
+            print(f"### can use only follows {[opt for opt in class_dict.keys()]}")
             raise Exception
-        return self.dictionary[name](*args, **kwargs)
-
-'''
-class TemplateNetwork:
-    def __init__(self):
-        pass
-
-    def forward(self, x):
-        pass
-'''
+        return class_dict[name](*args, **kwargs)

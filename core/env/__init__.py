@@ -1,60 +1,27 @@
-import os, sys
+import os, sys, inspect, re
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__))) # for import mlagents
 sys.path.append(os.path.abspath('../../'))
 
-from .gym_env import *
-from .atari import *
-from .ml_agent import * 
-from .nes import *
+file_list = os.listdir(__name__.replace(".","/"))
+module_list = [file.replace(".py", "") for file in file_list 
+               if file.endswith(".py") and file.replace(".py","") not in ["__init__", "base", "utils"]]
+class_dict = {}
+for module in module_list:
+    module_path = f"{__name__}.{module}"
+    __import__(module_path, fromlist=[None])
+    for class_name, _class in inspect.getmembers(sys.modules[module_path], inspect.isclass):
+        naming_rule = lambda x: re.sub('([a-z])([A-Z])', r'\1_\2', x).lower()
+        class_dict[naming_rule(class_name)] = _class
 
 class Env:
-    dictionary = {
-    #gym_env
-    "cartpole": CartPole,
-    "pendulum": Pendulum,
-    "mountaincar": MountainCar,
-    #atari
-    "breakout": Breakout,
-    "pong": Pong,
-    "alien": Alien,
-    "asterix": Asterix,
-    "assault": Assault,
-    "crazyclimber": CrazyClimber,
-    "enduro": Enduro,
-    "qbert": Qbert,
-    "privateeye": PrivateEye,
-    "montezuma": MontezumaRevenge,
-    "spaceinvaders": Spaceinvaders,
-    "seaquest": Seaquest,
-    #nes
-    "mario": Mario,
-    #ml_agent
-    "hopper_mlagent": HopperMLAgent,
-    "pong_mlagent": PongMLAgent,
-    }
-    
     def __new__(self, name, *args, **kwargs):
         expected_type = str
         if type(name) != expected_type:
             print("### name variable must be string! ###")
             raise Exception
         name = name.lower()
-        if not name in self.dictionary.keys():
-            print(f"### can use only follows {[opt for opt in self.dictionary.keys()]}")
+        if not name in class_dict.keys():
+            print(f"### can use only follows {[opt for opt in class_dict.keys()]}")
             raise Exception
-        return self.dictionary[name](*args, **kwargs)
-
-'''
-class BaseEnv:
-    def __init__(self):
-        pass
-
-    def reset(self):
-        pass
-
-    def step(self, action):
-        pass
-
-    def close(self):
-        pass
-'''
+        return class_dict[name](*args, **kwargs)
