@@ -1,4 +1,4 @@
-import sys, inspect, re
+import os, sys, inspect, re
 
 from torch.optim import *
 
@@ -7,6 +7,15 @@ for class_name, _class in inspect.getmembers(sys.modules[__name__], inspect.iscl
     naming_rule = lambda x: re.sub('([a-z])([A-Z])', r'\1_\2', x).lower()
     class_dict[naming_rule(class_name)] = _class
 
+    
+working_path = __name__.replace(".","/")
+with open(os.path.join(working_path, "_class_dict.txt"), 'w') as f:
+    f.write('### Class Dictionary ###\n')
+    f.write('format: (key, class)\n')
+    f.write('------------------------\n')
+    for item in class_dict.items():
+        f.write(str(item) + '\n')
+    
 class Optimizer:  
     def __new__(self, name, *args, **kwargs):
         expected_type = str
