@@ -47,9 +47,12 @@ if __name__ == "__main__":
         save_path = path_queue.get()
         state = env.reset()
         for step in range(1, config.train.run_step+1):
-            action = agent.act(state, training=True)
-            next_state, reward, done = env.step(action)
-            result = agent.process([(state, action, reward, next_state, done)], step)
+            action_dict = agent.act(state, config.train.training)            
+            next_state, reward, done = env.step(action_dict['action'])
+            transition = {'state': state, 'next_state': next_state,
+                          'reward': reward, 'done': done}
+            transition.update(action_dict)
+            result = agent.process([transition], step)
             result_queue.put((step, result))
 
             if step % config.train.print_period == 0 or step == config.train.run_step:

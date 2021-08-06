@@ -38,14 +38,17 @@ class REINFORCEAgent(BaseAgent):
             mu, std = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             z = torch.normal(mu, std) if training else mu
             action = torch.tanh(z)
-            action = action.cpu().numpy()
         else:
             pi = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             action = torch.multinomial(pi, 1) if training else torch.argmax(pi, dim=-1, keepdim=True)
-        return action.cpu().numpy()
+        return {'action': action.cpu().numpy()}
     
     def learn(self):
-        state, action, reward = self.memory.rollout()[:3]
+        transitions = self.memory.rollout()
+        
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
         
         ret = np.copy(reward)
         for t in reversed(range(len(ret)-1)):
@@ -58,12 +61,10 @@ class REINFORCEAgent(BaseAgent):
             m = Normal(mu, std)
             z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
             log_prob = m.log_prob(z)
-            log_prob -= torch.log(1 - action.pow(2) + 1e-7)
-            log_prob = log_prob.sum(1, keepdim=True)
-            loss = -(log_prob*ret).mean()
         else:
             pi = self.network(state)
-            loss = -(torch.log(pi.gather(1, action.long()))*ret).mean()
+            log_prob = torch.log(pi.gather(1, action.long()))
+        loss = -(log_prob*ret).mean()
 
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()

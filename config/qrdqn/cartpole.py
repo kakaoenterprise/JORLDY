@@ -29,9 +29,8 @@ optim = {
 train = {
     "training" : True,
     "load_path" : None,
-    "train_step" : 80000,
-    "test_step" : 10000,
-    "print_period" : 5,
-    "save_period" : 1000,
+    "run_step" : 100000,
+    "print_period" : 1000,
+    "save_period" : 10000,
     "test_iteration": 10,
 }
