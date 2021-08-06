@@ -2,11 +2,11 @@ import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 
-from .dqn import DQNAgent
+from .dqn import DQN
 
-class DoubleAgent(DQNAgent):
+class Double(DQN):
     def __init__(self, **kwargs):
-        super(DoubleAgent, self).__init__(**kwargs)
+        super(Double, self).__init__(**kwargs)
 
     def learn(self):        
         transitions = self.memory.sample(self.batch_size)

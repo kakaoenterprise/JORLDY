@@ -7,9 +7,9 @@ import copy
 from core.network import Network
 from core.optimizer import Optimizer
 from .utils import PERMultistepBuffer
-from .dqn import DQNAgent
+from .dqn import DQN
 
-class RainbowAgent(DQNAgent):
+class Rainbow(DQN):
     def __init__(self,
                 state_size,
                 action_size,

@@ -6,9 +6,9 @@ import copy
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .dqn import DQNAgent
+from .dqn import DQN
 
-class IQNAgent(DQNAgent):
+class IQN(DQN):
     def __init__(self,
                 state_size,
                 action_size,
@@ -20,7 +20,7 @@ class IQNAgent(DQNAgent):
                 sample_max=1.0,
                 **kwargs,
                 ):
-        super(IQNAgent, self).__init__(state_size, action_size, network=network, **kwargs)
+        super(IQN, self).__init__(state_size, action_size, network=network, **kwargs)
         
         self.network = Network(network, state_size, action_size, embedding_dim, num_sample).to(self.device)
         self.target_network = copy.deepcopy(self.network)

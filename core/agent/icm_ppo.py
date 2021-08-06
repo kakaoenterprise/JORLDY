@@ -5,10 +5,10 @@ from torch.distributions import Normal, Categorical
 import os
 import numpy as np
 
-from .ppo import PPOAgent
+from .ppo import PPO
 from core.network import Network
 
-class ICM_PPOAgent(PPOAgent):
+class ICM_PPO(PPO):
     def __init__(self,
                  state_size,
                  action_size,
@@ -21,9 +21,9 @@ class ICM_PPOAgent(PPOAgent):
                  intrinsic_coeff = 0.01,
                  **kwargs,
                  ):
-        super(ICMPPOAgent, self).__init__(state_size=state_size,
-                                          action_size=action_size,
-                                          **kwargs)
+        super(ICM_PPO, self).__init__(state_size=state_size,
+                                      action_size=action_size,
+                                      **kwargs)
         self.icm = Network(icm_network, state_size, action_size, eta, self.action_type).to(self.device)
         self.optimizer.add_param_group({'params':self.icm.parameters()})
         

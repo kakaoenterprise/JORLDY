@@ -1,5 +1,5 @@
-from .dqn import DQNAgent
+from .dqn import DQN
 
-class DuelingAgent(DQNAgent):
+class Dueling(DQN):
     def __init__(self, *args, **kwargs):
-        super(DuelingAgent, self).__init__(*args, **kwargs)
+        super(Dueling, self).__init__(*args, **kwargs)

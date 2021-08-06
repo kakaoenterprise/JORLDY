@@ -3,11 +3,11 @@ torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np 
 
-from .dqn import DQNAgent
+from .dqn import DQN
 
-class C51Agent(DQNAgent):
+class C51(DQN):
     def __init__(self, state_size, action_size, v_min, v_max, num_support , **kwargs):
-        super(C51Agent, self).__init__(state_size, action_size*num_support, **kwargs)  
+        super(C51, self).__init__(state_size, action_size*num_support, **kwargs)  
 
         self.action_size = action_size 
         self.v_min = v_min

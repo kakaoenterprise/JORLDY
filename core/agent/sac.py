@@ -10,7 +10,7 @@ from core.optimizer import Optimizer
 from .utils import ReplayBuffer
 from .base import BaseAgent
 
-class SACAgent(BaseAgent):
+class SAC(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
