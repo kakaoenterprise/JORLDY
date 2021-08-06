@@ -9,10 +9,14 @@ env = {
 agent = {
     "name":"reinforce",
     "network":"discrete_policy",
-    "optimizer":"adam",
-    "learning_rate": 1e-4,
     "gamma":0.99,
 }
+
+optim = {
+    "name":"adam",
+    "lr": 1e-4,
+}
+
 
 train = {
     "training" : True,
