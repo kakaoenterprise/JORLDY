@@ -10,7 +10,7 @@ class PPOAgent(REINFORCEAgent):
     def __init__(self,
                  state_size,
                  action_size,
-                 network="discrete_pi_v",
+                 network="discrete_policy_value",
                  batch_size=32,
                  n_step=128,
                  n_epoch=3,

@@ -1,51 +1,35 @@
-from .dqn import DQNAgent
-from .sac import SACAgent
-from .double import DoubleDQNAgent
-from .per import PERAgent
-from .noisy import NoisyAgent
-from .c51 import C51Agent
-from .rainbow import RainbowAgent
-from .rainbow_iqn import RainbowIQNAgent
-from .qrdqn import QRDQNAgent
-from .iqn import IQNAgent 
-from .icm_ppo import ICMPPOAgent
-from .rnd_dqn import RNDDQNAgent
-from .reinforce import REINFORCEAgent
-from .ppo import PPOAgent
-from .multistep import MultistepDQNAgent
-from .apex import ApeXAgent
+import os, sys, inspect, re
 
-import sys, os
 sys.path.append(os.path.abspath('../../'))
 
+working_path = __name__.replace(".","/")
+file_list = os.listdir(working_path)
+module_list = [file.replace(".py", "") for file in file_list 
+               if file.endswith(".py") and file.replace(".py","") not in ["__init__", "base", "utils"]]
+class_dict = {}
+for module in module_list:
+    module_path = f"{__name__}.{module}"
+    __import__(module_path, fromlist=[None])
+    for class_name, _class in inspect.getmembers(sys.modules[module_path], inspect.isclass):
+        if module_path in str(_class):
+            naming_rule = lambda x: re.sub('([a-z])([A-Z])', r'\1_\2', x.replace('Agent','')).lower()
+            class_dict[naming_rule(class_name)] = _class
+
+with open(os.path.join(working_path, "_class_dict.txt"), 'w') as f:
+    f.write('### Class Dictionary ###\n')
+    f.write('format: (key, class)\n')
+    f.write('------------------------\n')
+    for item in class_dict.items():
+        f.write(str(item) + '\n')
+        
 class Agent:
-    dictionary = {
-    "dqn": DQNAgent,
-    "sac": SACAgent,
-    "double": DoubleDQNAgent,
-    "dueling": DQNAgent,
-    "multistep": MultistepDQNAgent,
-    "per": PERAgent,
-    "noisy": NoisyAgent,
-    "c51": C51Agent,
-    "rainbow": RainbowAgent,
-    "rainbow_iqn": RainbowIQNAgent,
-    "qrdqn": QRDQNAgent,
-    "iqn": IQNAgent,
-    "icm_ppo": ICMPPOAgent,
-    "rnd_dqn": RNDDQNAgent,
-    "reinforce": REINFORCEAgent,
-    "ppo": PPOAgent,
-    "apex": ApeXAgent,
-    }
-    
     def __new__(self, name, *args, **kwargs):
         expected_type = str
         if type(name) != expected_type:
             print("### name variable must be string! ###")
             raise Exception
         name = name.lower()
-        if not name in self.dictionary.keys():
-            print(f"### can use only follows {[opt for opt in self.dictionary.keys()]}")
+        if not name in class_dict.keys():
+            print(f"### can use only follows {[opt for opt in class_dict.keys()]}")
             raise Exception
-        return self.dictionary[name](*args, **kwargs)
+        return class_dict[name](*args, **kwargs)

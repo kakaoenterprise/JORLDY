@@ -42,15 +42,15 @@ class Gym(BaseEnv):
     def close(self):
         self.env.close()
         
-class CartPole(Gym):
+class Cartpole(Gym):
     def __init__(self,
                 mode='discrete',
                 **kwargs):
         if mode == "continuous":
-            super(CartPole, self).__init__('CartPole-v1', mode, custom_action=True, **kwargs)
+            super(Cartpole, self).__init__('CartPole-v1', mode, custom_action=True, **kwargs)
             self.action_size = 1
         else:
-            super(CartPole, self).__init__('CartPole-v1', mode, **kwargs)
+            super(Cartpole, self).__init__('CartPole-v1', mode, **kwargs)
 
     def step(self, action):
         if self.render:

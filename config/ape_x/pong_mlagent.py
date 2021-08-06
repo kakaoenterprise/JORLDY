@@ -6,7 +6,7 @@ env = {
 }
 
 agent = {
-    "name": "apex",
+    "name": "ape_x",
     "network": "dueling",
     "gamma": 0.99,
     "buffer_size": 50000,
