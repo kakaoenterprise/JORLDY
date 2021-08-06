@@ -58,11 +58,18 @@ class DQNAgent(BaseAgent):
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
             action = torch.argmax(self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device)), -1, keepdim=True).cpu().numpy()
-        return action
+        return {'action': action}
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
         
         eye = torch.eye(self.action_size, device=self.device)
         one_hot_action = eye[action.view(-1).long()]

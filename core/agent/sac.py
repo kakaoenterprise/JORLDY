@@ -58,7 +58,7 @@ class SACAgent(BaseAgent):
         z = torch.normal(mu, std) if training else mu
         action = torch.tanh(z)
         action = action.cpu().numpy()
-        return action
+        return {'action': action}
 
     def sample_action(self, mu, std):
         m = Normal(mu, std)
@@ -72,7 +72,14 @@ class SACAgent(BaseAgent):
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
 
         q1, q2 = self.critic(state, action)
 
