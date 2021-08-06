@@ -7,11 +7,11 @@ import copy
 from core.network import Network
 from core.optimizer import Optimizer
 from .utils import ReplayBuffer
-from .dqn import DQNAgent
+from .dqn import DQN
 
-class NoisyAgent(DQNAgent):
+class Noisy(DQN):
     def __init__(self,**kwargs):
-        super(NoisyAgent, self).__init__(**kwargs)
+        super(Noisy, self).__init__(**kwargs)
         
     @torch.no_grad()
     def act(self, state, training=True):

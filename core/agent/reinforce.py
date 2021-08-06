@@ -11,13 +11,14 @@ from core.optimizer import Optimizer
 from .utils import Rollout
 from .base import BaseAgent
 
-class REINFORCEAgent(BaseAgent):
+class REINFORCE(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
                  network="discrete_policy",
                  optim_config={'name':'adam'},
                  gamma=0.99,
+                 use_standardization=False,
                  device=None,
                  ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -28,6 +29,7 @@ class REINFORCEAgent(BaseAgent):
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
 
         self.gamma = gamma
+        self.use_standardization = use_standardization
         self.memory = Rollout()
 
     @torch.no_grad()
@@ -53,7 +55,9 @@ class REINFORCEAgent(BaseAgent):
         ret = np.copy(reward)
         for t in reversed(range(len(ret)-1)):
             ret[t] += self.gamma * ret[t+1]
-        
+        if self.use_standardization:
+            ret = (ret - ret.mean())/(ret.std() + 1e-7)
+            
         state, action, ret = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), [state, action, ret])
         
         if self.action_type == "continuous":
@@ -81,7 +85,7 @@ class REINFORCEAgent(BaseAgent):
         self.memory.store(transitions)
 
         # Process per epi
-        if transitions[-1] :
+        if transitions[0]['done'] :
             result = self.learn()
         
         return result

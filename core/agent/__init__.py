@@ -12,7 +12,7 @@ for module in module_list:
     __import__(module_path, fromlist=[None])
     for class_name, _class in inspect.getmembers(sys.modules[module_path], inspect.isclass):
         if module_path in str(_class):
-            naming_rule = lambda x: re.sub('([a-z])([A-Z])', r'\1_\2', x.replace('Agent','')).lower()
+            naming_rule = lambda x: re.sub('([a-z])([A-Z])', r'\1_\2', x).lower()
             class_dict[naming_rule(class_name)] = _class
 
 with open(os.path.join(working_path, "_class_dict.txt"), 'w') as f:

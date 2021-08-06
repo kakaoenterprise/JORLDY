@@ -1,20 +1,14 @@
-### ICM PPO Mario Config ###
+### ICM PPO CartPole Config ###
 
 env = {
-    "name": "mario",
-    "render": False,
-    "gray_img": True,
-    "img_width": 84,
-    "img_height": 84,
-    "stack_frame": 4,
-#     "no_op": True,
-    "reward_clip": True,
-    "dead_penalty": True,
+    "name":"cartpole",
+    "mode": "discrete",
+    "render":False,
 }
 
 agent = {
     "name":"icm_ppo",
-    "network":"discrete_policy_value_cnn",
+    "network":"discrete_policy_value",
     "gamma":0.99,
     "batch_size":32,
     "n_step": 128,
@@ -25,7 +19,7 @@ agent = {
     "ent_coef": 0.1,
     "clip_grad_norm": 1.0,
     # Parameters for Curiosity-driven Exploration
-    "icm_network": "icm_cnn",
+    "icm_network": "icm",
     "beta": 0.2,
     "lamb": 1.0,
     "eta": 0.1,
@@ -41,14 +35,12 @@ optim = {
 train = {
     "training" : True,
     "load_path" : None,
-    "run_step" : 30000000,
-    "print_period" : 50000,
-    "save_period" : 500000,
-    "test_iteration": 1,
-    "record": True,
-    "record_period": 300000,
+    "run_step" : 100000,
+    "print_period" : 1000,
+    "save_period" : 10000,
+    "test_iteration": 10,
     # distributed setting
-    "distributed_batch_size": 1024,
+    "distributed_batch_size" : 256,
     "update_period" : agent["n_step"],
-    "num_worker" : 32,
+    "num_worker" : 8,
 }

@@ -7,9 +7,9 @@ import copy
 from core.network import Network
 from core.optimizer import Optimizer
 from .utils import PERMultistepBuffer
-from .dqn import DQNAgent
+from .dqn import DQN
 
-class ApeXAgent(DQNAgent):
+class ApeX(DQN):
     def __init__(self,
                  # ApeX
                  epsilon = 0.4,
@@ -24,7 +24,7 @@ class ApeXAgent(DQNAgent):
                  n_step = 4,
                  **kwargs
                  ):
-        super(ApeXAgent, self).__init__(**kwargs)
+        super(ApeX, self).__init__(**kwargs)
         # ApeX
         self.epsilon = epsilon
         self.epsilon_alpha = epsilon_alpha

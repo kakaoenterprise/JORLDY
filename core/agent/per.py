@@ -2,12 +2,12 @@ import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 
-from .dqn import DQNAgent
+from .dqn import DQN
 from .utils import PERBuffer
 
-class PERAgent(DQNAgent):
+class PER(DQN):
     def __init__(self, alpha, beta, learn_period=16, uniform_sample_prob=1e-3, **kwargs):
-        super(PERAgent, self).__init__(**kwargs)
+        super(PER, self).__init__(**kwargs)
         self.memory = PERBuffer(self.buffer_size, uniform_sample_prob)
         self.alpha = alpha
         self.beta = beta 

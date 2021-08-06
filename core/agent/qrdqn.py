@@ -3,11 +3,11 @@ torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np 
 
-from .dqn import DQNAgent
+from .dqn import DQN
 
-class QRDQNAgent(DQNAgent):
+class QRDQN(DQN):
     def __init__(self, state_size, action_size, num_support, **kwargs):
-        super(QRDQNAgent, self).__init__(state_size, action_size*num_support, **kwargs)  
+        super(QRDQN, self).__init__(state_size, action_size*num_support, **kwargs)  
 
         self.action_size = action_size 
         self.num_support = num_support 

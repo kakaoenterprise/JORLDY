@@ -8,9 +8,9 @@ import time
 from core.network import Network
 from core.optimizer import Optimizer
 from .utils import PERMultistepBuffer
-from .rainbow import RainbowAgent
+from .rainbow import Rainbow
 
-class RainbowIQNAgent(RainbowAgent):
+class RainbowIQN(Rainbow):
     def __init__(self,
                 state_size,
                 action_size,
