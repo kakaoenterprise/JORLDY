@@ -3,11 +3,11 @@ torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 
 from .utils import MultistepBuffer
-from .dqn import DQNAgent
+from .dqn import DQN
 
-class MultistepDQNAgent(DQNAgent):
+class Multistep(DQN):
     def __init__(self, n_step = 5, **kwargs):
-        super(MultistepDQNAgent, self).__init__(**kwargs)
+        super(Multistep, self).__init__(**kwargs)
         self.n_step = n_step
         self.memory = MultistepBuffer(self.buffer_size, self.n_step)
     
@@ -16,7 +16,15 @@ class MultistepDQNAgent(DQNAgent):
 #         shapes of multistep implementations: (batch_size, steps, dimension_data)
 
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
+        
         eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action[:, 0].view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)

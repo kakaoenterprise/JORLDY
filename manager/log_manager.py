@@ -5,14 +5,14 @@ import imageio
 from torch.utils.tensorboard import SummaryWriter
 
 class LogManager:
-    def __init__(self, env, id, purpose=None):
+    def __init__(self, env, id, experiment=None):
         self.id=id
         now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        self.path = f"./logs/{env}/{purpose}/{id}/{now}/" if purpose else f"./logs/{env}/{id}/{now}/"
+        self.path = f"./logs/{experiment}/{env}/{id}/{now}/" if experiment else f"./logs/{env}/{id}/{now}/"
         self.writer = SummaryWriter(self.path)
         self.stamp = time.time()
         
-    def write(self, scalar_dict, frames, step):
+    def write(self, scalar_dict, frames, score, step):
         for key, value in scalar_dict.items():
             self.writer.add_scalar(f"{self.id}/"+key, value, step)
             self.writer.add_scalar("all/"+key, value, step)
@@ -22,6 +22,6 @@ class LogManager:
                 self.writer.add_scalar(f"all/{key}_per_time", value, time_delta)
         
         if len(frames) > 0 :
-            write_path = os.path.join(self.path, f"{step}.gif")
+            write_path = os.path.join(self.path, f"{step:010d}_{score}.gif")
             imageio.mimwrite(write_path, frames, fps=60)
             print(f"...Record episode to {write_path}...")

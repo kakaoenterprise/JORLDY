@@ -5,6 +5,7 @@ class ConfigManager:
         module = __import__(config_path, fromlist=[None])
         self.config = CustomDict()
         self.config.agent = CustomDict(module.agent)
+        self.config.optim = CustomDict(module.optim)
         self.config.env = CustomDict(module.env)
         self.config.train = CustomDict(module.train)
         
@@ -28,7 +29,7 @@ class ConfigManager:
                 value = unknown_args[idx]
 
             # Get domain and key
-            assert '.' in key and key.split('.')[0] in ['env', 'agent', 'train'],\
+            assert '.' in key and key.split('.')[0] in ['env', 'agent', 'optim', 'train'],\
                     "optional argument should include env, agent or train. ex)env.name"
             domain, key = key.split('.')
 

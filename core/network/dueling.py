@@ -34,7 +34,7 @@ class Dueling(torch.nn.Module):
         return out
     
 class Dueling_CNN(torch.nn.Module):
-    def __init__(self, D_in, D_out):
+    def __init__(self, D_in, D_out, D_hidden=512):
         super(Dueling_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
@@ -46,11 +46,11 @@ class Dueling_CNN(torch.nn.Module):
         self.conv3 = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
         dim3 = ((dim2[0] - 3)//1 + 1, (dim2[1] - 3)//1 + 1)
         
-        self.fc1_a = torch.nn.Linear(64*dim3[0]*dim3[1], 512)
-        self.fc1_v = torch.nn.Linear(64*dim3[0]*dim3[1], 512)
+        self.fc1_a = torch.nn.Linear(64*dim3[0]*dim3[1], D_hidden)
+        self.fc1_v = torch.nn.Linear(64*dim3[0]*dim3[1], D_hidden)
 
-        self.fc2_a = torch.nn.Linear(512, self.D_out)
-        self.fc2_v = torch.nn.Linear(512, 1)
+        self.fc2_a = torch.nn.Linear(D_hidden, self.D_out)
+        self.fc2_v = torch.nn.Linear(D_hidden, 1)
         
     def forward(self, x):
         x = (x-(255.0/2))/(255.0/2)
@@ -63,11 +63,11 @@ class Dueling_CNN(torch.nn.Module):
         x_v = F.relu(self.fc1_v(x))
 
         # A stream : action advantage
-        x_a = self.l2_a(x_a) # [bs, num_action]
+        x_a = self.fc2_a(x_a) # [bs, num_action]
         x_a -= x_a.mean(dim=1, keepdim=True) # [bs, num_action]
 
         # V stream : state value
-        x_v = self.l2_v(x_v) # [bs, 1]
+        x_v = self.fc2_v(x_v) # [bs, 1]
 
         out = x_a + x_v # [bs, num_action]
         return out

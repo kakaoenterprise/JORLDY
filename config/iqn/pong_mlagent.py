@@ -8,9 +8,6 @@ env = {
 agent = {
     "name": "iqn",
     "network": "iqn",
-    "optimizer": "adam",
-    "opt_eps": 1e-2/32,
-    "learning_rate": 0.00005,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,
@@ -24,6 +21,12 @@ agent = {
     "embedding_dim": 64,
     "sample_min": 0,
     "sample_max": 1.0
+}
+
+optim = {
+    "name": "adam",
+    "eps": 1e-2/agent['batch_size'],
+    "lr": 5e-5,
 }
 
 train = {

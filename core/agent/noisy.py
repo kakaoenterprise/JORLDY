@@ -7,38 +7,11 @@ import copy
 from core.network import Network
 from core.optimizer import Optimizer
 from .utils import ReplayBuffer
-from .dqn import DQNAgent
+from .dqn import DQN
 
-class NoisyAgent(DQNAgent):
-    def __init__(self,
-                state_size,
-                action_size,
-                network='noisy',
-                optimizer='adam',
-                learning_rate=3e-4,
-                opt_eps=1e-8,
-                gamma=0.99,
-                explore_step=90000,
-                buffer_size=50000,
-                batch_size=64,
-                start_train_step=2000,
-                target_update_period=500,
-                 device=None,
-                 ):
-        self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.action_size = action_size
-        self.network = Network(network, state_size, action_size, self.device).to(self.device)
-        self.target_network = copy.deepcopy(self.network)
-        self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
-        self.gamma = gamma
-        self.explore_step = explore_step
-        self.memory = ReplayBuffer(buffer_size)
-        self.batch_size = batch_size
-        self.start_train_step = start_train_step
-        self.target_update_period = target_update_period
-        self.target_update_stamp = 0
-        self.num_learn = 0
-        self.time_t = 0
+class Noisy(DQN):
+    def __init__(self,**kwargs):
+        super(Noisy, self).__init__(**kwargs)
         
     @torch.no_grad()
     def act(self, state, training=True):
@@ -48,11 +21,18 @@ class NoisyAgent(DQNAgent):
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
             action = torch.argmax(self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device), training), -1, keepdim=True).cpu().numpy()
-        return action
+        return {'action': action}
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
         
         eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action.view(-1).long()]
@@ -70,7 +50,7 @@ class NoisyAgent(DQNAgent):
         self.optimizer.step()
         
         self.num_learn += 1
-
+        
         result = {
             "loss" : loss.item(),
             "max_Q": max_Q,
