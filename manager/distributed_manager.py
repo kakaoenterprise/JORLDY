@@ -44,6 +44,7 @@ class Actor:
             transition.update(action_dict)
             transitions.append(transition)
             self.state = next_state if not done else self.env.reset()
+        transitions = self.agent.interact_callback(transitions)
         return transitions
     
     def sync(self, sync_item):
