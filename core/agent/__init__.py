@@ -2,7 +2,7 @@ import os, sys, inspect, re
 
 sys.path.append(os.path.abspath('../../'))
 
-working_path = __name__.replace(".","/")
+working_path = os.path.dirname(os.path.realpath(__file__))
 file_list = os.listdir(working_path)
 module_list = [file.replace(".py", "") for file in file_list 
                if file.endswith(".py") and file.replace(".py","") not in ["__init__", "base", "utils"]]

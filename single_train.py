@@ -52,7 +52,7 @@ if __name__ == "__main__":
             transition = {'state': state, 'next_state': next_state,
                           'reward': reward, 'done': done}
             transition.update(action_dict)
-            result = agent.process([transition], step)
+            result = agent.process(agent.interact_callback([transition]), step)
             result_queue.put((step, result))
 
             if step % config.train.print_period == 0 or step == config.train.run_step:
