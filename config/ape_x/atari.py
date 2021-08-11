@@ -15,7 +15,7 @@ agent = {
     "name": "ape_x",
     "network": "dueling_cnn",
     "gamma": 0.99,
-    "buffer_size": 1000000,
+    "buffer_size": 2000000,
     "batch_size": 32,
     "clip_grad_norm": 40.0,
     "start_train_step": 50000,
@@ -46,6 +46,6 @@ train = {
     "record_period" : 300000,
     # distributed setting
     "distributed_batch_size" : 512,
-    "update_period" : 8,
-    "num_worker" : 32,
+    "update_period" : 100,
+    "num_worker" : 128,
 }
