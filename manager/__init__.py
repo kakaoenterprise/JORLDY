@@ -1,6 +1,14 @@
-from .metric_manager import MetricManager
-from .log_manager import LogManager
-from .test_manager import TestManager
-from .time_manager import TimeManager
-from .distributed_manager import DistributedManager
-from .config_manager import ConfigManager
+import os, sys, inspect
+
+working_path = os.path.dirname(os.path.realpath(__file__))
+file_list = os.listdir(working_path)
+module_list = [file.replace(".py", "") for file in file_list 
+               if file.endswith(".py") and file.replace(".py","") not in ["__init__"]]
+
+for module_name in module_list:
+    module_path = f"{__name__}.{module_name}"
+    __import__(module_path, fromlist=[None])
+    for class_name, _class in inspect.getmembers(sys.modules[module_path], inspect.isclass):
+        if module_path in str(_class) and "Manager" in class_name:
+            exec(f"from {module_path} import {class_name}")
+            
