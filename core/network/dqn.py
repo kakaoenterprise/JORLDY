@@ -10,12 +10,19 @@ class DQN(torch.nn.Module):
         self.l1 = torch.nn.Linear(D_in, D_hidden)
         self.l2 = torch.nn.Linear(D_hidden, D_hidden)
         self.q = torch.nn.Linear(D_hidden, D_out)
+        self.q_i = torch.nn.Linear(D_hidden, D_out)
 
     def forward(self, x):
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
         
         return self.q(x)
+    
+    def get_qi(self, x):
+        x = F.relu(self.l1(x))
+        x = F.relu(self.l2(x))
+        
+        return self.q_i(x)
     
 class DQN_CNN(torch.nn.Module):
     def __init__(self, D_in, D_out, D_hidden=512):
@@ -40,4 +47,14 @@ class DQN_CNN(torch.nn.Module):
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
+        return x
+    
+    def get_qi(self, x):
+        x = (x-(255.0/2))/(255.0/2)
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        x = x.view(x.size(0), -1)
+        x = F.relu(self.fc1(x))
+        x = self.fc2_i(x)
         return x
