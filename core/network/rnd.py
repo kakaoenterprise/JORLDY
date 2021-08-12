@@ -3,8 +3,9 @@ import torch.nn.functional as F
 
 # codes from https://github.com/openai/random-network-distillation
 class RewardForwardFilter(object):
-    def __init__(self, shape, device, gamma):
-        self.rewems = torch.zeros(shape, device=device, requires_grad=False)
+    def __init__(self, n_step, device, gamma):
+        self.rewems = torch.zeros(1, device=device, requires_grad=False)
+        self.n_step = n_step
         self.gamma = gamma
         
     def update(self, rews):
@@ -88,6 +89,7 @@ class RND(torch.nn.Module):
             'obs': RunningMeanStd(D_in, device_rms),
             'ri': RunningMeanStd(1, device_rms),
         }
+        self.n_step = n_step
         self.rff = RewardForwardFilter(n_step, device_rms, gamma_i)
         self.obs_normalize = obs_normalize
         self.ri_normalize = ri_normalize
@@ -141,6 +143,7 @@ class RND_CNN(torch.nn.Module):
             'obs': RunningMeanStd(D_in, device_rms),
             'ri': RunningMeanStd(1, device_rms),
         }
+        self.n_step = n_step
         self.rff = RewardForwardFilter(n_step, device_rms, gamma_i)
         self.obs_normalize = obs_normalize
         self.ri_normalize = ri_normalize
@@ -205,9 +208,10 @@ class RND_CNN(torch.nn.Module):
         t = self.fc1_target(t)
         
         r_i = torch.mean(torch.square(p - t), axis = 1)
+        ri_T = r_i.view(-1, self.n_step).T # (n_step, n_workers)
         
         if update_ri:
-            rewems = self.rff.update(r_i.detach())
+            rewems = torch.stack([self.rff.update(rit.detach()) for rit in ri_T]).ravel() # (n_step, n_workers) -> (n_step * n_workers)
             self.update_rms(rewems, 'ri')
         if self.ri_normalize: r_i = r_i / (torch.sqrt(self.rms['ri'].var) + 1e-7)
         
@@ -223,6 +227,7 @@ class RND_RNN(torch.nn.Module):
             'obs': RunningMeanStd(D_in, device_rms),
             'ri': RunningMeanStd(1, device_rms),
         }
+        self.n_step = n_step
         self.rff = RewardForwardFilter(n_step, device_rms, gamma_i)
         self.obs_normalize = obs_normalize
         self.ri_normalize = ri_normalize
