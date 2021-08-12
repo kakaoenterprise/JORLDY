@@ -3,12 +3,12 @@ import torch.nn.functional as F
 from torch.distributions import Normal, Categorical
 import numpy as np
 
-from .reinforce import REINFORCEAgent
 from core.network import Network
 from core.optimizer import Optimizer
 from .utils import Rollout
+from .base import BaseAgent
 
-class MPOAgent(BaseAgent):
+class MPO(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
