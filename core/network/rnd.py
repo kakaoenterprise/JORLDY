@@ -145,6 +145,12 @@ class RND_CNN(torch.nn.Module):
         self.obs_normalize = obs_normalize
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
+
+        dim1 = ((self.D_in[1] - 8)//4 + 1, (self.D_in[2] - 8)//4 + 1)
+        dim2 = ((dim1[0] - 4)//2 + 1, (dim1[1] - 4)//2 + 1)
+        dim3 = ((dim2[0] - 3)//1 + 1, (dim2[1] - 3)//1 + 1)
+        
+        feature_size = 64*dim3[0]*dim3[1]
         
         # Predictor Networks
         self.conv1_predict = torch.nn.Conv2d(in_channels=self.D_in[0], out_channels=32, kernel_size=8, stride=4)
@@ -155,6 +161,10 @@ class RND_CNN(torch.nn.Module):
         self.bn2_predict = torch.nn.BatchNorm2d(64)
         self.bn3_predict = torch.nn.BatchNorm2d(64)
         
+        self.fc1_predict = torch.nn.Linear(feature_size, 512)
+        self.fc2_predict = torch.nn.Linear(512, 512)
+        self.fc3_predict = torch.nn.Linear(512, 512)
+        
         # Target Networks
         self.conv1_target = torch.nn.Conv2d(in_channels=self.D_in[0], out_channels=32, kernel_size=8, stride=4)
         self.conv2_target = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
@@ -164,11 +174,7 @@ class RND_CNN(torch.nn.Module):
         self.bn2_target = torch.nn.BatchNorm2d(64)
         self.bn3_target = torch.nn.BatchNorm2d(64)
         
-        dim1 = ((self.D_in[1] - 8)//4 + 1, (self.D_in[2] - 8)//4 + 1)
-        dim2 = ((dim1[0] - 4)//2 + 1, (dim1[1] - 4)//2 + 1)
-        dim3 = ((dim2[0] - 3)//1 + 1, (dim2[1] - 3)//1 + 1)
-        
-        feature_size = 64*dim3[0]*dim3[1]
+        self.fc1_target = torch.nn.Linear(feature_size, 512)
         
     def update_rms(self, v, k='obs'):
         if k=='obs': v = v/255.0
@@ -185,6 +191,9 @@ class RND_CNN(torch.nn.Module):
         p = F.relu(self.conv3_predict(p))
         if self.batch_norm: p = self.bn3_predict(p)
         p = p.view(p.size(0), -1)
+        p = F.relu(self.fc1_predict(p))
+        p = F.relu(self.fc2_predict(p))
+        p = self.fc3_predict(p)
         
         t = F.relu(self.conv1_target(s_next))
         if self.batch_norm: t = self.bn1_target(t)
@@ -193,6 +202,7 @@ class RND_CNN(torch.nn.Module):
         t = F.relu(self.conv3_target(t))
         if self.batch_norm: t = self.bn3_target(t)
         t = t.view(t.size(0), -1)
+        t = self.fc1_target(t)
         
         r_i = torch.mean(torch.square(p - t), axis = 1)
         
@@ -221,6 +231,8 @@ class RND_RNN(torch.nn.Module):
         self.conv1_predict = torch.nn.Conv2d(in_channels=self.D_in[0], out_channels=32, kernel_size=8, stride=4)
         self.conv2_predict = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
         self.conv3_predict = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+        
+        
         
         # Target Networks
         self.conv1_target = torch.nn.Conv2d(in_channels=self.D_in[0], out_channels=32, kernel_size=8, stride=4)

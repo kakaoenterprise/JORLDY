@@ -47,7 +47,7 @@ class RNDPPOAgent(PPOAgent):
             if "target" in name:
                 param.requires_grad = False
 
-    def learn(self):
+    def learn(self, step):
         transitions = self.memory.rollout()
         state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)      
 
@@ -55,6 +55,11 @@ class RNDPPOAgent(PPOAgent):
         self.rnd.update_rms(next_state.detach(), 'obs')
         r_i = self.rnd.forward(next_state, update_ri=True)
         r_i = r_i.unsqueeze(-1)
+        
+#         if step < 50000: 
+#             intrinsic_coeff = 1
+#         else:
+#             intrinsic_coeff = self.intrinsic_coeff
         
         # Scaling extrinsic and intrinsic reward
         reward *= self.extrinsic_coeff
@@ -160,6 +165,21 @@ class RNDPPOAgent(PPOAgent):
             'min_pi': min(pis),
             'min_pi_old': min(pi_olds),
         }
+        return result
+    
+    def process(self, transitions, step):
+        result = {}
+        # Process per step
+        self.memory.store(transitions)
+        delta_t = step - self.time_t
+        self.time_t = step
+        self.learn_stamp += delta_t
+        
+        # Process per epi
+        if self.learn_stamp >= self.n_step :
+            result = self.learn(step)
+            self.learn_stamp = 0
+        
         return result
     
     def sync_in(self, weights, values_rnd):
