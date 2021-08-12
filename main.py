@@ -17,6 +17,7 @@ if __name__ == "__main__":
     env = Env(**config.env)
     agent = Agent(state_size=env.state_size,
                   action_size=env.action_size,
+                  optim_config=config.optim,
                   **config.agent)
 
     if config.train.load_path:
@@ -34,11 +35,14 @@ if __name__ == "__main__":
     state = env.reset()
 
     for step in range(1, config.train.run_step+1):
-        action = agent.act(state, config.train.training)            
-        next_state, reward, done = env.step(action)
+        action_dict = agent.act(state, config.train.training)            
+        next_state, reward, done = env.step(action_dict['action'])
 
         if config.train.training:
-            result = agent.process([(state, action, reward, next_state, done)], step)
+            transition = {'state': state, 'next_state': next_state,
+                          'reward': reward, 'done': done}
+            transition.update(action_dict)
+            result = agent.process(agent.interact_callback([transition]), step)
             if result:
                 metric_manager.append(result)
         state = next_state

@@ -1,60 +1,37 @@
-import os, sys
+import os, sys, inspect, re
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__))) # for import mlagents
 sys.path.append(os.path.abspath('../../'))
 
-from .gym_env import *
-from .atari import *
-from .ml_agent import * 
-from .nes import *
 
+working_path = os.path.dirname(os.path.realpath(__file__))
+file_list = os.listdir(working_path)
+module_list = [file.replace(".py", "") for file in file_list 
+               if file.endswith(".py") and file.replace(".py","") not in ["__init__", "base", "utils"]]
+class_dict = {}
+for module_name in module_list:
+    module_path = f"{__name__}.{module_name}"
+    module = __import__(module_path, fromlist=[None])
+    for class_name, _class in inspect.getmembers(module, inspect.isclass):
+        if module_path in str(_class):
+            naming_rule = lambda x: re.sub('([a-z])([A-Z])', r'\1_\2', x).lower()
+            class_dict[naming_rule(class_name)] = _class
+
+with open(os.path.join(working_path, "_class_dict.txt"), 'w') as f:
+    f.write('### Class Dictionary ###\n')
+    f.write('format: (key, class)\n')
+    f.write('------------------------\n')
+    for item in class_dict.items():
+        f.write(str(item) + '\n')
+        
 class Env:
-    dictionary = {
-    #gym_env
-    "cartpole": CartPole,
-    "pendulum": Pendulum,
-    "mountaincar": MountainCar,
-    #atari
-    "breakout": Breakout,
-    "pong": Pong,
-    "alien": Alien,
-    "asterix": Asterix,
-    "assault": Assault,
-    "crazyclimber": CrazyClimber,
-    "enduro": Enduro,
-    "qbert": Qbert,
-    "privateeye": PrivateEye,
-    "montezuma": MontezumaRevenge,
-    "spaceinvaders": Spaceinvaders,
-    "seaquest": Seaquest,
-    #nes
-    "mario": Mario,
-    #ml_agent
-    "hopper_mlagent": HopperMLAgent,
-    "pong_mlagent": PongMLAgent,
-    }
-    
     def __new__(self, name, *args, **kwargs):
         expected_type = str
         if type(name) != expected_type:
             print("### name variable must be string! ###")
             raise Exception
         name = name.lower()
-        if not name in self.dictionary.keys():
-            print(f"### can use only follows {[opt for opt in self.dictionary.keys()]}")
+        if not name in class_dict.keys():
+            print(f"### can use only follows {[opt for opt in class_dict.keys()]}")
             raise Exception
-        return self.dictionary[name](*args, **kwargs)
-
-'''
-class BaseEnv:
-    def __init__(self):
-        pass
-
-    def reset(self):
-        pass
-
-    def step(self, action):
-        pass
-
-    def close(self):
-        pass
-'''
+        return class_dict[name](*args, **kwargs)

@@ -7,9 +7,7 @@ env = {
 
 agent = {
     "name": "ppo",
-    "network": "continuous_pi_v",
-    "optimizer": "adam",
-    "learning_rate": 2.5e-4,
+    "network": "continuous_policy_value",
     "gamma": 0.99,
     "batch_size":32,
     "n_step": 128,
@@ -21,6 +19,11 @@ agent = {
     "use_standardization": True,
 }
 
+optim = {
+    "name": "adam",
+    "lr": 2.5e-4,
+}
+
 train = {
     "training" : True,
     "load_path" : None,
@@ -29,6 +32,7 @@ train = {
     "save_period" : 10000,
     "test_iteration": 10,
     # distributed setting
+    "distributed_batch_size" : 256,
     "update_period" : agent["n_step"],
     "num_worker" : 8,
 }

@@ -25,7 +25,7 @@ class DQN(torch.nn.Module):
         return self.q_i(x)
     
 class DQN_CNN(torch.nn.Module):
-    def __init__(self, D_in, D_out):
+    def __init__(self, D_in, D_out, D_hidden=512):
         super(DQN_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
@@ -36,9 +36,8 @@ class DQN_CNN(torch.nn.Module):
         self.conv3 = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
         dim3 = ((dim2[0] - 3)//1 + 1, (dim2[1] - 3)//1 + 1)
         
-        self.fc1 = torch.nn.Linear(64*dim3[0]*dim3[1], 512)
-        self.fc2 = torch.nn.Linear(512, self.D_out)
-        self.fc2_i = torch.nn.Linear(512, self.D_out)
+        self.fc1 = torch.nn.Linear(64*dim3[0]*dim3[1], D_hidden)
+        self.fc2 = torch.nn.Linear(D_hidden, self.D_out)
         
     def forward(self, x):
         x = (x-(255.0/2))/(255.0/2)

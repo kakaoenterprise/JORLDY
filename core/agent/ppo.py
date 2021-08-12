@@ -4,13 +4,10 @@ import torch.nn.functional as F
 from torch.distributions import Normal, Categorical
 import numpy as np
 
-from .reinforce import REINFORCEAgent
+from .reinforce import REINFORCE
 
-class PPOAgent(REINFORCEAgent):
+class PPO(REINFORCE):
     def __init__(self,
-                 state_size,
-                 action_size,
-                 network="discrete_pi_v",
                  batch_size=32,
                  n_step=128,
                  n_epoch=3,
@@ -19,13 +16,10 @@ class PPOAgent(REINFORCEAgent):
                  vf_coef=1.0,
                  ent_coef=0.01,
                  clip_grad_norm=1.0,
-                 use_standardization=False,
                  **kwargs,
                  ):
-        super(PPOAgent, self).__init__(state_size=state_size,
-                                       action_size=action_size,
-                                       network=network,
-                                       **kwargs)
+        super(PPO, self).__init__(**kwargs)
+        
         self.batch_size = batch_size
         self.n_step = n_step
         self.n_epoch = n_epoch
@@ -34,7 +28,6 @@ class PPOAgent(REINFORCEAgent):
         self.vf_coef = vf_coef
         self.ent_coef = ent_coef
         self.clip_grad_norm = clip_grad_norm
-        self.use_standardization = use_standardization
         self.time_t = 0
         self.learn_stamp = 0
     
@@ -49,11 +42,18 @@ class PPOAgent(REINFORCEAgent):
         else:
             pi, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             action = torch.multinomial(pi, 1) if training else torch.argmax(pi, dim=-1, keepdim=True)
-        return action.cpu().numpy()
+        return {'action': action.cpu().numpy()}
 
     def learn(self):
         transitions = self.memory.rollout()
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
         
         # set prob_a_old and advantage
         with torch.no_grad():            

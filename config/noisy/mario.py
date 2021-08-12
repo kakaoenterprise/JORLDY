@@ -12,25 +12,30 @@ env = {
 agent = {
     "name": "noisy",
     "network": "noisy_cnn",
-    "optimizer": "adam",
-    "learning_rate": 5e-4,
     "gamma": 0.99,
     "explore_step": 1000000,
-    "buffer_size": 100000,
+    "buffer_size": 1000000,
     "batch_size": 32,
-    "start_train_step": 50000,
+    "start_train_step": 100000,
     "target_update_period": 10000,
+}
+
+optim = {
+    "name": "adam",
+    "lr": 2.5e-4,
 }
 
 train = {
     "training" : True,
     "load_path" : None,
-    "run_step" : 100000000,
+    "run_step" : 30000000,
     "print_period" : 10000,
-    "save_period" : 50000,
-    "test_iteration": 3,
+    "save_period" : 100000,
+    "test_iteration": 5,
     "record" : True,
+    "record_period" : 300000,
     # distributed setting
     "update_period" : 32,
     "num_worker" : 16,
 }
+

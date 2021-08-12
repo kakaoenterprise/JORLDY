@@ -10,18 +10,14 @@ from core.optimizer import Optimizer
 from .utils import ReplayBuffer
 from .base import BaseAgent
 
-class SACAgent(BaseAgent):
+class SAC(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
                  actor = "sac_actor",
                  critic = "sac_critic",
-                 actor_optimizer = "adam",
-                 critic_optimizer = "adam",
-                 alpha_optimizer = "adam",
-                 actor_lr = 5e-4,
-                 critic_lr = 1e-3,
-                 alpha_lr = 3e-4,
+                 optim_config = {'actor':'adam','critic':'adam','alpha':'adam',
+                                'actor_lr':5e-4,'critic_lr':1e-3,'alpha_lr':3e-4},
                  use_dynamic_alpha = False,
                  gamma=0.99,
                  tau=5e-3,
@@ -29,19 +25,19 @@ class SACAgent(BaseAgent):
                  batch_size = 64,
                  start_train_step=2000,
                  static_log_alpha=-2.0,
-                device=None,
-                ):
+                 device=None,
+                 ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.actor = Network(actor, state_size, action_size).to(self.device)
         self.critic = Network(critic, state_size+action_size, action_size).to(self.device)
         self.target_critic = copy.deepcopy(self.critic)
-        self.actor_optimizer = Optimizer(actor_optimizer, self.actor.parameters(), lr=actor_lr)
-        self.critic_optimizer = Optimizer(critic_optimizer, self.critic.parameters(), lr=critic_lr)
+        self.actor_optimizer = Optimizer(optim_config.actor, self.actor.parameters(), lr=optim_config.actor_lr)
+        self.critic_optimizer = Optimizer(optim_config.critic, self.critic.parameters(), lr=optim_config.critic_lr)
         
         self.use_dynamic_alpha = use_dynamic_alpha
         if use_dynamic_alpha:
             self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
-            self.alpha_optimizer = Optimizer(alpha_optimizer, [self.log_alpha], lr=alpha_lr)
+            self.alpha_optimizer = Optimizer(optim_config.alpha, [self.log_alpha], lr=optim_config.alpha_lr)
         else:
             self.log_alpha = torch.tensor(static_log_alpha).to(self.device)
             self.alpha_optimizer = None
@@ -62,7 +58,7 @@ class SACAgent(BaseAgent):
         z = torch.normal(mu, std) if training else mu
         action = torch.tanh(z)
         action = action.cpu().numpy()
-        return action
+        return {'action': action}
 
     def sample_action(self, mu, std):
         m = Normal(mu, std)
@@ -76,7 +72,14 @@ class SACAgent(BaseAgent):
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
 
         q1, q2 = self.critic(state, action)
 

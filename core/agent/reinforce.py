@@ -11,14 +11,14 @@ from core.optimizer import Optimizer
 from .utils import Rollout
 from .base import BaseAgent
 
-class REINFORCEAgent(BaseAgent):
+class REINFORCE(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
                  network="discrete_policy",
-                 optimizer="adam",
-                 learning_rate=1e-4,
+                 optim_config={'name':'adam'},
                  gamma=0.99,
+                 use_standardization=False,
                  device=None,
                  ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -26,10 +26,10 @@ class REINFORCEAgent(BaseAgent):
         assert self.action_type in ["continuous", "discrete"]
         
         self.network = Network(network, state_size, action_size).to(self.device)
-        self.learning_rate = learning_rate
-        self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate)
+        self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
 
         self.gamma = gamma
+        self.use_standardization = use_standardization
         self.memory = Rollout()
 
     @torch.no_grad()
@@ -40,19 +40,24 @@ class REINFORCEAgent(BaseAgent):
             mu, std = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             z = torch.normal(mu, std) if training else mu
             action = torch.tanh(z)
-            action = action.cpu().numpy()
         else:
             pi = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             action = torch.multinomial(pi, 1) if training else torch.argmax(pi, dim=-1, keepdim=True)
-        return action.cpu().numpy()
+        return {'action': action.cpu().numpy()}
     
     def learn(self):
-        state, action, reward = self.memory.rollout()[:3]
+        transitions = self.memory.rollout()
+        
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
         
         ret = np.copy(reward)
         for t in reversed(range(len(ret)-1)):
             ret[t] += self.gamma * ret[t+1]
-        
+        if self.use_standardization:
+            ret = (ret - ret.mean())/(ret.std() + 1e-7)
+            
         state, action, ret = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), [state, action, ret])
         
         if self.action_type == "continuous":
@@ -60,12 +65,10 @@ class REINFORCEAgent(BaseAgent):
             m = Normal(mu, std)
             z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
             log_prob = m.log_prob(z)
-            log_prob -= torch.log(1 - action.pow(2) + 1e-7)
-            log_prob = log_prob.sum(1, keepdim=True)
-            loss = -(log_prob*ret).mean()
         else:
             pi = self.network(state)
-            loss = -(torch.log(pi.gather(1, action.long()))*ret).mean()
+            log_prob = torch.log(pi.gather(1, action.long()))
+        loss = -(log_prob*ret).mean()
 
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -82,7 +85,7 @@ class REINFORCEAgent(BaseAgent):
         self.memory.store(transitions)
 
         # Process per epi
-        if transitions[-1] :
+        if transitions[0]['done'] :
             result = self.learn()
         
         return result

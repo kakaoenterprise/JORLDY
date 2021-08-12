@@ -7,17 +7,15 @@ import time
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import RainbowBuffer
-from .rainbow import RainbowAgent
+from .utils import PERMultistepBuffer
+from .rainbow import Rainbow
 
-class RainbowIQNAgent(RainbowAgent):
+class RainbowIQN(Rainbow):
     def __init__(self,
                 state_size,
                 action_size,
                 network='rainbow_iqn',
-                optimizer='adam',
-                learning_rate=3e-4,
-                opt_eps=1e-8,
+                optim_config={'name':'adam'},
                 gamma=0.99,
                 explore_step=90000,
                 buffer_size=50000,
@@ -38,12 +36,11 @@ class RainbowIQNAgent(RainbowAgent):
                 sample_max = 1.0,
                 device = None,
                 ):
-        
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size        
-        self.network = Network(network, state_size, action_size, embedding_dim, num_sample, self.device).to(self.device)
+        self.network = Network(network, state_size, action_size, embedding_dim, num_sample).to(self.device)
         self.target_network = copy.deepcopy(self.network)
-        self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
+        self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma
         self.explore_step = explore_step
         self.batch_size = batch_size
@@ -71,7 +68,7 @@ class RainbowIQNAgent(RainbowAgent):
         self.sample_max = sample_max
         
         # MultiStep
-        self.memory = RainbowBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
+        self.memory = PERMultistepBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
         
     @torch.no_grad()
     def act(self, state, training=True):
@@ -85,11 +82,18 @@ class RainbowIQNAgent(RainbowAgent):
             logits, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device), training, sample_min, sample_max)
             _, q_action = self.logits2Q(logits)
             action = torch.argmax(q_action, -1, keepdim=True).cpu().numpy()
-        return action
+        return {'action': action}
 
     def learn(self):
         transitions, weights, indices, sampled_p, mean_p = self.memory.sample(self.beta, self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
         
          # Get Theta Pred, Tau
         logit, tau = self.network(state, True)

@@ -1,9 +1,9 @@
 import torch
 import torch.nn.functional as F
 
-class ContinuousPiV(torch.nn.Module):
+class ContinuousPolicyValue(torch.nn.Module):
     def __init__(self, D_in, D_out, D_hidden=512):
-        super(ContinuousPiV, self).__init__()
+        super(ContinuousPolicyValue, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
         
@@ -28,9 +28,9 @@ class ContinuousPiV(torch.nn.Module):
         return self.v_i(x)
     
     
-class DiscretePiV(torch.nn.Module):
+class DiscretePolicyValue(torch.nn.Module):
     def __init__(self, D_in, D_out, D_hidden=512):
-        super(DiscretePiV, self).__init__()
+        super(DiscretePolicyValue, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
         
@@ -51,9 +51,9 @@ class DiscretePiV(torch.nn.Module):
         return self.v_i(x)
     
     
-class ContinuousPiV_CNN(torch.nn.Module):
+class ContinuousPolicyValue_CNN(torch.nn.Module):
     def __init__(self, D_in, D_out, D_hidden=512):
-        super(ContinuousPiV_CNN, self).__init__()
+        super(ContinuousPolicyValue_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
         
@@ -94,9 +94,9 @@ class ContinuousPiV_CNN(torch.nn.Module):
         return self.v_i(x)
     
     
-class DiscretePiV_CNN(torch.nn.Module):
+class DiscretePolicyValue_CNN(torch.nn.Module):
     def __init__(self, D_in, D_out, D_hidden=512):
-        super(DiscretePiV_CNN, self).__init__()
+        super(DiscretePolicyValue_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
         

@@ -11,14 +11,12 @@ from core.optimizer import Optimizer
 from .utils import ReplayBuffer
 from .base import BaseAgent
 
-class DQNAgent(BaseAgent):
+class DQN(BaseAgent):
     def __init__(self,
                 state_size,
                 action_size,
+                optim_config={'name':'adam'},
                 network='dqn',
-                optimizer='adam',
-                learning_rate=3e-4,
-                opt_eps=1e-8,
                 gamma=0.99,
                 epsilon_init=1.0,
                 epsilon_min=0.1,
@@ -34,9 +32,7 @@ class DQNAgent(BaseAgent):
         self.action_size = action_size
         self.network = Network(network, state_size, action_size).to(self.device)
         self.target_network = copy.deepcopy(self.network)
-        self.learning_rate = learning_rate
-        self.opt_eps = opt_eps
-        self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
+        self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma
         self.epsilon = epsilon_init
         self.epsilon_init = epsilon_init
@@ -62,11 +58,18 @@ class DQNAgent(BaseAgent):
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
             action = torch.argmax(self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device)), -1, keepdim=True).cpu().numpy()
-        return action
+        return {'action': action}
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
         
         eye = torch.eye(self.action_size, device=self.device)
         one_hot_action = eye[action.view(-1).long()]
@@ -135,8 +138,6 @@ class DQNAgent(BaseAgent):
         self.target_network = copy.deepcopy(self.network)
         self.optimizer.load_state_dict(checkpoint["optimizer"])
     
-    def set_distributed(self, id):
-        while id >= 1.0:
-            id /= 10.
-        self.epsilon = id 
+    def set_distributed(self, id, num_worker):
+        self.epsilon = id / num_worker
         return self

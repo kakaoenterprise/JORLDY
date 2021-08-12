@@ -1,4 +1,4 @@
-### C51 Atari Config ###
+### Ape-X Atari Config ###
 
 env = {
     # "name": it should be defined in the command. ex) python main.py --config config.dqn.atari --env.name breakout
@@ -12,25 +12,27 @@ env = {
 }
 
 agent = {
-    "name": "c51",
-    "network": "dqn_cnn",
+    "name": "ape_x",
+    "network": "dueling_cnn",
     "gamma": 0.99,
-    "epsilon_init": 1.0,
-    "epsilon_min": 0.1,
-    "explore_step": 1000000,
-    "buffer_size": 1000000,
+    "buffer_size": 2000000,
     "batch_size": 32,
-    "start_train_step": 100000,
-    "target_update_period": 10000,
-    "v_min": -1,
-    "v_max": 10,
-    "num_support": 51
+    "clip_grad_norm": 40.0,
+    "start_train_step": 50000,
+    "target_update_period": 2500,
+    # MultiStep
+    "n_step": 3,
+    # PER
+    "alpha": 0.6,
+    "beta": 0.4,
+    "uniform_sample_prob": 1e-3,
 }
 
 optim = {
-    "name": "adam",
-    "eps": 1e-2/agent['batch_size'],
-    "lr": 2.5e-4,
+    "name": "rmsprop",
+    "eps": 1.5e-7,
+    "lr": 2.5e-4/4,
+    "centered": True,
 }
 
 train = {
@@ -43,6 +45,7 @@ train = {
     "record" : True,
     "record_period" : 300000,
     # distributed setting
-    "update_period" : 32,
-    "num_worker" : 16,
+    "distributed_batch_size" : 512,
+    "update_period" : 100,
+    "num_worker" : 128,
 }

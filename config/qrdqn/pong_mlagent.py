@@ -8,9 +8,6 @@ env = {
 agent = {
     "name": "qrdqn",
     "network": "dqn",
-    "optimizer": "adam",
-    "opt_eps": 1e-2/32,
-    "learning_rate": 0.00005,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,
@@ -20,6 +17,12 @@ agent = {
     "start_train_step": 25000,
     "target_update_period": 1000,
     "num_support": 200
+}
+
+optim = {
+    "name": "adam",
+    "eps": 1e-2/agent['batch_size'],
+    "lr": 5e-5,
 }
 
 train = {

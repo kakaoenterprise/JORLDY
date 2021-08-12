@@ -6,27 +6,25 @@ import copy
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .dqn import DQNAgent
+from .dqn import DQN
 
-class IQNAgent(DQNAgent):
+class IQN(DQN):
     def __init__(self,
                 state_size,
                 action_size,
                 network='iqn',
-                optimizer='adam',
-                learning_rate=3e-4,
-                opt_eps=1e-8,
+                optim_config={'name':'adam'},
                 num_sample=64,
                 embedding_dim=64,
                 sample_min=0.0,
                 sample_max=1.0,
                 **kwargs,
                 ):
-        super(IQNAgent, self).__init__(state_size, action_size, network=network, **kwargs)
+        super(IQN, self).__init__(state_size, action_size, network=network, **kwargs)
         
         self.network = Network(network, state_size, action_size, embedding_dim, num_sample).to(self.device)
         self.target_network = copy.deepcopy(self.network)
-        self.optimizer = Optimizer(optimizer, self.network.parameters(), lr=learning_rate, eps=opt_eps)
+        self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         
         self.action_size = action_size
         self.num_support = num_sample
@@ -47,11 +45,18 @@ class IQNAgent(DQNAgent):
             logits, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device), sample_min, sample_max)
             _, q_action = self.logits2Q(logits)
             action = torch.argmax(q_action, -1, keepdim=True).cpu().numpy()
-        return action
+        return {'action': action}
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
         
         # Get Theta Pred, Tau
         logit, tau = self.network(state)

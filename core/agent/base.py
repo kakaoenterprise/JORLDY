@@ -33,5 +33,8 @@ class BaseAgent(ABC):
         }
         return sync_item
     
-    def set_distributed(self, id):
+    def set_distributed(self, *args, **kwargs):
         return self
+    
+    def interact_callback(self, transitions):
+        return transitions

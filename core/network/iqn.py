@@ -36,7 +36,7 @@ class IQN(torch.nn.Module):
         return embed, tau
     
 class IQN_CNN(torch.nn.Module):
-    def __init__(self, D_in, D_out, D_em=64, N_sample=64):
+    def __init__(self, D_in, D_out, D_em=64, N_sample=64, D_hidden=512):
         super(IQN_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
@@ -53,8 +53,8 @@ class IQN_CNN(torch.nn.Module):
         
         self.sample_embed = torch.nn.Linear(D_em, 64*dim3[0]*dim3[1])
         
-        self.fc1 = torch.nn.Linear(64*dim3[0]*dim3[1], 512)
-        self.fc2 = torch.nn.Linear(512, D_out)
+        self.fc1 = torch.nn.Linear(64*dim3[0]*dim3[1], D_hidden)
+        self.fc2 = torch.nn.Linear(D_hidden, D_out)
         
     def forward(self, x, tau_min=0, tau_max=1):
         x = (x-(255.0/2))/(255.0/2)

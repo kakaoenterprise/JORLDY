@@ -3,11 +3,11 @@ torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np 
 
-from .dqn import DQNAgent
+from .dqn import DQN
 
-class QRDQNAgent(DQNAgent):
+class QRDQN(DQN):
     def __init__(self, state_size, action_size, num_support, **kwargs):
-        super(QRDQNAgent, self).__init__(state_size, action_size*num_support, **kwargs)  
+        super(QRDQN, self).__init__(state_size, action_size*num_support, **kwargs)  
 
         self.action_size = action_size 
         self.num_support = num_support 
@@ -29,11 +29,18 @@ class QRDQNAgent(DQNAgent):
             logits = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             _, q_action = self.logits2Q(logits)
             action = torch.argmax(q_action, -1, keepdim=True).cpu().numpy()
-        return action
+        return {'action': action}
     
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
         
         # Get Theta Pred
         logit = self.network(state)
