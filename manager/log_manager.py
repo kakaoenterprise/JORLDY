@@ -2,6 +2,7 @@ import os
 import datetime, time
 
 import imageio
+from pygifsicle import optimize
 from torch.utils.tensorboard import SummaryWriter
 
 class LogManager:
@@ -24,4 +25,5 @@ class LogManager:
         if len(frames) > 0 :
             write_path = os.path.join(self.path, f"{step:010d}_{score}.gif")
             imageio.mimwrite(write_path, frames, fps=60)
+            optimize(write_path)
             print(f"...Record episode to {write_path}...")
