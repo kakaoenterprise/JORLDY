@@ -6,7 +6,7 @@ import copy
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import ReplayBuffer
+from core.buffer import ReplayBuffer
 from .dqn import DQN
 
 class Noisy(DQN):
