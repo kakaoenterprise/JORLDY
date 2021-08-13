@@ -2,15 +2,22 @@ import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 
-from .dqn import DQNAgent
+from .dqn import DQN
 
-class DoubleDQNAgent(DQNAgent):
+class Double(DQN):
     def __init__(self, **kwargs):
-        super(DoubleDQNAgent, self).__init__(**kwargs)
+        super(Double, self).__init__(**kwargs)
 
     def learn(self):        
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
         
         eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action.view(-1).long()]

@@ -1,0 +1,15 @@
+### Class Dictionary ###
+format: (key, class)
+------------------------
+('asgd', <class 'torch.optim.asgd.ASGD'>)
+('adadelta', <class 'torch.optim.adadelta.Adadelta'>)
+('adagrad', <class 'torch.optim.adagrad.Adagrad'>)
+('adam', <class 'torch.optim.adam.Adam'>)
+('adam_w', <class 'torch.optim.adamw.AdamW'>)
+('adamax', <class 'torch.optim.adamax.Adamax'>)
+('lbfgs', <class 'torch.optim.lbfgs.LBFGS'>)
+('optimizer', <class 'torch.optim.optimizer.Optimizer'>)
+('rmsprop', <class 'torch.optim.rmsprop.RMSprop'>)
+('rprop', <class 'torch.optim.rprop.Rprop'>)
+('sgd', <class 'torch.optim.sgd.SGD'>)
+('sparse_adam', <class 'torch.optim.sparse_adam.SparseAdam'>)

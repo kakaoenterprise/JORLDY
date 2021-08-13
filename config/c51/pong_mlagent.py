@@ -8,9 +8,6 @@ env = {
 agent = {
     "name": "c51",
     "network": "dqn",
-    "optimizer": "adam",
-    "opt_eps": 1e-2/32,
-    "learning_rate": 0.00025,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,
@@ -22,6 +19,12 @@ agent = {
     "v_min": -1,
     "v_max": 10,
     "num_support": 51
+}
+
+optim = {
+    "name": "adam",
+    "eps": 1e-2/agent['batch_size'],
+    "lr": 2.5e-4,
 }
 
 train = {

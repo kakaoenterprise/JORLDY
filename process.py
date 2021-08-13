@@ -16,17 +16,19 @@ def interact_process(DistributedManager, distributed_manager_config,
         distributed_manager.terminate()
         
 # Manage
-def manage_process(Agent, agent_config, result_queue, sync_queue,
-                   run_step, print_period, save_period, MetricManager,
+def manage_process(Agent, agent_config,
+                   result_queue, sync_queue, path_queue,
+                   run_step, print_period, MetricManager,
                    TestManager, test_manager_config,
                    LogManager, log_manager_config, config_manager):
     agent = Agent(**agent_config)
     test_manager = TestManager(*test_manager_config)
     metric_manager = MetricManager()
     log_manager = LogManager(*log_manager_config)
+    path_queue.put(log_manager.path)
     config_manager.dump(log_manager.path)
     
-    step, print_stamp, save_stamp = 0, 0, 0
+    step, print_stamp = 0, 0
     try:
         while step < run_step:
             wait = True
@@ -35,7 +37,6 @@ def manage_process(Agent, agent_config, result_queue, sync_queue,
                 metric_manager.append(result)
                 wait = False
             print_stamp += _step - step
-            save_stamp += _step - step
             step = _step
             if print_stamp >= print_period or step >= run_step: 
                 agent.sync_in(**sync_queue.get())
@@ -45,8 +46,5 @@ def manage_process(Agent, agent_config, result_queue, sync_queue,
                 print(f"Step : {step} / {statistics}")
                 log_manager.write(statistics, frames, score, step)
                 print_stamp = 0
-            if save_stamp >= save_period or step >= run_step:
-                agent.save(log_manager.path)
-                save_stamp = 0
     except Exception as e:
         traceback.print_exc()

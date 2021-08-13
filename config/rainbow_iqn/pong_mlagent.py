@@ -8,8 +8,6 @@ env = {
 agent = {
     "name": "rainbow_iqn",
     "network": "rainbow_iqn",
-    "optimizer": "adam",
-    "learning_rate": 0.0000625,
     "gamma": 0.99,
     "explore_step": 450000,
     "buffer_size": 50000,
@@ -28,6 +26,12 @@ agent = {
     "embedding_dim": 64,
     "sample_min": 0.0,
     "sample_max": 1.0,
+}
+
+optim = {
+    "name": "adam",
+    "eps": 1e-2/agent['batch_size'],
+    "lr": 2.5e-4/4,
 }
 
 train = {

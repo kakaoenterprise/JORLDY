@@ -6,11 +6,14 @@ import numpy as np
 
 class DistributedManager:
     def __init__(self, Env, env_config, Agent, agent_config, num_worker):
-        ray.init()
+        try:
+            ray.init(address='auto')
+        except:
+            ray.init()
         agent = Agent(**agent_config)
         num_worker = num_worker if num_worker else os.cpu_count()
         Env, env_config, agent = map(ray.put, [Env, dict(env_config), agent])
-        self.actors = [Actor.remote(Env, env_config, agent, i) for i in range(num_worker)]
+        self.actors = [Actor.remote(Env, env_config, agent, i, num_worker) for i in range(num_worker)]
 
     def run(self, step=1):
         assert step > 0
@@ -27,9 +30,9 @@ class DistributedManager:
 
 @ray.remote
 class Actor:
-    def __init__(self, Env, env_config, agent, id):
+    def __init__(self, Env, env_config, agent, id, num_worker):
         self.env = Env(id=id+1, **env_config)
-        self.agent = agent.set_distributed(id)
+        self.agent = agent.set_distributed(id, num_worker)
         self.state = self.env.reset()
         if 'need_past_pi' in dir(self.agent) and 'action_type' in dir(self.agent):
             self.action_type = self.agent.action_type
@@ -39,15 +42,12 @@ class Actor:
     def run(self, step):
         transitions = []
         for t in range(step):
-            action = self.agent.act(self.state, training=True)
-            if self.action_type is None:
-                next_state, reward, done = self.env.step(action)
-            elif self.action_type == 'continuous':
-                next_state, reward, done = self.env.step(action[:, :self.env.action_size])
-            elif self.action_type == 'discrete':
-                next_state, reward, done = self.env.step(action[:, 0].astype(np.long))
-                
-            transitions.append((self.state, action, reward, next_state, done))
+            action_dict = self.agent.act(self.state, training=True)
+            next_state, reward, done = self.env.step(action_dict['action'])
+            transition = {'state': self.state, 'next_state': next_state,
+                          'reward': reward, 'done': done}
+            transition.update(action_dict)
+            transitions.append(transition)
             self.state = next_state if not done else self.env.reset()
         return transitions
     

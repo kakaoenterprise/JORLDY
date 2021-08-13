@@ -9,8 +9,6 @@ env = {
 agent = {
     "name": "per",
     "network": "dqn",
-    "optimizer": "adam",
-    "learning_rate": 0.00025/4,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
@@ -23,6 +21,11 @@ agent = {
     "beta": 0.4,
     "learn_period": 16,
     "uniform_sample_prob": 1e-3,
+}
+
+optim = {
+    "name": "adam",
+    "lr": 2.5e-4/4,
 }
 
 train = {

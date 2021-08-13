@@ -29,16 +29,8 @@ class TestManager:
                 # record first iteration
                 if record and i == 0: 
                     frames.append(self.env.get_frame())
-                action = agent.act(state, training=False)
-                
-                if action_type is None:
-                    state, reward, done = self.env.step(action)
-                elif action_type == 'continuous':
-                    state, reward, done = self.env.step(action[:, :self.env.action_size])
-                elif action_type == 'discrete':
-                    state, reward, done = self.env.step(action[:, 0].astype(np.long))
-                
-#                 state, reward, done = self.env.step(action)
+                action_dict = agent.act(state, training=False)
+                state, reward, done = self.env.step(action_dict['action'])
             scores.append(self.env.score)
             
         if record:

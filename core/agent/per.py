@@ -2,12 +2,12 @@ import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 
-from .dqn import DQNAgent
+from .dqn import DQN
 from .utils import PERBuffer
 
-class PERAgent(DQNAgent):
+class PER(DQN):
     def __init__(self, alpha, beta, learn_period=16, uniform_sample_prob=1e-3, **kwargs):
-        super(PERAgent, self).__init__(**kwargs)
+        super(PER, self).__init__(**kwargs)
         self.memory = PERBuffer(self.buffer_size, uniform_sample_prob)
         self.alpha = alpha
         self.beta = beta 
@@ -17,7 +17,14 @@ class PERAgent(DQNAgent):
                 
     def learn(self):        
         transitions, weights, indices, sampled_p, mean_p = self.memory.sample(self.beta, self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
         
         eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action.view(-1).long()]

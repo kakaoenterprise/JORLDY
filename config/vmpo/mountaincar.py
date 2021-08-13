@@ -1,4 +1,4 @@
-### PPO MountainCar Config ###
+### V-MPO MountainCar Config ###
 
 env = {
     "name":"mountaincar",
@@ -6,18 +6,30 @@ env = {
 }
 
 agent = {
-    "name":"ppo",
+    "name":"vmpo",
     "network":"discrete_pi_v",
-    "optimizer":"adam",
-    "learning_rate": 3e-4,
     "gamma":0.99,
     "batch_size":64,
-    "n_step": 200,
-    "n_epoch": 5,
+    "n_step": 128,
+    "n_epoch": 1,
     "_lambda": 0.95,
-    "epsilon_clip": 0.1,
-    "vf_coef": 0.5,
-    "ent_coef": 0.0,
+    
+    "min_eta": 1e-8,
+    "min_alpha_mu": 1e-8,
+    "min_alpha_sigma": 1e-8,
+    
+    "eps_eta": 0.02,
+    "eps_alpha_mu": 0.1,
+    "eps_alpha_sigma": 0.1,
+    
+    "eta": 1.0,
+    "alpha_mu": 1.0,
+    "alpha_sigma": 1.0,
+}
+
+optim = {
+    "name": "adam",
+    "lr": 3e-4,
 }
 
 train = {

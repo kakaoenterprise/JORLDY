@@ -4,7 +4,7 @@ from core import *
 from manager import *
 
 # default_config_path = "config.YOUR_AGENT.YOUR_ENV"
-default_config_path = "config.icm_dqn.mario"
+default_config_path = "config.dqn.cartpole"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -17,6 +17,7 @@ if __name__ == "__main__":
     env = Env(**config.env)
     agent = Agent(state_size=env.state_size,
                   action_size=env.action_size,
+                  optim_config=config.optim,
                   **config.agent)
 
     if config.train.load_path:
@@ -27,17 +28,21 @@ if __name__ == "__main__":
                                config.train.record, record_period)
     metric_manager = MetricManager()
     log_id = config.train.id if config.train.id else config.agent.name
-    log_manager = LogManager(config.env.name, log_id, config.train.purpose)
+    log_manager = LogManager(config.env.name, log_id, config.train.experiment)
     config_manager.dump(log_manager.path)
     
     episode = 0
     state = env.reset()
+
     for step in range(1, config.train.run_step+1):
-        action = agent.act(state, config.train.training)
-        next_state, reward, done = env.step(action)
+        action_dict = agent.act(state, config.train.training)            
+        next_state, reward, done = env.step(action_dict['action'])
 
         if config.train.training:
-            result = agent.process([(state, action, reward, next_state, done)], step)
+            transition = {'state': state, 'next_state': next_state,
+                          'reward': reward, 'done': done}
+            transition.update(action_dict)
+            result = agent.process([transition], step)
             if result:
                 metric_manager.append(result)
         state = next_state
