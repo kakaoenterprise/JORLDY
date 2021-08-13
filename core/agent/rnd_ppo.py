@@ -2,14 +2,13 @@ import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 from torch.distributions import Normal, Categorical
-import numpy as np
 import os
+import numpy as np
 
-from .ppo import PPOAgent
-from core.optimizer import Optimizer
+from .ppo import PPO
 from core.network import Network
 
-class RNDPPOAgent(PPOAgent):
+class RND_PPO(PPO):
     def __init__(self,
                  state_size,
                  action_size,
@@ -23,9 +22,9 @@ class RNDPPOAgent(PPOAgent):
                  batch_norm=True,
                  **kwargs,
                  ):
-        super(RNDPPOAgent, self).__init__(state_size=state_size,
-                                          action_size=action_size,
-                                          **kwargs)
+        super(RND_PPO, self).__init__(state_size=state_size,
+                                      action_size=action_size,
+                                      **kwargs)
         
         self.gamma_i = gamma_i
         self.extrinsic_coeff = extrinsic_coeff
@@ -40,7 +39,8 @@ class RNDPPOAgent(PPOAgent):
                            self.ri_normalize, 
                            self.obs_normalize,
                            self.batch_norm).to(self.device)
-        self.rnd_optimizer = Optimizer('adam', self.rnd.parameters(), lr=self.learning_rate)
+        
+        self.optimizer.add_param_group({'params':self.rnd.parameters()})
         
         # Freeze random network
         for name, param in self.rnd.named_parameters():
@@ -49,17 +49,19 @@ class RNDPPOAgent(PPOAgent):
 
     def learn(self, step):
         transitions = self.memory.rollout()
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)      
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
 
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
+        
         # RND: calculate exploration reward, update moments of obs and r_i
         self.rnd.update_rms(next_state.detach(), 'obs')
         r_i = self.rnd.forward(next_state, update_ri=True)
         r_i = r_i.unsqueeze(-1)
-        
-#         if step < 50000: 
-#             intrinsic_coeff = 1
-#         else:
-#             intrinsic_coeff = self.intrinsic_coeff
         
         # Scaling extrinsic and intrinsic reward
         reward *= self.extrinsic_coeff
@@ -136,18 +138,16 @@ class RNDPPOAgent(PPOAgent):
                 critic_loss = F.mse_loss(value, _ret).mean() + F.mse_loss(_v_i, _ret_i).mean()
                 
                 entropy_loss = -m.entropy().mean()
-                loss = actor_loss + self.vf_coef * critic_loss + self.ent_coef * entropy_loss
+                ppo_loss = actor_loss + self.vf_coef * critic_loss + self.ent_coef * entropy_loss
+                rnd_loss = r_i.mean()
+                
+                loss = ppo_loss + rnd_loss
                 
                 self.optimizer.zero_grad(set_to_none=True)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.network.parameters(), self.clip_grad_norm)
-                self.optimizer.step()
-                
-                rnd_loss = _r_i.mean()
-                self.rnd_optimizer.zero_grad(set_to_none=True)
-                rnd_loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.rnd.parameters(), self.clip_grad_norm)
-                self.rnd_optimizer.step()
+                self.optimizer.step()
                 
                 pis.append(pi.min().item())
                 ratios.append(ratio.max().item())
@@ -183,7 +183,6 @@ class RNDPPOAgent(PPOAgent):
         return result
     
     def sync_in(self, weights, values_rnd):
-#     def sync_in(self, weights):
         self.network.load_state_dict(weights)
         self.rnd.load_state_dict(values_rnd["rnd"])
         self.rnd.rms['obs'].load(values_rnd["rnd_rms_obs"], device=self.device)

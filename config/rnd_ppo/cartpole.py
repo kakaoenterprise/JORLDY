@@ -8,9 +8,7 @@ env = {
 
 agent = {
     "name":"rnd_ppo",
-    "network":"discrete_pi_v",
-    "optimizer":"adam",
-    "learning_rate": 3e-4,
+    "network":"discrete_policy_value",
     "gamma":0.99,
     "batch_size":64,
     "n_step": 128,
@@ -27,6 +25,11 @@ agent = {
     "intrinsic_coeff": 1.0,
     "obs_normalize": False,
     "ri_normalize": False,
+}
+
+optim = {
+    "name":"adam",
+    "lr": 0.0001,
 }
 
 train = {
