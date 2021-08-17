@@ -22,9 +22,10 @@ agent = {
     "rnd_network": "rnd",
     "gamma_i": 0.99,
     "extrinsic_coeff": 1.0,
-    "intrinsic_coeff": 1.0,
-    "obs_normalize": False,
-    "ri_normalize": False,
+    "intrinsic_coeff": 0.01,
+    "obs_normalize": True,
+    "ri_normalize": True,
+    "batch_norm": True,
 }
 
 optim = {
@@ -40,6 +41,7 @@ train = {
     "save_period" : 10000,
     "test_iteration": 10,
     # distributed setting
+    "distributed_batch_size" : 512,
     "update_period" : agent["n_step"],
     "num_worker" : 8,
 }
