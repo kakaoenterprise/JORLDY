@@ -118,7 +118,8 @@ class RND(torch.nn.Module):
         r_i = torch.mean(torch.square(p - t), axis = 1)
         
         if update_ri:
-            rewems = self.rff.update(r_i.detach())
+            ri_T = r_i.view(-1, self.n_step).T # (n_step, n_workers)
+            rewems = torch.stack([self.rff.update(rit.detach()) for rit in ri_T]).ravel() # (n_step, n_workers) -> (n_step * n_workers)
             self.update_rms(rewems, 'ri')
         if self.ri_normalize: r_i = r_i / (torch.sqrt(self.rms['ri'].var) + 1e-7)
         
@@ -206,9 +207,9 @@ class RND_CNN(torch.nn.Module):
         t = self.fc1_target(t)
         
         r_i = torch.mean(torch.square(p - t), axis = 1)
-        ri_T = r_i.view(-1, self.n_step).T # (n_step, n_workers)
         
         if update_ri:
+            ri_T = r_i.view(-1, self.n_step).T # (n_step, n_workers)
             rewems = torch.stack([self.rff.update(rit.detach()) for rit in ri_T]).ravel() # (n_step, n_workers) -> (n_step * n_workers)
             self.update_rms(rewems, 'ri')
         if self.ri_normalize: r_i = r_i / (torch.sqrt(self.rms['ri'].var) + 1e-7)
@@ -267,9 +268,9 @@ class RND_RNN(torch.nn.Module):
         r_i = torch.mean(torch.square(p - t), axis = 1)
         
         if update_ri:
-            rewems = self.rff.update(r_i.detach())
+            ri_T = r_i.view(-1, self.n_step).T # (n_step, n_workers)
+            rewems = torch.stack([self.rff.update(rit.detach()) for rit in ri_T]).ravel() # (n_step, n_workers) -> (n_step * n_workers)
             self.update_rms(rewems, 'ri')
-            
         if self.ri_normalize: r_i = r_i / (torch.sqrt(self.rms['ri'].var) + 1e-7)
         
         return r_i

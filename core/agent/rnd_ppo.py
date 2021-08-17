@@ -33,8 +33,8 @@ class RND_PPO(PPO):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
         
-        self.rnd = Network(rnd_network, state_size, action_size, self.batch_size, 
-                           gamma_i, ri_normalize, obs_normalize, batch_norm).to(self.device)
+        self.rnd = Network(rnd_network, state_size, action_size, self.n_step, gamma_i, 
+                           ri_normalize, obs_normalize, batch_norm).to(self.device)
         self.optimizer.add_param_group({'params':self.rnd.parameters()})
         
         # Freeze random network
@@ -52,7 +52,7 @@ class RND_PPO(PPO):
         reward = transitions['reward']
         next_state = transitions['next_state']
         done = transitions['done']
-        
+
         # set pi_old and advantage
         with torch.no_grad():
             # RND: calculate exploration reward, update moments of obs and r_i
@@ -63,7 +63,7 @@ class RND_PPO(PPO):
             # Scaling extrinsic and intrinsic reward
             reward *= self.extrinsic_coeff
             r_i *= self.intrinsic_coeff
-
+            
             if self.action_type == "continuous":
                 mu, std, value = self.network(state)
                 m = Normal(mu, std)
@@ -104,7 +104,6 @@ class RND_PPO(PPO):
         idxs = np.arange(len(reward))
         for idx_epoch in range(self.n_epoch):
             np.random.shuffle(idxs)
-            
             for offset in range(0, len(reward), self.batch_size):
                 idx = idxs[offset : offset + self.batch_size]
                 
@@ -150,7 +149,6 @@ class RND_PPO(PPO):
                 critic_losses.append(critic_loss.item())
                 entropy_losses.append(entropy_loss.item())
                 rnd_losses.append(rnd_loss.item())
-            
         result = {
             'actor_loss' : np.mean(actor_losses),
             'critic_loss' : np.mean(critic_losses),
