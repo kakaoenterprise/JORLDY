@@ -3,7 +3,7 @@ torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 
 from .dqn import DQN
-from .utils import PERBuffer
+from core.buffer import PERBuffer
 
 class PER(DQN):
     def __init__(self, alpha, beta, learn_period=16, uniform_sample_prob=1e-3, **kwargs):

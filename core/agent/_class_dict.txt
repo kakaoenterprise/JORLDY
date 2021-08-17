@@ -1,7 +1,6 @@
 ### Class Dictionary ###
 format: (key, class)
 ------------------------
-('ape_x', <class 'core.agent.ape_x.ApeX'>)
 ('c51', <class 'core.agent.c51.C51'>)
 ('double', <class 'core.agent.double.Double'>)
 ('dqn', <class 'core.agent.dqn.DQN'>)
@@ -17,3 +16,5 @@ format: (key, class)
 ('rainbow_iqn', <class 'core.agent.rainbow_iqn.RainbowIQN'>)
 ('reinforce', <class 'core.agent.reinforce.REINFORCE'>)
 ('sac', <class 'core.agent.sac.SAC'>)
+('ape_x', <class 'core.agent.ape_x.ApeX'>)
+('rnd_ppo', <class 'core.agent.rnd_ppo.RND_PPO'>)

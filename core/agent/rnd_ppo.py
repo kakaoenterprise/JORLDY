@@ -5,11 +5,11 @@ from torch.distributions import Normal, Categorical
 import numpy as np
 import os
 
-from .ppo import PPOAgent
+from .ppo import PPO
 from core.optimizer import Optimizer
 from core.network import Network
 
-class RNDPPOAgent(PPOAgent):
+class RND_PPO(PPO):
     def __init__(self,
                  state_size,
                  action_size,

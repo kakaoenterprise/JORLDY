@@ -7,7 +7,7 @@ import copy
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import ApeXBuffer
+from core.buffer import ApeXBuffer
 from .dqn import DQN
 
 class ApeX(DQN):
