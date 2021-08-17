@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from torch.distributions import Normal, Categorical
 import os
 import numpy as np
+import time
 
 from .ppo import PPO
 from core.network import Network
@@ -68,11 +69,11 @@ class RND_PPO(PPO):
                 mu, std, value = self.network(state)
                 m = Normal(mu, std)
                 z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
-                pi = m.log_prob(z).exp()
+                prob = m.log_prob(z).exp()
             else:
                 pi, value = self.network(state)
-                pi = pi.gather(1, action.long())
-            pi_old = pi
+                prob = pi.gather(1, action.long())
+            prob_old = prob
             v_i = self.network.get_vi(state)
             
             next_value = self.network(next_state)[-1]
@@ -98,33 +99,30 @@ class RND_PPO(PPO):
             ret_i = adv_i + v_i
         
         # start train iteration
-        actor_losses, critic_losses, entropy_losses, ratios, pis, pi_olds = [], [], [], [], [], []
-        rnd_losses = []
-        pi_olds.append(pi_old.min().item())
+        actor_losses, critic_losses, entropy_losses, rnd_losses, ratios, probs = [], [], [], [], [], []
         idxs = np.arange(len(reward))
         for idx_epoch in range(self.n_epoch):
             np.random.shuffle(idxs)
             for offset in range(0, len(reward), self.batch_size):
                 idx = idxs[offset : offset + self.batch_size]
                 
-                _state, _action, _ret, _next_state, _done, _adv, _pi_old =\
-                    map(lambda x: x[idx], [state, action, ret, next_state, done, adv, pi_old])
-                _ret_i, _adv_i = map(lambda x: x[idx], [ret_i, adv_i])
+                _state, _action, _ret, _next_state, _adv, _prob_old, _ret_i, _adv_i =\
+                    map(lambda x: x[idx], [state, action, ret, next_state, adv, prob_old, ret_i, adv_i])
 
-                _r_i = self.rnd.forward(_next_state) * self.intrinsic_coeff
+                _r_i = self.rnd(_next_state) * self.intrinsic_coeff
                 
                 if self.action_type == "continuous":
                     mu, std, value = self.network(_state)
                     m = Normal(mu, std)
                     z = torch.atanh(torch.clamp(_action, -1+1e-7, 1-1e-7))
-                    pi = m.log_prob(z).exp()
+                    prob = m.log_prob(z).exp()
                 else:
                     pi, value = self.network(_state)
                     m = Categorical(pi)
-                    pi = pi.gather(1, _action.long())
+                    prob = pi.gather(1, _action.long())
                 _v_i = self.network.get_vi(_state)
                 
-                ratio = (pi / (_pi_old + 1e-4)).prod(1, keepdim=True)
+                ratio = (prob / (_prob_old + 1e-4)).prod(1, keepdim=True)
                 surr1 = ratio * (_adv + _adv_i)
                 surr2 = torch.clamp(ratio, min=1-self.epsilon_clip, max=1+self.epsilon_clip) * (_adv + _adv_i)
                 actor_loss = -torch.min(surr1, surr2).mean() 
@@ -143,20 +141,20 @@ class RND_PPO(PPO):
                 torch.nn.utils.clip_grad_norm_(self.rnd.parameters(), self.clip_grad_norm)
                 self.optimizer.step()
                 
-                pis.append(pi.min().item())
+                probs.append(prob.min().item())
                 ratios.append(ratio.max().item())
                 actor_losses.append(actor_loss.item())
                 critic_losses.append(critic_loss.item())
                 entropy_losses.append(entropy_loss.item())
                 rnd_losses.append(rnd_loss.item())
+                
         result = {
             'actor_loss' : np.mean(actor_losses),
             'critic_loss' : np.mean(critic_losses),
             'entropy_loss' : np.mean(entropy_losses),
             'r_i': np.mean(rnd_losses),
             'max_ratio' : max(ratios),
-            'min_pi': min(pis),
-            'min_pi_old': min(pi_olds),
+            'min_prob': min(probs),
         }
         return result
 

@@ -105,15 +105,19 @@ class RND(torch.nn.Module):
                             
     def forward(self, s_next, update_ri=False):
         if self.obs_normalize: s_next = normalize_obs(s_next, self.rms['obs'].mean, self.rms['obs'].var)
-        p = F.elu(self.fc1_predict(s_next))
-        if self.batch_norm: p = self.bn1_predict(p)
-        p = F.elu(self.fc2_predict(p))
-        if self.batch_norm: p = self.bn2_predict(p)
-
-        t = F.elu(self.fc1_target(s_next))
-        if self.batch_norm: t = self.bn1_predict(t)
-        t = F.elu(self.fc2_target(t))
-        if self.batch_norm: t = self.bn2_predict(t)
+        
+        if self.batch_norm:
+            p = F.relu(self.bn1_predict(self.fc1_predict(s_next)))
+            p = F.relu(self.bn2_predict(self.fc2_predict(p)))
+            
+            t = F.relu(self.bn1_target(self.fc1_target(s_next)))
+            t = F.relu(self.bn2_target(self.fc2_target(t)))
+        else:
+            p = F.relu(self.fc1_predict(s_next))
+            p = F.relu(self.fc2_predict(p))
+            
+            t = F.relu(self.fc1_target(s_next))
+            t = F.relu(self.fc2_target(t))
         
         r_i = torch.mean(torch.square(p - t), axis = 1)
         
@@ -195,9 +199,9 @@ class RND_CNN(torch.nn.Module):
         p = self.fc3_predict(p)
         
         if self.batch_norm:
-            t = F.relu(self.bn1_predict(self.conv1_target(s_next)))
-            t = F.relu(self.bn2_predict(self.conv2_target(t)))
-            t = F.relu(self.bn3_predict(self.conv3_target(t)))
+            t = F.relu(self.bn1_target(self.conv1_target(s_next)))
+            t = F.relu(self.bn2_target(self.conv2_target(t)))
+            t = F.relu(self.bn3_target(self.conv3_target(t)))
         else:
             t = F.relu(self.conv1_target(s_next)) 
             t = F.relu(self.conv2_target(t)) 
