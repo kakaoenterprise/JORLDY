@@ -1,9 +1,9 @@
 import torch
 import torch.nn.functional as F
 
-class ContinuousPiQ(torch.nn.Module):
+class ContinuousPolicyQ(torch.nn.Module):
     def __init__(self, D_in, D_out, D_hidden=512):
-        super(ContinuousPiQ, self).__init__()
+        super(ContinuousPolicyQ, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
         
@@ -30,9 +30,9 @@ class ContinuousPiQ(torch.nn.Module):
         return self.Q(x)
     
     
-class DiscretePiQ(torch.nn.Module):
+class DiscretePolicyQ(torch.nn.Module):
     def __init__(self, D_in, D_out, D_hidden=512):
-        super(DiscretePiQ, self).__init__()
+        super(DiscretePolicyQ, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
         
@@ -47,9 +47,9 @@ class DiscretePiQ(torch.nn.Module):
         return F.softmax(self.pi(x), dim=-1), self.Q(x)
     
     
-class ContinuousPiQ_CNN(torch.nn.Module):
+class ContinuousPolicyQ_CNN(torch.nn.Module):
     def __init__(self, D_in, D_out, D_hidden=512):
-        super(ContinuousPiQ_CNN, self).__init__()
+        super(ContinuousPolicyQ_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
         
@@ -67,6 +67,9 @@ class ContinuousPiQ_CNN(torch.nn.Module):
 
     def forward(self, x):
         x = (x-(255.0/2))/(255.0/2)
+        shape_x = x.shape
+        if len(shape_x) == 5:
+            x = x.reshape(-1, shape_x[2], shape_x[3], shape_x[4])
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
@@ -76,12 +79,27 @@ class ContinuousPiQ_CNN(torch.nn.Module):
         
         log_std = self.log_std(x)
         log_std = torch.clamp(log_std, min=-5., max=2.)
-        return self.mu(x), log_std.exp(), self.v(x) #TODO: v->Q????
+        if len(shape_x) == 5:
+            return self.mu(x).reshape(*shape_x[:2], -1), log_std.exp().reshape(*shape_x[:2], -1)
+        else:
+            return self.mu(x), log_std.exp()
+    
+    def calculate_Q(self, x, a):
+        x = (x-(255.0/2))/(255.0/2)
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        x = x.view(x.size(0), -1)
+        
+        x = F.relu(self.fc1(x))
+        x = torch.cat([x, a], axis=-1)
+        
+        return self.Q(x)
     
     
-class DiscretePiQ_CNN(torch.nn.Module):
+class DiscretePolicyQ_CNN(torch.nn.Module):
     def __init__(self, D_in, D_out, D_hidden=512):
-        super(DiscretePiQ_CNN, self).__init__()
+        super(DiscretePolicyQ_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
         
@@ -99,6 +117,11 @@ class DiscretePiQ_CNN(torch.nn.Module):
         
     def forward(self, x):
         x = (x-(255.0/2))/(255.0/2)
+        
+        shape_x = x.shape
+        if len(shape_x) == 5:
+            x = x.reshape(-1, shape_x[2], shape_x[3], shape_x[4])
+            
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
@@ -106,4 +129,8 @@ class DiscretePiQ_CNN(torch.nn.Module):
         
         x = F.relu(self.fc1(x))
         
-        return F.softmax(self.pi(x), dim=-1), self.Q(x)
+        if len(shape_x) == 5:
+            return F.softmax(self.pi(x), dim=-1).reshape(*shape_x[:2], -1), self.Q(x).reshape(*shape_x[:2], -1)
+        else:
+            return F.softmax(self.pi(x), dim=-1), self.Q(x)
+    

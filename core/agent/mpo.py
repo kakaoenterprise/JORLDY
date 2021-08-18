@@ -13,13 +13,17 @@ class MPO(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
+                 optim_config={'name': 'adam'},
                  network="discrete_pi_q",
                  buffer_size=50000,
                  batch_size=64,
                  start_train_step=2000,
                  target_update_period=500,
                  n_step=100,
-                 n_epoch=5,
+                 clip_grad_norm=1.0,
+                 gamma=0.99,
+                 device=None,
+                 # parameters unique to MPO
                  num_sample = 30,
                  min_eta=1e-8,
                  min_alpha_mu=1e-8,
@@ -30,14 +34,9 @@ class MPO(BaseAgent):
                  eta=0.1, 
                  alpha_mu=0.1,
                  alpha_sigma=0.1,
-                 optimizer="adam",
-                 learning_rate=1e-4,
-                 gamma=0.99,
-                 device=None,
                  ):
 
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.need_past_pi = True
         self.action_type = network.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
         self.action_size = action_size
@@ -46,9 +45,8 @@ class MPO(BaseAgent):
         self.target_network = copy.deepcopy(self.network)
         
         self.batch_size = batch_size
-        print(f"self.batch_size: {self.batch_size}")
         self.n_step = n_step
-        self.n_epoch = n_epoch
+        self.clip_grad_norm = clip_grad_norm
 
         self.num_learn = 0
         self.time_t = 0
@@ -77,8 +75,7 @@ class MPO(BaseAgent):
         self.action_type = network.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
 
-        self.optimizer = Optimizer(optimizer, list(self.network.parameters()) + 
-                                   [self.eta, self.alpha_mu, self.alpha_sigma], lr=learning_rate)
+        self.optimizer = Optimizer(**optim_config, params=list(self.network.parameters()) + [self.eta, self.alpha_mu, self.alpha_sigma])
 
         self.gamma = gamma
         self.memory = MultistepBuffer(buffer_size, self.n_step)
@@ -92,11 +89,12 @@ class MPO(BaseAgent):
     
     def check_inference(self, state, action):
         problem = False
-        mu, std = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
-        Q = self.network.calculate_Q(state, action)
-        problem = problem or self.check_nan(mu, 'MU_chk')
-        problem = problem or self.check_nan(std, 'STD_chk')
-        problem = problem or self.check_nan(Q, 'Q_chk')
+        if self.action_type == 'continuous':
+            mu, std = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+            Q = self.network.calculate_Q(state, action)
+            problem = problem or self.check_nan(mu, 'MU_chk')
+            problem = problem or self.check_nan(std, 'STD_chk')
+            problem = problem or self.check_nan(Q, 'Q_chk')
         return problem
     
     @torch.no_grad()
@@ -117,24 +115,26 @@ class MPO(BaseAgent):
                 
         else:
             pi, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
-#             m = Categorical(pi)
-#             action = m.sample().data.cpu().unsqueeze(-1)
-            action = torch.multinomial(pi, 1)
+            action = torch.multinomial(pi, 1) if training else torch.argmax(pi, dim=-1, keepdim=True)
             prob = pi.numpy()
             action = action.cpu().numpy()
-        return np.concatenate([action, prob], axis=-1)
+        return {
+            'action': action,
+            'prob': prob,
+        }
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)
-
-        if self.action_type == 'discrete':
-            prob_b = action[:, :, 1:] # behavior policy probability
-            action = action[:, :, :1]
-        elif self.action_type == 'continuous':
-            prob_b = action[:, :, -1:] # behavior policy probability
-            action = action[:, :, :self.action_size]
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
             
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
+        prob_b = transitions['prob']
+        
         if self.action_type == "continuous":
             with torch.no_grad():
                 mu, std = self.network(state)
@@ -162,14 +162,12 @@ class MPO(BaseAgent):
 #                 prob_next = torch.exp(m.log_prob(z).sum(axis=-1))
                 
                 Qt_next = self.target_network.calculate_Q(next_state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), next_action) # (num_sample, batch_size, len_tr, 1)
-#                 print(f"Qt_next: {Qt_next.shape}, reward: {reward.shape}")
                 
                 prob_t = pi_old
                 
                 # calculate Qret for Retrace
                 if self.ones == None: self.ones = torch.ones(prob_t.shape).to(self.device)
                 c = torch.min(self.ones, prob_t / prob_b)
-#                 c = torch.min(self.ones, prob_t / (prob_b+1e-4))
                 
                 Qret = reward + Qt_next.mean(axis=0) - Qt_a
                 for i in reversed(range(reward.shape[1]-1)):
@@ -237,8 +235,6 @@ class MPO(BaseAgent):
 
                 Qt_a = Qt.gather(2, action.long()) # (batch_size, len_tr, 1)
                 prob_t = pi.gather(2, action.long()) # (batch_size, len_tr, 1), target policy probability
-#                 Qt_a = Qt # (batch_size, len_tr, action_dim)
-#                 prob_t = pi # (batch_size, len_tr, action_dim), target policy probability
                 
                 if self.ones == None: self.ones = torch.ones(prob_t.shape).to(self.device)
 
@@ -268,13 +264,13 @@ class MPO(BaseAgent):
             alpha_loss = torch.mean(self.alpha_mu * (self.eps_alpha_mu - KLD_pi.detach()) + \
                                     self.alpha_mu.detach() * KLD_pi)
 
-#         loss = critic_loss + actor_loss + eta_loss + alpha_loss
+        loss = critic_loss + actor_loss + eta_loss + alpha_loss
 #         loss = critic_loss + eta_loss + alpha_loss
-        loss = critic_loss + actor_loss
+#         loss = critic_loss + actor_loss
 
         self.optimizer.zero_grad()
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.network.parameters(), 5.)
+        torch.nn.utils.clip_grad_norm_(self.network.parameters(), self.clip_grad_norm)
         self.optimizer.step()
         self.reset_lgr_muls()
         
@@ -296,11 +292,13 @@ class MPO(BaseAgent):
             'max_probb': prob_b.cpu().numpy().max(),
             'min_Q': Q.detach().cpu().numpy().min(),
             'max_Q': Q.detach().cpu().numpy().max(),
-            'min_mu': mu.detach().cpu().numpy().min(),
-            'max_mu': mu.detach().cpu().numpy().max(),
-            'min_std': std.detach().cpu().numpy().min(),
-            'max_std': std.detach().cpu().numpy().max(),
         }
+        
+        if self.action_type == 'continuous':
+            result['min_mu'] = mu.detach().cpu().numpy().min()
+            result['max_mu'] = mu.detach().cpu().numpy().max()
+            result['min_std'] = std.detach().cpu().numpy().min()
+            result['max_std'] = std.detach().cpu().numpy().max()
             
         return result
     
