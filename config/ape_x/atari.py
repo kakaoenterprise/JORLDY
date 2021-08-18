@@ -7,13 +7,15 @@ env = {
     "img_width": 84,
     "img_height": 84,
     "stack_frame": 4,
-    "no_op": True,
+#     "no_op": True,
     "reward_clip": True,
+    "dead_penalty": True,
 }
 
 agent = {
     "name": "ape_x",
-    "network": "dueling_cnn",
+    "network": "dueling",
+    "header": "cnn,
     "gamma": 0.99,
     "buffer_size": 2000000,
     "batch_size": 32,
