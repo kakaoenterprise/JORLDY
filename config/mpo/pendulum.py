@@ -7,17 +7,15 @@ env = {
 
 agent = {
     "name": "mpo",
-    "network": "continuous_pi_q",
-    "optimizer": "adam",
-#     "learning_rate": 5e-4,
-    "learning_rate": 5e-6,
+    "network": "continuous_policy_q",
+
     "gamma": 0.99,
     "buffer_size": 50000,
     "batch_size":64,
     "n_step": 4,
-    "n_epoch": 1,
     "start_train_step": 2000,
     "target_update_period": 1000,
+    "clip_grad_norm": 1.0,
     
     "min_eta": 1e-8,
     "min_alpha_mu": 1e-8,
@@ -30,6 +28,11 @@ agent = {
     "eta": 1.0,
     "alpha_mu": 1.0,
     "alpha_sigma": 1.0,
+}
+
+optim = {
+    "name": "adam",
+    "lr": 5e-4,
 }
 
 train = {

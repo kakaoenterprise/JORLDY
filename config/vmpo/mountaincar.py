@@ -7,7 +7,7 @@ env = {
 
 agent = {
     "name":"vmpo",
-    "network":"discrete_pi_v",
+    "network":"discrete_policy_value",
     "gamma":0.99,
     "batch_size":64,
     "n_step": 128,

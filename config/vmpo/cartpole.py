@@ -8,7 +8,7 @@ env = {
 
 agent = {
     "name":"vmpo",
-    "network":"discrete_pi_v",
+    "network":"discrete_policy_value",
     "gamma":0.99,
     "batch_size":64,
     "n_step": 128,
@@ -28,10 +28,7 @@ agent = {
     "alpha_sigma": 5.0,
 }
 
-optim = {
-    "name": "adam",
-    "lr": 2.5e-4,
-}
+
 
 train = {
     "training" : True,
