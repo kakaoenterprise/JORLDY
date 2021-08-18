@@ -42,12 +42,9 @@ class MultistepBuffer(ReplayBuffer):
         
     def prepare_nstep(self, batch):
         transition = {}
-        transition['state'] = batch[0]['state']
-        transition['next_state'] = batch[-1]['next_state']
         
         for key in batch[0].keys():
-            if key not in ['state', 'next_state']:
-                transition[key] = np.stack([b[key] for b in batch], axis=1)
+            transition[key] = np.stack([b[key] for b in batch], axis=1)
         
         return transition
         
