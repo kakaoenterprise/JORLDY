@@ -7,7 +7,7 @@ import time
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import PERMultistepBuffer
+from core.buffer import RainbowBuffer
 from .rainbow import Rainbow
 
 class RainbowIQN(Rainbow):

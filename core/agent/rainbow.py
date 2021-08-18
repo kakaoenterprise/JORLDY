@@ -6,7 +6,7 @@ import copy
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import PERMultistepBuffer
+from core.buffer import RainbowBuffer
 from .dqn import DQN
 
 class Rainbow(DQN):

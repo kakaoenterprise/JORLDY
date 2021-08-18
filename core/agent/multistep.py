@@ -2,7 +2,7 @@ import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 
-from .utils import MultistepBuffer
+from core.buffer import MultistepBuffer
 from .dqn import DQN
 
 class Multistep(DQN):

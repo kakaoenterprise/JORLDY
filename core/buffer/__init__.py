@@ -9,6 +9,6 @@ for module_name in module_list:
     module_path = f"{__name__}.{module_name}"
     module = __import__(module_path, fromlist=[None])
     for class_name, _class in inspect.getmembers(module, inspect.isclass):
-        if module_path in str(_class) and "Manager" in class_name:
+        if module_path in str(_class) and "Buffer" in class_name:
             exec(f"from {module_path} import {class_name}")
             

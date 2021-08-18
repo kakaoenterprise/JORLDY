@@ -8,7 +8,7 @@ from collections import OrderedDict
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import Rollout
+from core.buffer import RolloutBuffer
 from .base import BaseAgent
 
 class REINFORCE(BaseAgent):
@@ -30,7 +30,7 @@ class REINFORCE(BaseAgent):
 
         self.gamma = gamma
         self.use_standardization = use_standardization
-        self.memory = Rollout()
+        self.memory = RolloutBuffer()
 
     @torch.no_grad()
     def act(self, state, training=True):

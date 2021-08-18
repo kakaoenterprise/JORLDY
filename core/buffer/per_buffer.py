@@ -1,65 +1,7 @@
-from collections import deque
-import random
 import numpy as np
 
-class ReplayBuffer:
-    def __init__(self, buffer_size):
-        self.buffer = deque(maxlen=buffer_size)
-        self.first_store = True
-    
-    def check_dim(self, transition):
-        print("########################################")
-        print("You should check dimension of transition")
-        for key, val in transition.items():
-            print(f"{key}: {val.shape}")
-        print("########################################")
-        self.first_store = False
-            
-    def store(self, transitions):
-        if self.first_store:
-            self.check_dim(transitions[0])
-        self.buffer += transitions
+from .replay_buffer import ReplayBuffer
 
-    def sample(self, batch_size):
-        batch = random.sample(self.buffer, batch_size)
-        transitions = {}
-        for key in batch[0].keys():
-            transitions[key] = np.stack([b[key][0] for b in batch], axis=0)
-            
-        return transitions
-    
-    def clear(self):
-        self.buffer.clear()
-    
-    @property
-    def size(self):
-        return len(self.buffer)
-
-class MultistepBuffer(ReplayBuffer):
-    def __init__(self, buffer_size, n_step):
-        super(MultistepBuffer, self).__init__(buffer_size)
-        self.n_step = n_step
-        
-    def prepare_nstep(self, batch):
-        transition = {}
-        
-        for key in batch[0].keys():
-            transition[key] = np.stack([b[key] for b in batch], axis=1)
-        
-        return transition
-        
-    def store(self, transitions, delta_t=1):
-        if self.first_store:
-            self.check_dim(transitions[0])
-            self.nstep_buffers = [deque(maxlen=self.n_step) for _ in range(len(transitions)//delta_t)]
-        
-        # Issue: need to consider multiple actor
-        for i, transition in enumerate(transitions):
-            nstep_buffer = self.nstep_buffers[i//delta_t]
-            nstep_buffer.append(transition)
-            if len(nstep_buffer) == self.n_step:
-                self.buffer.append(self.prepare_nstep(nstep_buffer))
-                
 # Reference: https://github.com/LeejwUniverse/following_deepmid/tree/master/jungwoolee_pytorch/100%20Algorithm_For_RL/01%20sum_tree
 class PERBuffer(ReplayBuffer):
     def __init__(self, buffer_size, uniform_sample_prob=1e-3):
@@ -89,8 +31,9 @@ class PERBuffer(ReplayBuffer):
             self.buffer_counter = min(self.buffer_counter + 1, self.buffer_size)
             self.buffer_index = (self.buffer_index + 1) % self.buffer_size
                 
-    def add_tree_data(self):
-        self.update_priority(self.max_priority, self.tree_index)
+    def add_tree_data(self, new_priority=None):
+        new_priority = np.asscalar(new_priority) if new_priority is not None else self.max_priority 
+        self.update_priority(new_priority, self.tree_index)
 
         self.tree_index += 1 # count current sum_tree index
         if self.tree_index == self.tree_size: # if sum tree index achive last index.
@@ -159,41 +102,3 @@ class PERBuffer(ReplayBuffer):
     @property
     def size(self):
         return self.buffer_counter
-    
-class Rollout(ReplayBuffer):
-    def __init__(self, **kwargs):
-        self.buffer = list()
-        self.first_store = True
-    
-    def rollout(self):
-        transitions = {}
-        for key in self.buffer[0].keys():
-            transitions[key] = np.stack([b[key][0] for b in self.buffer], axis=0)
-            
-        self.clear()
-        return transitions
-    
-# Reference: https://github.com/LeejwUniverse/following_deepmid/tree/master/jungwoolee_pytorch/100%20Algorithm_For_RL/01%20sum_tree
-class PERMultistepBuffer(PERBuffer, MultistepBuffer):
-    def __init__(self, buffer_size, n_step, uniform_sample_prob=1e-3):
-        MultistepBuffer.__init__(self, buffer_size, n_step)
-        PERBuffer.__init__(self, buffer_size, uniform_sample_prob)
-        
-    def store(self, transitions, delta_t=1):
-        if self.first_store:
-            self.check_dim(transitions[0])
-            self.nstep_buffers = [deque(maxlen=self.n_step) for _ in range(len(transitions)//delta_t)]
-        
-        for i, transition in enumerate(transitions):
-            # MultiStep
-            nstep_buffer = self.nstep_buffers[i//delta_t]
-            nstep_buffer.append(transition)
-            if len(nstep_buffer) == self.n_step:
-                self.buffer[self.buffer_index] = self.prepare_nstep(nstep_buffer)
-        
-                # PER
-                self.add_tree_data()
-
-                self.buffer_counter = min(self.buffer_counter + 1, self.buffer_size)
-                self.buffer_index = (self.buffer_index + 1) % self.buffer_size
-    

@@ -12,8 +12,6 @@ env = {
 agent = {
     "name": "dqn",
     "network": "dqn_cnn",
-    "optimizer": "adam",
-    "learning_rate": 1e-4, #0.00025,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
@@ -24,6 +22,11 @@ agent = {
     "target_update_period": 10000,
 }
 
+optim = {
+    "name": "adam",
+    "lr": 1e-4,
+}
+
 train = {
     "training" : True,
     "load_path" : None,
@@ -32,7 +35,7 @@ train = {
     "save_period" : 50000,
     "test_iteration": 1,
     "record" : True,
-    "record_period" : 50000,
+    "record_period" : 200000,
     # distributed setting
     "update_period" : 32,
     "num_worker" : 16,

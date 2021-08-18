@@ -7,7 +7,7 @@ from manager import *
 from process import *
 
 # default_config_path = "config.YOUR_AGENT.YOUR_ENV"
-default_config_path = "config.dqn.cartpole"
+default_config_path = "config.rnd_dqn.mario"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -52,7 +52,7 @@ if __name__ == "__main__":
             transition = {'state': state, 'next_state': next_state,
                           'reward': reward, 'done': done}
             transition.update(action_dict)
-            result = agent.process([transition], step)
+            result = agent.process(agent.interact_callback([transition]), step)
             result_queue.put((step, result))
 
             if step % config.train.print_period == 0 or step == config.train.run_step:

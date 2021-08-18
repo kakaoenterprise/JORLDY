@@ -35,3 +35,6 @@ class BaseAgent(ABC):
     
     def set_distributed(self, *args, **kwargs):
         return self
+    
+    def interact_callback(self, transitions):
+        return transitions
