@@ -28,7 +28,10 @@ agent = {
     "alpha_sigma": 5.0,
 }
 
-
+optim = {
+    "name": "adam",
+    "lr": 2.5e-4,
+}
 
 train = {
     "training" : True,
