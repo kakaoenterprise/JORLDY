@@ -17,11 +17,6 @@ class TestManager:
         self.time_t = step
         record = self.record and self.record_stamp >= self.record_period
         
-        if 'need_past_pi' in dir(agent) and 'action_type' in dir(agent):
-            action_type = agent.action_type
-        else:
-            action_type = None
-        
         for i in range(self.iteration):
             done = False
             state = self.env.reset()

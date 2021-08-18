@@ -1,4 +1,4 @@
-### MPO Assualt Config ###
+### MPO Atari Config ###
 
 env = {
     # "name": it should be defined in the command. ex) python main.py --config config.dqn.atari --env.name breakout

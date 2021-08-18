@@ -34,10 +34,6 @@ class Actor:
         self.env = Env(id=id+1, **env_config)
         self.agent = agent.set_distributed(id, num_worker)
         self.state = self.env.reset()
-        if 'need_past_pi' in dir(self.agent) and 'action_type' in dir(self.agent):
-            self.action_type = self.agent.action_type
-        else:
-            self.action_type = None
     
     def run(self, step):
         transitions = []
