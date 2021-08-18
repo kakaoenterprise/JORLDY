@@ -14,7 +14,7 @@ class MPO(BaseAgent):
                  state_size,
                  action_size,
                  optim_config={'name': 'adam'},
-                 network="discrete_pi_q",
+                 network="discrete_policy_q",
                  buffer_size=50000,
                  batch_size=64,
                  start_train_step=2000,
@@ -80,31 +80,11 @@ class MPO(BaseAgent):
         self.gamma = gamma
         self.memory = MPOBuffer(buffer_size, self.n_step)
         
-    def check_nan(self, v, name=""):
-        if v.isnan().any():
-            print(f"\n### [MPO] NaN ERROR: {name} ###\n")
-            print(v[v.isnan()])
-            return True
-        return False
-    
-    def check_inference(self, state, action):
-        problem = False
-        if self.action_type == 'continuous':
-            mu, std = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
-            Q = self.network.calculate_Q(state, action)
-            problem = problem or self.check_nan(mu, 'MU_chk')
-            problem = problem or self.check_nan(std, 'STD_chk')
-            problem = problem or self.check_nan(Q, 'Q_chk')
-        return problem
-    
     @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
         if self.action_type == "continuous":
             mu, std = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
-            
-            self.check_nan(mu, 'MU')
-            self.check_nan(std, 'STD')
 
             m = Normal(mu, std)
             z = m.sample() if training else mu
@@ -139,13 +119,9 @@ class MPO(BaseAgent):
             with torch.no_grad():
                 mu, std = self.network(state)
                 
-                self.check_nan(mu, 'MU-0')
-                self.check_nan(std, 'STD-0')
-                
                 m = Normal(mu, std)
                 z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
                 log_pi = m.log_prob(z)
-#                 log_pi -= torch.log(1 - action.pow(2) + 1e-7)
                 log_pi = log_pi.sum(axis=-1, keepdims=True)
                 
                 mu_old = mu
@@ -153,13 +129,11 @@ class MPO(BaseAgent):
                 pi_old = torch.exp(log_pi)
                 
                 Qt_a = self.target_network.calculate_Q(state, action)
-                self.check_nan(Qt_a, 'Qt_a')
                 
                 next_mu, next_std = self.network(next_state)
                 m = Normal(next_mu, next_std)
                 z = m.sample((self.num_sample,)) # (num_sample, batch_size, len_tr, dim_action)
                 next_action = torch.tanh(z)
-#                 prob_next = torch.exp(m.log_prob(z).sum(axis=-1))
                 
                 Qt_next = self.target_network.calculate_Q(next_state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), next_action) # (num_sample, batch_size, len_tr, 1)
                 
@@ -176,9 +150,6 @@ class MPO(BaseAgent):
                 Qret += Qt_a
                 
             mu, std = self.network(state)
-            
-            self.check_nan(mu, 'MU-1')
-            self.check_nan(std, 'STD-1')
             
             Q = self.network.calculate_Q(state, action)
             m = Normal(mu, std)
@@ -198,10 +169,7 @@ class MPO(BaseAgent):
             exp_Q_eta = torch.exp(Q.detach() / self.eta)
             exp_Q_eta_add = torch.exp(Q_add.detach() / self.eta)
             q = torch.softmax(exp_Q_eta_add, axis = 0)
-#             q = exp_Q_eta_add / exp_Q_eta_add.sum(axis=0, keepdim=True)
             
-#             actor_loss = -torch.sum(q.detach() * torch.log(pi))
-#             actor_loss = -torch.sum(q.detach() * log_pi)
             actor_loss = -torch.mean(q.detach() * log_pi_add)
             
             eta_loss = self.eta * self.eps_eta + \
@@ -253,7 +221,6 @@ class MPO(BaseAgent):
             exp_Q_eta = torch.exp(Q / self.eta)
             q = exp_Q_eta / torch.sum(exp_Q_eta.detach(), axis = 2, keepdims=True)
             
-#             actor_loss = -torch.sum(q.detach() * torch.log(pi))
             actor_loss = -torch.mean(q.detach() * torch.log(pi))
             
             eta_loss = self.eta * self.eps_eta + \
@@ -265,8 +232,6 @@ class MPO(BaseAgent):
                                     self.alpha_mu.detach() * KLD_pi)
 
         loss = critic_loss + actor_loss + eta_loss + alpha_loss
-#         loss = critic_loss + eta_loss + alpha_loss
-#         loss = critic_loss + actor_loss
 
         self.optimizer.zero_grad()
         loss.backward()
@@ -275,9 +240,6 @@ class MPO(BaseAgent):
         self.reset_lgr_muls()
         
         self.num_learn += 1
-        
-        if self.check_inference(state, action):
-            print(f"\n NaN occurred at step {self.num_learn} \n")
 
         result = {
             'actor_loss' : actor_loss.item(),
@@ -287,7 +249,6 @@ class MPO(BaseAgent):
             'eta': self.eta.item(),
             'alpha_mu': self.alpha_mu.item(),
             'alpha_sigma': self.alpha_sigma.item(),
-#             'max_c': c.max().item(),
             'max_probt': prob_t.cpu().numpy().max(),
             'max_probb': prob_b.cpu().numpy().max(),
             'min_Q': Q.detach().cpu().numpy().min(),

@@ -84,7 +84,6 @@ class VMPO(REINFORCE):
                 m = Normal(mu, std)
                 z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
                 log_pi = m.log_prob(z)
-#                 log_prob -= torch.log(1 - action.pow(2) + 1e-7)
                 mu_old = mu
                 std_old = std
             else:
@@ -128,14 +127,13 @@ class VMPO(REINFORCE):
                 tophalf_adv = _adv[idx_tophalf]
                 # calculate psi
                 exp_adv_eta = torch.exp(tophalf_adv / self.eta)
-                psi = exp_adv_eta / torch.sum(exp_adv_eta.detach()) # TODO: is it right to detach() the denominator here?
+                psi = exp_adv_eta / torch.sum(exp_adv_eta.detach())
                 
                 if self.action_type == "continuous":
                     mu, std, value = self.network(_state)
                     m = Normal(mu, std)
                     z = torch.atanh(torch.clamp(_action, -1+1e-7, 1-1e-7))
                     log_pi = m.log_prob(z)
-#                     log_pi -= torch.log(1 - _action.pow(2) + 1e-7)
                 else:
                     pi, value = self.network(_state)
                     log_pi = torch.log(pi.gather(1, _action.long()))
