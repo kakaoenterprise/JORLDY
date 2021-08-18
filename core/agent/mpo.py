@@ -7,7 +7,7 @@ import os, copy
 from .base import BaseAgent
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import MultistepBuffer
+from core.buffer import MPOBuffer
 
 class MPO(BaseAgent):
     def __init__(self,
@@ -78,7 +78,7 @@ class MPO(BaseAgent):
         self.optimizer = Optimizer(**optim_config, params=list(self.network.parameters()) + [self.eta, self.alpha_mu, self.alpha_sigma])
 
         self.gamma = gamma
-        self.memory = MultistepBuffer(buffer_size, self.n_step)
+        self.memory = MPOBuffer(buffer_size, self.n_step)
         
     def check_nan(self, v, name=""):
         if v.isnan().any():

@@ -6,7 +6,6 @@ import numpy as np
 from .reinforce import REINFORCE
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import Rollout
 
 class VMPO(REINFORCE):
     def __init__(self,
