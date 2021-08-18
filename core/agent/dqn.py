@@ -3,7 +3,6 @@ torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np
 import os
-import copy
 from collections import OrderedDict
 
 from core.network import Network
@@ -17,6 +16,7 @@ class DQN(BaseAgent):
                 action_size,
                 optim_config={'name':'adam'},
                 network='dqn',
+                header=None,
                 gamma=0.99,
                 epsilon_init=1.0,
                 epsilon_min=0.1,
@@ -30,8 +30,9 @@ class DQN(BaseAgent):
                 ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size
-        self.network = Network(network, state_size, action_size).to(self.device)
-        self.target_network = copy.deepcopy(self.network)
+        self.network = Network(network, state_size, action_size, header=header).to(self.device)
+        self.target_network = Network(network, state_size, action_size, header=header).to(self.device)
+        self.target_network.load_state_dict(self.network.state_dict())
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma
         self.epsilon = epsilon_init
@@ -135,7 +136,7 @@ class DQN(BaseAgent):
         print(f"...Load model from {path}...")
         checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=self.device)
         self.network.load_state_dict(checkpoint["network"])
-        self.target_network = copy.deepcopy(self.network)
+        self.target_network.load_state_dict(checkpoint["network"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
     
     def set_distributed(self, id, num_worker):
