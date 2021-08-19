@@ -3,8 +3,6 @@ torch.backends.cudnn.benchmark = True
 from torch.distributions import Normal, Categorical
 import numpy as np
 import os
-import copy
-from collections import OrderedDict
 
 from core.network import Network
 from core.optimizer import Optimizer
