@@ -7,13 +7,15 @@ env = {
     "img_width": 84,
     "img_height": 84,
     "stack_frame": 4,
-    "no_op": True,
+#     "no_op": True,
     "reward_clip": True,
+    "dead_penalty": True,
 }
 
 agent = {
     "name": "iqn",
-    "network": "iqn_cnn",
+    "network": "iqn",
+    "header": "cnn",
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,

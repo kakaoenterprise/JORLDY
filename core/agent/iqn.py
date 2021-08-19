@@ -2,7 +2,6 @@ import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np
-import copy
 
 from core.network import Network
 from core.optimizer import Optimizer
@@ -13,6 +12,7 @@ class IQN(DQN):
                 state_size,
                 action_size,
                 network='iqn',
+                header=None,
                 optim_config={'name':'adam'},
                 num_sample=64,
                 embedding_dim=64,
@@ -20,10 +20,11 @@ class IQN(DQN):
                 sample_max=1.0,
                 **kwargs,
                 ):
-        super(IQN, self).__init__(state_size, action_size, network=network, **kwargs)
-        
-        self.network = Network(network, state_size, action_size, embedding_dim, num_sample).to(self.device)
-        self.target_network = copy.deepcopy(self.network)
+        super(IQN, self).__init__(state_size, action_size, network=network, header=header, **kwargs)
+        self.network = Network(network, state_size, action_size, embedding_dim, num_sample, header=header).to(self.device)
+        self.target_network = Network(network, state_size, action_size, embedding_dim, num_sample, header=header).to(self.device)
+        self.target_network.load_state_dict(self.network.state_dict())
+
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         
         self.action_size = action_size

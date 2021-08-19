@@ -11,7 +11,8 @@ env = {
 
 agent = {
     "name": "noisy",
-    "network": "noisy_cnn",
+    "network": "noisy",
+    "header": "cnn",
     "gamma": 0.99,
     "explore_step": 1000000,
     "buffer_size": 1000000,

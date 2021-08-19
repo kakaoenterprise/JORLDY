@@ -7,7 +7,6 @@ for class_name, _class in inspect.getmembers(sys.modules[__name__], inspect.iscl
     naming_rule = lambda x: re.sub('([a-z])([A-Z])', r'\1_\2', x).lower()
     class_dict[naming_rule(class_name)] = _class
 
-    
 working_path = os.path.dirname(os.path.realpath(__file__))
 with open(os.path.join(working_path, "_class_dict.txt"), 'w') as f:
     f.write('### Class Dictionary ###\n')

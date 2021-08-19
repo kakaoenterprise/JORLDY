@@ -7,13 +7,15 @@ env = {
     "img_width": 84,
     "img_height": 84,
     "stack_frame": 4,
-    "no_op": True,
+#     "no_op": True,
     "reward_clip": True,
+    "dead_penalty": True,
 }
 
 agent = {
     "name": "rainbow_iqn",
-    "network": "rainbow_iqn_cnn",
+    "network": "rainbow_iqn",
+    "header": "cnn",
     "gamma": 0.99,
     "explore_step": 1000000,
     "buffer_size": 1000000,
