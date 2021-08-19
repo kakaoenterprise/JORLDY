@@ -3,7 +3,6 @@ torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 from torch.distributions import Normal
 import os 
-import copy
 
 from core.network import Network
 from core.optimizer import Optimizer
@@ -31,7 +30,8 @@ class SAC(BaseAgent):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.actor = Network(actor, state_size, action_size, header=header).to(self.device)
         self.critic = Network(critic, state_size+action_size, action_size, header=header).to(self.device)
-        self.target_critic = copy.deepcopy(self.critic)
+        self.target_critic = Network(critic, state_size+action_size, action_size, header=header).to(self.device)
+        self.target_critic.load_state_dict(self.critic.state_dict())
         self.actor_optimizer = Optimizer(optim_config.actor, self.actor.parameters(), lr=optim_config.actor_lr)
         self.critic_optimizer = Optimizer(optim_config.critic, self.critic.parameters(), lr=optim_config.critic_lr)
         
@@ -171,7 +171,7 @@ class SAC(BaseAgent):
         self.actor_optimizer.load_state_dict(checkpoint["actor_optimizer"])
 
         self.critic.load_state_dict(checkpoint["critic"])
-        self.target_critic = copy.deepcopy(self.critic)
+        self.target_critic.load_state_dict(self.critic.state_dict())
         self.critic_optimizer.load_state_dict(checkpoint["critic_optimizer"])
         
         if self.use_dynamic_alpha and 'log_alpha' in checkpoint.keys():
