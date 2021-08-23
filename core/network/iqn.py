@@ -5,8 +5,8 @@ import numpy as np
 from .base import BaseNetwork
 
 class IQN(BaseNetwork):
-    def __init__(self, D_in, D_out, D_em=64, N_sample=64, D_hidden=512, header=None):
-        D_in, D_hidden = super(IQN, self).__init__(D_in, D_hidden, header)
+    def __init__(self, D_in, D_out, D_em=64, N_sample=64, D_hidden=512, head=None):
+        D_in, D_hidden = super(IQN, self).__init__(D_in, D_hidden, head)
 
         self.N_sample = N_sample
         self.i_pi = (torch.arange(0, D_em) * np.pi).view(1, 1, D_em)

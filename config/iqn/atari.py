@@ -15,7 +15,7 @@ env = {
 agent = {
     "name": "iqn",
     "network": "iqn",
-    "header": "cnn",
+    "head": "cnn",
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,

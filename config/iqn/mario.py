@@ -12,7 +12,7 @@ env = {
 agent = {
     "name": "iqn",
     "network": "iqn",
-    "header": "cnn",
+    "head": "cnn",
     "optimizer": "adam",
     "opt_eps": 1e-2/32,
     "learning_rate": 0.00005,

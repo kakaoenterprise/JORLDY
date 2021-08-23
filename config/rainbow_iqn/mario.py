@@ -14,7 +14,7 @@ env = {
 agent = {
     "name": "rainbow_iqn",
     "network": "rainbow_iqn",
-    "header": "cnn",
+    "head": "cnn",
     "gamma": 0.99,
     "explore_step": 1000000,
     "buffer_size": 1000000,
