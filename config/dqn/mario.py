@@ -12,7 +12,7 @@ env = {
 agent = {
     "name": "dqn",
     "network": "dqn",
-    "header": "cnn",
+    "head": "cnn",
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,

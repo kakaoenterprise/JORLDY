@@ -6,8 +6,8 @@ from .base import BaseNetwork
 from .noisy import noisy_l, init_weights
 
 class Rainbow_IQN(BaseNetwork):
-    def __init__(self, D_in, D_out, D_em, N_sample, D_hidden=512, header=None):
-        D_in, D_hidden = super(Rainbow_IQN, self).__init__(D_in, D_hidden, header)
+    def __init__(self, D_in, D_out, D_em, N_sample, D_hidden=512, head=None):
+        D_in, D_hidden = super(Rainbow_IQN, self).__init__(D_in, D_hidden, head)
         self.D_out = D_out
         
         self.N_sample = N_sample

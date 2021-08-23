@@ -14,7 +14,7 @@ class REINFORCE(BaseAgent):
                  state_size,
                  action_size,
                  network="discrete_policy",
-                 header=None,
+                 head=None,
                  optim_config={'name':'adam'},
                  gamma=0.99,
                  use_standardization=False,
@@ -24,7 +24,7 @@ class REINFORCE(BaseAgent):
         self.action_type = network.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
         
-        self.network = Network(network, state_size, action_size, header=header).to(self.device)
+        self.network = Network(network, state_size, action_size, head=head).to(self.device)
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
 
         self.gamma = gamma

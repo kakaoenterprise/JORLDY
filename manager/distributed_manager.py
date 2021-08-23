@@ -4,9 +4,6 @@ from functools import reduce
 import ray
 import numpy as np
 
-import time 
-import numpy as np
-
 class DistributedManager:
     def __init__(self, Env, env_config, Agent, agent_config, num_worker):
         try:
@@ -20,10 +17,8 @@ class DistributedManager:
 
     def run(self, step=1):
         assert step > 0
-#         start_time = time.time()
         transitions = reduce(lambda x,y: x+y, 
                              ray.get([actor.run.remote(step) for actor in self.actors]))
-#         print("Spent time run: {}".format(time.time()-start_time))
         return transitions
 
     def sync(self, sync_item):
@@ -42,8 +37,6 @@ class Actor:
     
     def run(self, step):
         transitions = []
-#         start_time = time.time()
-        
         for t in range(step):
             action_dict = self.agent.act(self.state, training=True)
             next_state, reward, done = self.env.step(action_dict['action'])
@@ -52,9 +45,7 @@ class Actor:
             transition.update(action_dict)
             transitions.append(transition)
             self.state = next_state if not done else self.env.reset()
-
         transitions = self.agent.interact_callback(transitions)
-#         print("Spent time Actor: {}".format(time.time()-start_time))
         return transitions
     
     def sync(self, sync_item):

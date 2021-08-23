@@ -15,7 +15,7 @@ class SAC(BaseAgent):
                  action_size,
                  actor = "sac_actor",
                  critic = "sac_critic",
-                 header = None,
+                 head = None,
                  optim_config = {'actor':'adam','critic':'adam','alpha':'adam',
                                 'actor_lr':5e-4,'critic_lr':1e-3,'alpha_lr':3e-4},
                  use_dynamic_alpha = False,
@@ -28,9 +28,9 @@ class SAC(BaseAgent):
                  device=None,
                  ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.actor = Network(actor, state_size, action_size, header=header).to(self.device)
-        self.critic = Network(critic, state_size+action_size, action_size, header=header).to(self.device)
-        self.target_critic = Network(critic, state_size+action_size, action_size, header=header).to(self.device)
+        self.actor = Network(actor, state_size, action_size, head=head).to(self.device)
+        self.critic = Network(critic, state_size+action_size, action_size, head=head).to(self.device)
+        self.target_critic = Network(critic, state_size+action_size, action_size, head=head).to(self.device)
         self.target_critic.load_state_dict(self.critic.state_dict())
         self.actor_optimizer = Optimizer(optim_config.actor, self.actor.parameters(), lr=optim_config.actor_lr)
         self.critic_optimizer = Optimizer(optim_config.critic, self.critic.parameters(), lr=optim_config.critic_lr)

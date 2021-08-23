@@ -15,7 +15,8 @@ env = {
 
 agent = {
     "name":"rnd_ppo",
-    "network":"discrete_pi_v_cnn",
+    "network":"discrete_policy_value",
+    "head": "cnn",
     "optimizer":"adam",
     "learning_rate": 0.0001,
     "gamma":0.999,
@@ -40,7 +41,7 @@ agent = {
 
 train = {
     "training" : True,
-    "load_path" : './logs/montezuma/rnd_ppo/20210809111521/',
+    "load_path" : None,
     "run_step" : 30000000,
     "print_period" : 10000,
     "save_period" : 100000,

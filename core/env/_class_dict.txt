@@ -1,6 +1,9 @@
 ### Class Dictionary ###
 format: (key, class)
 ------------------------
+('hopper_mlagent', <class 'core.env.ml_agent.HopperMLAgent'>)
+('mlagent', <class 'core.env.ml_agent.MLAgent'>)
+('pong_mlagent', <class 'core.env.ml_agent.PongMLAgent'>)
 ('alien', <class 'core.env.atari.Alien'>)
 ('assault', <class 'core.env.atari.Assault'>)
 ('asterix', <class 'core.env.atari.Asterix'>)
@@ -18,8 +21,5 @@ format: (key, class)
 ('gym', <class 'core.env.gym_env.Gym'>)
 ('mountain_car', <class 'core.env.gym_env.MountainCar'>)
 ('pendulum', <class 'core.env.gym_env.Pendulum'>)
-('hopper_mlagent', <class 'core.env.ml_agent.HopperMLAgent'>)
-('mlagent', <class 'core.env.ml_agent.MLAgent'>)
-('pong_mlagent', <class 'core.env.ml_agent.PongMLAgent'>)
 ('mario', <class 'core.env.nes.Mario'>)
 ('nes', <class 'core.env.nes.Nes'>)

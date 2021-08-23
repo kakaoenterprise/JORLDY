@@ -15,7 +15,7 @@ env = {
 agent = {
     "name": "ape_x",
     "network": "dueling",
-    "header": "cnn,
+    "head": "cnn,
     "gamma": 0.99,
     "buffer_size": 2000000,
     "batch_size": 32,

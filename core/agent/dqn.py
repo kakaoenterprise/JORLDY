@@ -16,7 +16,7 @@ class DQN(BaseAgent):
                 action_size,
                 optim_config={'name':'adam'},
                 network='dqn',
-                header=None,
+                head=None,
                 gamma=0.99,
                 epsilon_init=1.0,
                 epsilon_min=0.1,
@@ -30,8 +30,8 @@ class DQN(BaseAgent):
                 ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size
-        self.network = Network(network, state_size, action_size, header=header).to(self.device)
-        self.target_network = Network(network, state_size, action_size, header=header).to(self.device)
+        self.network = Network(network, state_size, action_size, head=head).to(self.device)
+        self.target_network = Network(network, state_size, action_size, head=head).to(self.device)
         self.target_network.load_state_dict(self.network.state_dict())
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma

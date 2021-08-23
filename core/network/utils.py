@@ -26,7 +26,7 @@ class CNN(torch.nn.Module):
 
 import sys, inspect, re
 
-header_dict = {}
+head_dict = {}
 for class_name, _class in inspect.getmembers(sys.modules[__name__], inspect.isclass):
     naming_rule = lambda x: re.sub('([a-z])([A-Z])', r'\1_\2', x).lower()
-    header_dict[naming_rule(class_name)] = _class
+    head_dict[naming_rule(class_name)] = _class

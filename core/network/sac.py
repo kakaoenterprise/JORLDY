@@ -4,8 +4,8 @@ import torch.nn.functional as F
 from .base import BaseNetwork
 
 class SAC_Critic(BaseNetwork):
-    def __init__(self, D_in, D_out, header=None, D_hidden=512):
-        D_in, D_hidden = super(SAC_Critic, self).__init__(D_in, header, D_hidden)
+    def __init__(self, D_in, D_out, head=None, D_hidden=512):
+        D_in, D_hidden = super(SAC_Critic, self).__init__(D_in, head, D_hidden)
 
         self.l1 = torch.nn.Linear(D_in, D_hidden)
         self.l2 = torch.nn.Linear(D_hidden, D_hidden)

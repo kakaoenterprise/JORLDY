@@ -56,8 +56,8 @@ def init_weights(shape):
     return mu_w, sig_w, mu_b, sig_b
     
 class Noisy(BaseNetwork):
-    def __init__(self, D_in, D_out, D_hidden=512, header=None):
-        D_in, D_hidden = super(Noisy, self).__init__(D_in, D_hidden, header)
+    def __init__(self, D_in, D_out, D_hidden=512, head=None):
+        D_in, D_hidden = super(Noisy, self).__init__(D_in, D_hidden, head)
 
         self.mu_w, self.sig_w, self.mu_b, self.sig_b = init_weights((D_hidden, D_out))
         self.l1 = torch.nn.Linear(D_in, D_hidden)
