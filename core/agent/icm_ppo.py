@@ -44,12 +44,12 @@ class ICM_PPO(PPO):
         next_state = transitions['next_state']
         done = transitions['done']
         
-        #ICM 
-        r_i, _, _ = self.icm(state, action, next_state)
-        reward = self.extrinsic_coeff * reward + self.intrinsic_coeff * r_i.unsqueeze(1)
-        
         # set prob_a_old and advantage
         with torch.no_grad():            
+            #ICM 
+            r_i, _, _ = self.icm(state, action, next_state)
+            reward = self.extrinsic_coeff * reward + self.intrinsic_coeff * r_i.unsqueeze(1)
+        
             if self.action_type == "continuous":
                 mu, std, value = self.network(state)
                 m = Normal(mu, std)

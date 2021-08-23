@@ -2,12 +2,13 @@ import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 from torch.distributions import Normal, Categorical
-import numpy as np
 import os
+import numpy as np
 
 from .ppo import PPO
-from core.optimizer import Optimizer
 from core.network import Network
+
+import torch.optim as optim
 
 class RND_PPO(PPO):
     def __init__(self,
@@ -23,10 +24,9 @@ class RND_PPO(PPO):
                  batch_norm=True,
                  **kwargs,
                  ):
-        super(RNDPPOAgent, self).__init__(state_size=state_size,
-                                          action_size=action_size,
-                                          **kwargs)
-        
+        super(RND_PPO, self).__init__(state_size=state_size,
+                                      action_size=action_size,
+                                      **kwargs)
         self.gamma_i = gamma_i
         self.extrinsic_coeff = extrinsic_coeff
         self.intrinsic_coeff = intrinsic_coeff
@@ -35,38 +35,39 @@ class RND_PPO(PPO):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
         
-        self.rnd = Network(rnd_network, state_size, action_size, self.batch_size, self.device, 
-                           self.gamma_i, 
-                           self.ri_normalize, 
-                           self.obs_normalize,
-                           self.batch_norm).to(self.device)
-        self.rnd_optimizer = Optimizer('adam', self.rnd.parameters(), lr=self.learning_rate)
+        self.rnd = Network(rnd_network, state_size, action_size, self.batch_size, 
+                           gamma_i, ri_normalize, obs_normalize, batch_norm).to(self.device)
+        
+        self.optimizer.add_param_group({'params':self.rnd.parameters()})
+#         self.rnd_optimizer = optim.Adam(self.rnd.parameters(), lr=0.0001)
         
         # Freeze random network
         for name, param in self.rnd.named_parameters():
             if "target" in name:
                 param.requires_grad = False
 
-    def learn(self, step):
+    def learn(self):
         transitions = self.memory.rollout()
-        state, action, reward, next_state, done = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions)      
+        for key in transitions.keys():
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
 
-        # RND: calculate exploration reward, update moments of obs and r_i
-        self.rnd.update_rms(next_state.detach(), 'obs')
-        r_i = self.rnd.forward(next_state, update_ri=True)
-        r_i = r_i.unsqueeze(-1)
-        
-#         if step < 50000: 
-#             intrinsic_coeff = 1
-#         else:
-#             intrinsic_coeff = self.intrinsic_coeff
-        
-        # Scaling extrinsic and intrinsic reward
-        reward *= self.extrinsic_coeff
-        r_i *= self.intrinsic_coeff
+        state = transitions['state']
+        action = transitions['action']
+        reward = transitions['reward']
+        next_state = transitions['next_state']
+        done = transitions['done']
         
         # set pi_old and advantage
-        with torch.no_grad():            
+        with torch.no_grad():
+            # RND: calculate exploration reward, update moments of obs and r_i
+            self.rnd.update_rms(next_state, 'obs')
+            r_i = self.rnd(next_state, update_ri=True)
+            r_i = r_i.unsqueeze(-1)
+
+            # Scaling extrinsic and intrinsic reward
+            reward *= self.extrinsic_coeff
+            r_i *= self.intrinsic_coeff
+
             if self.action_type == "continuous":
                 mu, std, value = self.network(state)
                 m = Normal(mu, std)
@@ -136,19 +137,23 @@ class RND_PPO(PPO):
                 critic_loss = F.mse_loss(value, _ret).mean() + F.mse_loss(_v_i, _ret_i).mean()
                 
                 entropy_loss = -m.entropy().mean()
-                loss = actor_loss + self.vf_coef * critic_loss + self.ent_coef * entropy_loss
+                ppo_loss = actor_loss + self.vf_coef * critic_loss + self.ent_coef * entropy_loss
+                rnd_loss = _r_i.mean()
+                
+                loss = ppo_loss + rnd_loss
                 
                 self.optimizer.zero_grad(set_to_none=True)
+#                 ppo_loss.backward()
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.network.parameters(), self.clip_grad_norm)
+                torch.nn.utils.clip_grad_norm_(self.rnd.parameters(), self.clip_grad_norm)
                 self.optimizer.step()
                 
-                rnd_loss = _r_i.mean()
-                self.rnd_optimizer.zero_grad(set_to_none=True)
-                rnd_loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.rnd.parameters(), self.clip_grad_norm)
-                self.rnd_optimizer.step()
-                
+#                 self.rnd_optimizer.zero_grad(set_to_none=True)
+#                 rnd_loss.backward()
+#                 torch.nn.utils.clip_grad_norm_(self.rnd.parameters(), self.clip_grad_norm)
+#                 self.rnd_optimizer.step()
+        
                 pis.append(pi.min().item())
                 ratios.append(ratio.max().item())
                 actor_losses.append(actor_loss.item())
@@ -166,51 +171,6 @@ class RND_PPO(PPO):
             'min_pi_old': min(pi_olds),
         }
         return result
-    
-    def process(self, transitions, step):
-        result = {}
-        # Process per step
-        self.memory.store(transitions)
-        delta_t = step - self.time_t
-        self.time_t = step
-        self.learn_stamp += delta_t
-        
-        # Process per epi
-        if self.learn_stamp >= self.n_step :
-            result = self.learn(step)
-            self.learn_stamp = 0
-        
-        return result
-    
-    def sync_in(self, weights, values_rnd):
-#     def sync_in(self, weights):
-        self.network.load_state_dict(weights)
-        self.rnd.load_state_dict(values_rnd["rnd"])
-        self.rnd.rms['obs'].load(values_rnd["rnd_rms_obs"], device=self.device)
-        self.rnd.rms['ri'].load(values_rnd["rnd_rms_ri"], device=self.device)
-        self.rnd.rff.load(values_rnd["rnd_rff"], device=self.device)
-    
-    def sync_out(self, device="cpu"):
-        weights = self.network.state_dict()
-        for k, v in weights.items():
-            weights[k] = v.to(device) 
-            
-        # RND
-        w_rnd = self.rnd.state_dict()
-        for k, v in w_rnd.items():
-            w_rnd[k] = v.to(device)
-        values_rnd = {
-            "rnd" : w_rnd,
-            "rnd_rms_obs": self.rnd.rms['obs'].save(),
-            "rnd_rms_ri": self.rnd.rms['ri'].save(),
-            "rnd_rff": self.rnd.rff.save(),
-        }
-                    
-        sync_item ={
-            "weights": weights,
-            "values_rnd": values_rnd,
-        }
-        return sync_item
 
     def save(self, path):
         print(f"...Save model to {path}...")
@@ -218,7 +178,6 @@ class RND_PPO(PPO):
             "network" : self.network.state_dict(),
             "rnd" : self.rnd.state_dict(),
             "optimizer" : self.optimizer.state_dict(),
-            "rnd_optimizer" : self.rnd_optimizer.state_dict(),
             "rnd_rms_obs": self.rnd.rms['obs'].save(),
             "rnd_rms_ri": self.rnd.rms['ri'].save(),
             "rnd_rff": self.rnd.rff.save(),
@@ -230,7 +189,6 @@ class RND_PPO(PPO):
         self.network.load_state_dict(checkpoint["network"])
         self.rnd.load_state_dict(checkpoint["rnd"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
-        self.rnd_optimizer.load_state_dict(checkpoint["rnd_optimizer"])
-        self.rnd.rms['obs'].load(checkpoint["rnd_rms_obs"], device=self.device)
-        self.rnd.rms['ri'].load(checkpoint["rnd_rms_ri"], device=self.device)
-        self.rnd.rff.load(checkpoint["rnd_rff"], device=self.device)
+        self.rnd.rms['obs'].load(checkpoint["rnd_rms_obs"])
+        self.rnd.rms['ri'].load(checkpoint["rnd_rms_ri"])
+        self.rnd.rff.load(checkpoint["rnd_rff"])

@@ -14,9 +14,7 @@ env = {
 
 agent = {
     "name":"rnd_ppo",
-    "network":"discrete_pi_v_cnn",
-    "optimizer":"adam",
-    "learning_rate": 0.0001,
+    "network":"discrete_policy_value_cnn",
     "gamma":0.99,
     "batch_size":16,
     "n_step": 128,
@@ -37,6 +35,11 @@ agent = {
     "batch_norm": True,
 }
 
+optim = {
+    "name":"adam",
+    "lr": 0.0001,
+}
+
 train = {
     "training" : True,
     "load_path" : None,
@@ -47,6 +50,7 @@ train = {
     "record" : True,
     "record_period" : 250000,
     # distributed setting
+    "distributed_batch_size" : 1024,
     "update_period" : agent["n_step"],
     "num_worker" : 64,
 }
