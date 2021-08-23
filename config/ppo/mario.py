@@ -14,9 +14,8 @@ env = {
 
 agent = {
     "name":"ppo",
-    "network":"discrete_pi_v_cnn",
-    "optimizer":"adam",
-    "learning_rate": 2.5e-4,
+    "network":"discrete_policy_value",
+    "header": "cnn",
     "gamma":0.99,
     "batch_size":32,
     "n_step": 128,
@@ -27,6 +26,11 @@ agent = {
     "ent_coef": 0.01,
     "clip_grad_norm": 1.0,
     "use_standardization": False,
+}
+
+optim ={
+    "name": "adam",
+    "lr": 2.5e-4,
 }
 
 train = {

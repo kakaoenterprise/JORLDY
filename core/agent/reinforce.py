@@ -3,12 +3,10 @@ torch.backends.cudnn.benchmark = True
 from torch.distributions import Normal, Categorical
 import numpy as np
 import os
-import copy
-from collections import OrderedDict
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import Rollout
+from core.buffer import RolloutBuffer
 from .base import BaseAgent
 
 class REINFORCE(BaseAgent):
@@ -16,6 +14,7 @@ class REINFORCE(BaseAgent):
                  state_size,
                  action_size,
                  network="discrete_policy",
+                 header=None,
                  optim_config={'name':'adam'},
                  gamma=0.99,
                  use_standardization=False,
@@ -25,12 +24,12 @@ class REINFORCE(BaseAgent):
         self.action_type = network.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
         
-        self.network = Network(network, state_size, action_size).to(self.device)
+        self.network = Network(network, state_size, action_size, header=header).to(self.device)
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
 
         self.gamma = gamma
         self.use_standardization = use_standardization
-        self.memory = Rollout()
+        self.memory = RolloutBuffer()
 
     @torch.no_grad()
     def act(self, state, training=True):

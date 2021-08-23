@@ -1,6 +1,5 @@
 import os, inspect, re
 
-
 working_path = os.path.dirname(os.path.realpath(__file__))
 file_list = os.listdir(working_path)
 module_list = [file.replace(".py", "") for file in file_list 

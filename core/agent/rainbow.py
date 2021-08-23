@@ -2,11 +2,10 @@ import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np
-import copy
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import PERMultistepBuffer
+from core.buffer import RainbowBuffer
 from .dqn import DQN
 
 class Rainbow(DQN):
@@ -14,6 +13,7 @@ class Rainbow(DQN):
                 state_size,
                 action_size,
                 network='rainbow',
+                header=None,
                 optim_config={'name':'adam'},
                 gamma=0.99,
                 explore_step=90000,
@@ -36,8 +36,9 @@ class Rainbow(DQN):
                 ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size        
-        self.network = Network(network, state_size, action_size, num_support).to(self.device)
-        self.target_network = copy.deepcopy(self.network)
+        self.network = Network(network, state_size, action_size, num_support, header=header).to(self.device)
+        self.target_network = Network(network, state_size, action_size, num_support, header=header).to(self.device)
+        self.target_network.load_state_dict(self.network.state_dict())
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma
         self.explore_step = explore_step
@@ -65,7 +66,7 @@ class Rainbow(DQN):
         self.num_support = num_support
         
         # MultiStep
-        self.memory = PERMultistepBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
+        self.memory = RainbowBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
         
         # C51
         self.delta_z = (self.v_max - self.v_min) / (self.num_support - 1)

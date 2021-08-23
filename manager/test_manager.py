@@ -16,6 +16,7 @@ class TestManager:
         self.record_stamp += step - self.time_t
         self.time_t = step
         record = self.record and self.record_stamp >= self.record_period
+        
         for i in range(self.iteration):
             done = False
             state = self.env.reset()

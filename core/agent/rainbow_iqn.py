@@ -7,7 +7,7 @@ import time
 
 from core.network import Network
 from core.optimizer import Optimizer
-from .utils import PERMultistepBuffer
+from core.buffer import RainbowBuffer
 from .rainbow import Rainbow
 
 class RainbowIQN(Rainbow):
@@ -15,6 +15,7 @@ class RainbowIQN(Rainbow):
                 state_size,
                 action_size,
                 network='rainbow_iqn',
+                header=None,
                 optim_config={'name':'adam'},
                 gamma=0.99,
                 explore_step=90000,
@@ -38,8 +39,9 @@ class RainbowIQN(Rainbow):
                 ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size        
-        self.network = Network(network, state_size, action_size, embedding_dim, num_sample).to(self.device)
-        self.target_network = copy.deepcopy(self.network)
+        self.network = Network(network, state_size, action_size, embedding_dim, num_sample, header=header).to(self.device)
+        self.target_network = Network(network, state_size, action_size, embedding_dim, num_sample, header=header).to(self.device)
+        self.target_network.load_state_dict(self.network.state_dict())
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma
         self.explore_step = explore_step
@@ -68,7 +70,7 @@ class RainbowIQN(Rainbow):
         self.sample_max = sample_max
         
         # MultiStep
-        self.memory = PERMultistepBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
+        self.memory = RainbowBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
         
     @torch.no_grad()
     def act(self, state, training=True):
