@@ -24,7 +24,8 @@ class ContinuousPolicy(BaseNetwork):
     
 class DiscretePolicy(BaseNetwork):
     def __init__(self, D_in, D_out, D_hidden=512, head=None):
-        D_in, D_out, D_hidden = super(DiscretePolicy, self).__init__(D_in, D_out, D_hidden, head)
+#         D_in, D_out, D_hidden = super(DiscretePolicy, self).__init__(D_in, D_out, D_hidden, head)
+        D_in, D_hidden = super(DiscretePolicy, self).__init__(D_in, D_hidden, head)
         
         self.l1 = torch.nn.Linear(D_in, D_hidden)
         self.l2 = torch.nn.Linear(D_hidden, D_hidden)

@@ -14,8 +14,9 @@ env = {
 
 agent = {
     "name":"mpo",
-    "network":"discrete_policy_q_cnn",
-    
+    "actor":"discrete_policy_q",
+    "head": "cnn",
+    "critic":"ddpg_critic",
     "gamma": 0.99,
     "buffer_size": 50000,
     "batch_size": 64,

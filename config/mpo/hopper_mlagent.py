@@ -7,7 +7,8 @@ env = {
 
 agent = {
     "name": "mpo",
-    "network": "continuous_policy_q",
+    "actor": "continuous_policy",
+    "critic": "ddpg_critic",
     "gamma": 0.99,
     "buffer_size": 50000,
     "batch_size": 64,

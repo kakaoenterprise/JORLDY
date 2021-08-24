@@ -14,7 +14,8 @@ env = {
 
 agent = {
     "name":"vmpo",
-    "network":"discrete_policy_value_cnn",
+    "network":"discrete_policy_value",
+    "header": "cnn",
     "gamma":0.99,
     "batch_size":32,
     "n_step": 128,

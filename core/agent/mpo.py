@@ -14,7 +14,9 @@ class MPO(BaseAgent):
                  state_size,
                  action_size,
                  optim_config={'name': 'adam'},
-                 network="discrete_policy_q",
+                 actor="discrete_policy",
+                 critic="ddpg_critic",
+                 head = None,
                  buffer_size=50000,
                  batch_size=64,
                  start_train_step=2000,
@@ -37,12 +39,14 @@ class MPO(BaseAgent):
                  ):
 
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.action_type = network.split("_")[0]
+        self.action_type = actor.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
         self.action_size = action_size
 
-        self.network = Network(network, state_size, action_size).to(self.device)
-        self.target_network = copy.deepcopy(self.network)
+        self.actor = Network(actor, state_size, action_size, head=head).to(self.device)
+        self.critic = Network(critic, state_size+action_size, 1, head=head).to(self.device)
+        self.target_critic = Network(critic, state_size+action_size, 1, head=head).to(self.device)
+        self.target_critic.load_state_dict(self.critic.state_dict())
         
         self.batch_size = batch_size
         self.n_step = n_step
@@ -71,20 +75,18 @@ class MPO(BaseAgent):
         self.alpha_sigma = torch.nn.Parameter(torch.tensor(alpha_sigma, requires_grad=True).to(self.device))
 
         self.reset_lgr_muls()
-        
-        self.action_type = network.split("_")[0]
-        assert self.action_type in ["continuous", "discrete"]
 
-        self.optimizer = Optimizer(**optim_config, params=list(self.network.parameters()) + [self.eta, self.alpha_mu, self.alpha_sigma])
+        self.actor_optimizer = Optimizer(**optim_config, params=list(self.actor.parameters()) + [self.eta, self.alpha_mu, self.alpha_sigma])
+        self.critic_optimizer = Optimizer(**optim_config, params=list(self.critic.parameters()))
 
         self.gamma = gamma
         self.memory = MPOBuffer(buffer_size, self.n_step)
         
     @torch.no_grad()
     def act(self, state, training=True):
-        self.network.train(training)
+        self.actor.train(training)
         if self.action_type == "continuous":
-            mu, std = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+            mu, std = self.actor(torch.as_tensor(state, dtype=torch.float32, device=self.device))
 
             m = Normal(mu, std)
             z = m.sample() if training else mu
@@ -94,7 +96,7 @@ class MPO(BaseAgent):
             prob = prob.exp().cpu().numpy()
                 
         else:
-            pi, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+            pi = self.actor(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             action = torch.multinomial(pi, 1) if training else torch.argmax(pi, dim=-1, keepdim=True)
             prob = pi.numpy()
             action = action.cpu().numpy()
@@ -115,9 +117,11 @@ class MPO(BaseAgent):
         done = transitions['done']
         prob_b = transitions['prob']
         
+        action = torch.tensor(action, device=self.device)
+        
         if self.action_type == "continuous":
             with torch.no_grad():
-                mu, std = self.network(state)
+                mu, std = self.actor(state)
                 
                 m = Normal(mu, std)
                 z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
@@ -128,14 +132,14 @@ class MPO(BaseAgent):
                 std_old = std
                 pi_old = torch.exp(log_pi)
                 
-                Qt_a = self.target_network.calculate_Q(state, action)
+                Qt_a = self.target_critic(state, action)
                 
-                next_mu, next_std = self.network(next_state)
+                next_mu, next_std = self.actor(next_state)
                 m = Normal(next_mu, next_std)
                 z = m.sample((self.num_sample,)) # (num_sample, batch_size, len_tr, dim_action)
                 next_action = torch.tanh(z)
                 
-                Qt_next = self.target_network.calculate_Q(next_state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), next_action) # (num_sample, batch_size, len_tr, 1)
+                Qt_next = self.target_critic(next_state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), next_action) # (num_sample, batch_size, len_tr, 1)
                 
                 prob_t = pi_old
                 
@@ -149,9 +153,9 @@ class MPO(BaseAgent):
                 
                 Qret += Qt_a
                 
-            mu, std = self.network(state)
+            mu, std = self.actor(state)
             
-            Q = self.network.calculate_Q(state, action)
+            Q = self.critic(state, action)
             m = Normal(mu, std)
             z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
             log_pi = m.log_prob(z)
@@ -162,7 +166,7 @@ class MPO(BaseAgent):
             action_add = torch.tanh(z_add)
             log_pi_add = m.log_prob(z_add)
             log_pi_add = log_pi_add.sum(axis=-1, keepdims=True)
-            Q_add = self.target_network.calculate_Q(state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), action_add)
+            Q_add = self.target_critic(state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), action_add)
             
             critic_loss = F.mse_loss(Q, Qret).mean()
             
@@ -194,31 +198,39 @@ class MPO(BaseAgent):
             alpha_loss = mu_loss + sigma_loss
                 
         else:
+            
+            # TODO: use DQN instead of DDPG_critic for critic, utilise the previous way of calculating Q, exp_Q_eta, etc.
             with torch.no_grad():
                 # calculate Q_ret using Retrace
-                _, Qt = self.target_network(state) # Q_target
-                _, Qt_next = self.target_network(next_state)
-                pi, _ = self.network(state)
-                pi_next, _ = self.network(next_state)
+                pi = self.actor(state)
+                shape_pi = pi.shape
+                pi_next = self.actor(next_state)
+                next_action = torch.multinomial(pi.reshape(-1, self.action_size), 1).reshape(*shape_pi[:-1], -1)
+                
+                ohv_action = torch.eye(self.action_size, device=self.device)[action.long()].squeeze(-2) # (batch_size, len_tr, action_size). one-hot vector of actions
+                ohv_next_action = torch.eye(self.action_size, device=self.device)[next_action.long()].squeeze(-2)
+                
+                Qt_a = self.target_critic(state, ohv_action) # Q_target
+                Qt_next = self.target_critic(next_state, ohv_next_action)
 
-                Qt_a = Qt.gather(2, action.long()) # (batch_size, len_tr, 1)
                 prob_t = pi.gather(2, action.long()) # (batch_size, len_tr, 1), target policy probability
                 
                 if self.ones == None: self.ones = torch.ones(prob_t.shape).to(self.device)
 
                 c = torch.min(self.ones, prob_t/prob_b.gather(2, action.long())) # (batch_size, len_tr, 1), prod of importance ratio and gamma
-                Qret = reward + torch.sum(pi_next * Qt_next, axis=2).unsqueeze(2) - Qt_a
+                Qret = reward + Qt_next - Qt_a
                 for i in reversed(range(reward.shape[1]-1)): # along the trajectory length
                     Qret[:, i] += self.gamma * c[:, i+1] * Qret[:, i+1] * (1-done[:,i])
 
                 Qret += Qt_a
                 pi_old = pi
                 
-            pi, Q = self.network(state) # pi,Q: (batch_size, len_tr, dim_action)
-            Q_a = Q.gather(2, action.long())
+            pi = self.actor(state) # pi,Q: (batch_size, len_tr, dim_action)
+            Q_a = self.critic(state, ohv_action)
+            
             critic_loss = F.mse_loss(Q_a, Qret).mean()
             
-            exp_Q_eta = torch.exp(Q / self.eta)
+            exp_Q_eta = torch.exp(Q_a / self.eta)
             q = exp_Q_eta / torch.sum(exp_Q_eta.detach(), axis = 2, keepdims=True)
             
             actor_loss = -torch.mean(q.detach() * torch.log(pi))
@@ -233,10 +245,13 @@ class MPO(BaseAgent):
 
         loss = critic_loss + actor_loss + eta_loss + alpha_loss
 
-        self.optimizer.zero_grad()
+        self.actor_optimizer.zero_grad()
+        self.critic_optimizer.zero_grad()
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.network.parameters(), self.clip_grad_norm)
-        self.optimizer.step()
+        torch.nn.utils.clip_grad_norm_(self.actor.parameters(), self.clip_grad_norm)
+        torch.nn.utils.clip_grad_norm_(self.critic.parameters(), self.clip_grad_norm)
+        self.actor_optimizer.step()
+        self.critic_optimizer.step()
         self.reset_lgr_muls()
         
         self.num_learn += 1
@@ -270,21 +285,25 @@ class MPO(BaseAgent):
         self.alpha_sigma.data = torch.max(self.alpha_sigma, self.min_alpha_sigma)
         
     def update_target(self):
-        self.target_network.load_state_dict(self.network.state_dict())
+        self.target_critic.load_state_dict(self.critic.state_dict())
         
     def save(self, path):
         print(f"...Save model to {path}...")
         torch.save({
-            "network" : self.network.state_dict(),
-            "optimizer" : self.optimizer.state_dict(),
+            "actor" : self.actor.state_dict(),
+            "critic": self.critic.state_dict(),
+            "actor_optimizer" : self.actor_optimizer.state_dict(),
+            "critic_optimizer" : self.critic_optimizer.state_dict(),
         }, os.path.join(path,"ckpt"))
         
     def load(self, path):
         print(f"...Load model from {path}...")
         checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=self.device)
-        self.network.load_state_dict(checkpoint["network"])
-        self.target_network = copy.deepcopy(self.network)
-        self.optimizer.load_state_dict(checkpoint["optimizer"])
+        self.actor.load_state_dict(checkpoint["actor"])
+        self.critic.load_state_dict(checkpoint["critic"])
+        self.target_critic = copy.deepcopy(self.critic)
+        self.actor_optimizer.load_state_dict(checkpoint["actor_optimizer"])
+        self.critic_optimizer.load_state_dict(checkpoint["critic_optimizer"])
         
     def process(self, transitions, step):
         result = {}
@@ -304,3 +323,15 @@ class MPO(BaseAgent):
             self.target_update_stamp = 0
         
         return result
+    
+    def sync_in(self, weights):
+        self.actor.load_state_dict(weights)
+    
+    def sync_out(self, device="cpu"):
+        weights = self.actor.state_dict()
+        for k, v in weights.items():
+            weights[k] = v.to(device) 
+        sync_item ={
+            "weights": weights,
+        }
+        return sync_item

@@ -8,7 +8,8 @@ env = {
 
 agent = {
     "name":"mpo",
-    "network":"discrete_policy_q",
+    "actor":"discrete_policy",
+    "critic":"ddpg_critic",
     "gamma":0.99,
     "buffer_size": 50000,
     "batch_size":64,
@@ -16,7 +17,6 @@ agent = {
     "start_train_step": 2000,
     "target_update_period": 1000,
     "clip_grad_norm": 1.0,
-    
     
     "min_eta": 1e-8,
     "min_alpha_mu": 1e-8,
