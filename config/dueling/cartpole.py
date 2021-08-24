@@ -1,4 +1,4 @@
-### Dueling DQN CratPole Config ###
+### Dueling DQN CartPole Config ###
 
 env = {
     "name":"cartpole",

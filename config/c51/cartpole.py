@@ -1,4 +1,4 @@
-### C51 CratPole Config ###
+### C51 CartPole Config ###
 
 env = {
     "name":"cartpole",

@@ -1,4 +1,4 @@
-### QRDQN CratPole Config ###
+### QRDQN CartPole Config ###
 
 env = {
     "name":"cartpole",

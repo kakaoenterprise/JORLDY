@@ -52,6 +52,7 @@ class Atari(BaseEnv):
     def reset(self):
         self.env.reset()
         state, reward, _, info = self.env.step(1)
+        
         self.score = reward
         self.life = info[self.life_key]
         

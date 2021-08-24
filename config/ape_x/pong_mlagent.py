@@ -1,4 +1,4 @@
-### Rainbow DQN Pong_ML-Agents Config ###
+### Ape-X Pong_ML-Agents Config ###
 
 env = {
     "name": "pong_mlagent",

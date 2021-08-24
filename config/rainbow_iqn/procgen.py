@@ -1,34 +1,42 @@
-### Dueling DQN Atari Config ###
+### Rainbow IQN Procgen Config ###
 
 env = {
-    # "name": it should be defined in the command. ex) python main.py --config config.AGENT.atari --env.name breakout
+    # "name": it should be defined in the command. ex) python main.py --config config.AGENT.procgen --env.name coinrun
     "render": False,
     "gray_img": True,
-    "img_width": 84,
-    "img_height": 84,
     "stack_frame": 4,
     "no_op": False,
     "reward_clip": True,
-    "dead_penalty": True,
 }
 
 agent = {
-    "name": "dueling",
-    "network": "dueling",
+    "name": "rainbow_iqn",
+    "network": "rainbow_iqn",
     "head": "cnn",
     "gamma": 0.99,
-    "epsilon_init": 1.0,
-    "epsilon_min": 0.1,
     "explore_step": 1000000,
     "buffer_size": 1000000,
     "batch_size": 32,
     "start_train_step": 100000,
     "target_update_period": 10000,
+    # MultiStep
+    "n_step": 3,
+    # PER
+    "alpha": 0.6,
+    "beta": 0.4,
+    "learn_period": 4,
+    "uniform_sample_prob": 1e-3,
+    # IQN
+    "num_sample": 64,
+    "embedding_dim": 64,
+    "sample_min": 0.0,
+    "sample_max": 1.0,
 }
 
 optim = {
     "name": "adam",
-    "lr": 2.5e-4,
+    "eps": 1e-2/agent['batch_size'],
+    "lr": 2.5e-4/4,
 }
 
 train = {

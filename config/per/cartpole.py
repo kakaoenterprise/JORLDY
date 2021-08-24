@@ -1,4 +1,4 @@
-### PER CratPole Config ###
+### PER CartPole Config ###
 
 env = {
     "name":"cartpole",

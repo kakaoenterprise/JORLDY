@@ -1,4 +1,4 @@
-### Rainbow IQN CratPole Config ###
+### Rainbow IQN CartPole Config ###
 
 env = {
     "name":"cartpole",

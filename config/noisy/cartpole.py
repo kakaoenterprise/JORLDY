@@ -1,4 +1,4 @@
-### Noisy DQN CratPole Config ###
+### Noisy DQN CartPole Config ###
 
 env = {
     "name":"cartpole",

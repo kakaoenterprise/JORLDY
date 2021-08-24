@@ -1,7 +1,7 @@
-### Dueling DQN Atari Config ###
+### QRDQN Procgen Config ###
 
 env = {
-    # "name": it should be defined in the command. ex) python main.py --config config.AGENT.atari --env.name breakout
+    # "name": it should be defined in the command. ex) python main.py --config config.AGENT.procgen --env.name coinrun
     "render": False,
     "gray_img": True,
     "img_width": 84,
@@ -13,22 +13,24 @@ env = {
 }
 
 agent = {
-    "name": "dueling",
-    "network": "dueling",
+    "name": "qrdqn",
+    "network": "dqn",
     "head": "cnn",
     "gamma": 0.99,
     "epsilon_init": 1.0,
-    "epsilon_min": 0.1,
+    "epsilon_min": 0.01,
     "explore_step": 1000000,
     "buffer_size": 1000000,
     "batch_size": 32,
     "start_train_step": 100000,
     "target_update_period": 10000,
+    "num_support": 200
 }
 
 optim = {
     "name": "adam",
-    "lr": 2.5e-4,
+    "eps": 1e-2/agent['batch_size'],
+    "lr": 5e-5,
 }
 
 train = {

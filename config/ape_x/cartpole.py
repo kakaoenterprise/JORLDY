@@ -1,4 +1,4 @@
-### Ape-X CratPole Config ###
+### Ape-X CartPole Config ###
 
 env = {
     "name":"cartpole",

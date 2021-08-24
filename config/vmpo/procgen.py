@@ -1,30 +1,35 @@
-### PPO Atari Config ###
+### V-MPO Procgen Config ###
 
 env = {
-    # "name": it should be defined in the command. ex) python main.py --config config.AGENT.atari --env.name breakout
+    # "name": it should be defined in the command. ex) python main.py --config config.AGENT.procgen --env.name coinrun
     "render": False,
     "gray_img": True,
-    "img_width": 84,
-    "img_height": 84,
     "stack_frame": 4,
     "no_op": False,
     "reward_clip": True,
-    "dead_penalty": True,
 }
 
 agent = {
-    "name":"ppo",
-    "network":"discrete_policy_value",
-    "head": "cnn",
+    "name":"vmpo",
+    "network":"discrete_policy_value_cnn",
     "gamma":0.99,
     "batch_size":32,
     "n_step": 128,
-    "n_epoch": 3,
+    "n_epoch": 1,
     "_lambda": 0.95,
-    "epsilon_clip": 0.1,
-    "vf_coef": 1.0,
-    "ent_coef": 0.01,
     "clip_grad_norm": 1.0,
+    
+    "min_eta": 1e-8,
+    "min_alpha_mu": 1e-8,
+    "min_alpha_sigma": 1e-8,
+    
+    "eps_eta": 0.02,
+    "eps_alpha_mu": 0.1,
+    "eps_alpha_sigma": 0.1,
+    
+    "eta": 1.0,
+    "alpha_mu": 1.0,
+    "alpha_sigma": 1.0,
 }
 
 optim = {

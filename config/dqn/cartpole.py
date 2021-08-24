@@ -1,4 +1,4 @@
-### DQN CratPole Config ###
+### DQN CartPole Config ###
 
 env = {
     "name":"cartpole",
