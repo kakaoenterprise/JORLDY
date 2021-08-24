@@ -1,8 +1,9 @@
 import os, sys, inspect, re
+from collections import OrderedDict
 
 from torch.optim import *
 
-class_dict = {}
+class_dict = OrderedDict()
 for class_name, _class in inspect.getmembers(sys.modules[__name__], inspect.isclass):
     naming_rule = lambda x: re.sub('([a-z])([A-Z])', r'\1_\2', x).lower()
     class_dict[naming_rule(class_name)] = _class
