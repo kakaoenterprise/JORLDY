@@ -3,12 +3,13 @@ from collections import OrderedDict
 
 from torch.optim import *
 
-class_dict = OrderedDict()
+class_dict = {}
 for class_name, _class in inspect.getmembers(sys.modules[__name__], inspect.isclass):
     naming_rule = lambda x: re.sub('([a-z])([A-Z])', r'\1_\2', x).lower()
     class_dict[naming_rule(class_name)] = _class
 
 working_path = os.path.dirname(os.path.realpath(__file__))
+class_dict = OrderedDict(sorted(class_dict.items()))
 with open(os.path.join(working_path, "_class_dict.txt"), 'w') as f:
     f.write('### Class Dictionary ###\n')
     f.write('format: (key, class)\n')
