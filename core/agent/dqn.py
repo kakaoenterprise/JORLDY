@@ -27,6 +27,7 @@ class DQN(BaseAgent):
                 start_train_step=2000,
                 target_update_period=500,
                 device=None,
+                **kwargs,
                 ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size

@@ -6,7 +6,7 @@ from core.buffer import MultistepBuffer
 from .dqn import DQN
 
 class Multistep(DQN):
-    def __init__(self, n_step = 5, **kwargs):
+    def __init__(self, n_step=5, **kwargs):
         super(Multistep, self).__init__(**kwargs)
         self.n_step = n_step
         self.memory = MultistepBuffer(self.buffer_size, self.n_step)

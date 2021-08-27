@@ -33,6 +33,7 @@ class Rainbow(DQN):
                 v_max = 10,
                 num_support = 51,
                 device = None,
+                **kwargs,
                 ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size        

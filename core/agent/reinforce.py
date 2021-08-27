@@ -19,6 +19,7 @@ class REINFORCE(BaseAgent):
                  gamma=0.99,
                  use_standardization=False,
                  device=None,
+                 **kwargs,
                  ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_type = network.split("_")[0]

@@ -26,6 +26,7 @@ class SAC(BaseAgent):
                  start_train_step=2000,
                  static_log_alpha=-2.0,
                  device=None,
+                 **kwargs,
                  ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.actor = Network(actor, state_size, action_size, head=head).to(self.device)
