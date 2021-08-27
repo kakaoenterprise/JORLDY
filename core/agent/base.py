@@ -3,22 +3,52 @@ from abc import *
 class BaseAgent(ABC):
     @abstractmethod
     def act(self, state):
-        pass
+        """
+        Compute action through the state, and return the items to store in the buffer, including the action, in the form of a dictionary.
+        
+        Parameter Type / Shape
+        - state:        ndarray / (N_batch, *D_state) ex) (1, 4), (1, 4, 84, 84)
+        - action:       ndarray / (N_batch, *D_action) ex) (1, 3), (1, 1)
+        - action_dict:  dict /
+        """
+        action = None
+        action_dict = {'action': action, }
+        return action_dict
     
     @abstractmethod
     def learn(self):
-        pass
+        """
+        Optimize model, and return the values ​​you want to record from optimization process in the form of a dictionary.
+
+        Parameter Type / Shape
+        - result: dict /
+        """
+        result = {'loss': None, }
+        return result
     
     @abstractmethod
-    def process(self):
-        pass
+    def process(self, transitions, step):
+        """
+        Execute specific tasks at each period, including learn process, and return the result from the learn process.
+        
+        Parameter Type / Shape
+        result: dict /
+        """
+        result = {}
+        return result
     
     @abstractmethod
     def save(self, path):
+        """
+        Save model to path.
+        """
         pass
     
     @abstractmethod
     def load(self, path):
+        """
+        Load model from path.
+        """
         pass
     
     def sync_in(self, weights):
