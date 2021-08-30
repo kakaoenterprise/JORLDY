@@ -38,8 +38,8 @@ class RND_PPO(PPO):
         self.rnd = Network(rnd_network, state_size, action_size, self.batch_size, 
                            gamma_i, ri_normalize, obs_normalize, batch_norm).to(self.device)
         
-        self.optimizer.add_param_group({'params':self.rnd.parameters()})
-#         self.rnd_optimizer = optim.Adam(self.rnd.parameters(), lr=0.0001)
+#         self.optimizer.add_param_group({'params':self.rnd.parameters()})
+        self.rnd_optimizer = optim.Adam(self.rnd.parameters(), lr=0.0001)
         
         # Freeze random network
         for name, param in self.rnd.named_parameters():
@@ -140,19 +140,19 @@ class RND_PPO(PPO):
                 ppo_loss = actor_loss + self.vf_coef * critic_loss + self.ent_coef * entropy_loss
                 rnd_loss = _r_i.mean()
                 
-                loss = ppo_loss + rnd_loss
+#                 loss = ppo_loss + rnd_loss
                 
                 self.optimizer.zero_grad(set_to_none=True)
-#                 ppo_loss.backward()
-                loss.backward()
+                ppo_loss.backward()
+#                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.network.parameters(), self.clip_grad_norm)
-                torch.nn.utils.clip_grad_norm_(self.rnd.parameters(), self.clip_grad_norm)
+#                 torch.nn.utils.clip_grad_norm_(self.rnd.parameters(), self.clip_grad_norm)
                 self.optimizer.step()
                 
-#                 self.rnd_optimizer.zero_grad(set_to_none=True)
-#                 rnd_loss.backward()
-#                 torch.nn.utils.clip_grad_norm_(self.rnd.parameters(), self.clip_grad_norm)
-#                 self.rnd_optimizer.step()
+                self.rnd_optimizer.zero_grad(set_to_none=True)
+                rnd_loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.rnd.parameters(), self.clip_grad_norm)
+                self.rnd_optimizer.step()
         
                 pis.append(pi.min().item())
                 ratios.append(ratio.max().item())

@@ -1,3 +1,5 @@
+### SAC Hopper Config ###
+
 env = {
     "name": "hopper_mlagent",
     "train_mode": True
@@ -29,7 +31,7 @@ train = {
     "training" : True,
     "load_path" : None, 
     "run_step" : 1000000,
-    "print_period" : 1000,
+    "print_period" : 10000,
     "save_period" : 10000,
     "test_iteration": 10,
     # distributed setting
