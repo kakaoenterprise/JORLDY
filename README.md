@@ -13,6 +13,7 @@
 - [Implicit Quantile Network (IQN)](https://arxiv.org/abs/1806.06923)
 - [Rainbow [DQN, IQN]](https://arxiv.org/abs/1710.02298)
 - [REINFORCE [Discrete, Continuous]](https://people.cs.umass.edu/~barto/courses/cs687/williams92simple.pdf)
+- [Deep Deterministic Policy Gradient](https://arxiv.org/abs/1509.02971)
 - [Proximal Policy Optimization (PPO) [Discrete, Continuous]](https://arxiv.org/abs/1707.06347)
 - [Soft Actor Critic (SAC) [Continuous]](https://arxiv.org/abs/1801.01290)
 - [Maximum a posteriori Policy Optimization(MPO) [Discrete, Continuous]](https://arxiv.org/abs/1806.06920) 

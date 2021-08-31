@@ -16,3 +16,16 @@ class DDPG_Critic(BaseNetwork):
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
         return self.q1(x)
+    
+class DDPG_Actor(BaseNetwork):
+    def __init__(self, D_in, D_out, D_hidden=512, head=None):
+        D_in, D_hidden = super(DDPG_Actor, self).__init__(D_in, D_hidden, head)
+        self.fc1 = torch.nn.Linear(D_in, D_hidden)
+        self.fc2 = torch.nn.Linear(D_hidden, D_hidden)
+        self.mu = torch.nn.Linear(D_hidden, D_out)
+
+    def forward(self, state):
+        x = super(DDPG, self).forward(x)
+        x = torch.relu(self.fc1(state))
+        x = torch.relu(self.fc2(x))
+        return torch.tanh(self.mu(x))
