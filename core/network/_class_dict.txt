@@ -3,6 +3,7 @@ format: (key, class)
 ------------------------
 ('continuous_policy', <class 'core.network.policy.ContinuousPolicy'>)
 ('continuous_policy_value', <class 'core.network.policy_value.ContinuousPolicyValue'>)
+('ddpg_actor', <class 'core.network.ddpg.DDPG_Actor'>)
 ('ddpg_critic', <class 'core.network.ddpg.DDPG_Critic'>)
 ('discrete_policy', <class 'core.network.policy.DiscretePolicy'>)
 ('discrete_policy_value', <class 'core.network.policy_value.DiscretePolicyValue'>)
