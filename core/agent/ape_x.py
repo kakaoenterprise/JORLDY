@@ -17,6 +17,7 @@ class ApeX(DQN):
                  epsilon_alpha = 0.7,                 
                  clip_grad_norm = 40.0,
                  n_epoch = 16,
+                 num_worker = 1,
                  # PER
                  alpha = 0.6,
                  beta = 0.4,
@@ -34,6 +35,7 @@ class ApeX(DQN):
         self.transition_buffer = deque(maxlen=n_step)
         self.time_t = n_step - 1 # for sync between step and # of transitions
         self.n_epoch = n_epoch
+        self.num_worker = num_worker
         
         # PER
         self.alpha = alpha
@@ -146,8 +148,8 @@ class ApeX(DQN):
             
         return result
 
-    def set_distributed(self, id, num_worker):
-        self.epsilon = self.epsilon**(1 + (id/(num_worker-1))*self.epsilon_alpha)
+    def set_distributed(self, id):
+        self.epsilon = self.epsilon**(1 + (id/(self.num_worker-1))*self.epsilon_alpha)
         return self
     
     def interact_callback(self, transitions):

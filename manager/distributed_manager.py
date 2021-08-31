@@ -13,7 +13,7 @@ class DistributedManager:
         agent = Agent(**agent_config)
         num_worker = num_worker if num_worker else os.cpu_count()
         Env, env_config, agent = map(ray.put, [Env, dict(env_config), agent])
-        self.actors = [Actor.remote(Env, env_config, agent, i, num_worker) for i in range(num_worker)]
+        self.actors = [Actor.remote(Env, env_config, agent, i) for i in range(num_worker)]
 
     def run(self, step=1):
         assert step > 0
@@ -30,9 +30,9 @@ class DistributedManager:
 
 @ray.remote
 class Actor:
-    def __init__(self, Env, env_config, agent, id, num_worker):
+    def __init__(self, Env, env_config, agent, id):
         self.env = Env(id=id+1, **env_config)
-        self.agent = agent.set_distributed(id, num_worker)
+        self.agent = agent.set_distributed(id)
         self.state = self.env.reset()
     
     def run(self, step):
