@@ -14,15 +14,16 @@ env = {
 
 agent = {
     "name":"mpo",
-    "actor":"discrete_policy_q",
+    "actor":"discrete_policy",
     "head": "cnn",
-    "critic":"ddpg_critic",
+    "critic":"dqn",
+    "critic_loss_type": "1-step TD", # one of ['1-step TD', 'retrace']
     "gamma": 0.99,
     "buffer_size": 50000,
-    "batch_size": 64,
-    "n_step": 4,
+    "batch_size": 32,
+    "n_step": 8,
     "start_train_step": 2000,
-    "target_update_period": 1000,
+    "n_epoch": 64,
     "clip_grad_norm": 1.0,
     
     "min_eta": 1e-8,
@@ -48,13 +49,13 @@ train = {
     "training" : True,
     "load_path" : None,
     "run_step" : 30000000,
-    "print_period" : 10000,
+    "print_period" : 1000,
     "save_period" : 100000,
     "test_iteration": 5,
     "record" : True,
     "record_period" : 300000,
     # distributed setting
     "distributed_batch_size" : 256,
-    "update_period" : agent["n_step"],
+    "update_period" : 512,
     "num_worker" : 8,
 }

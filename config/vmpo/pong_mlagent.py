@@ -35,7 +35,7 @@ optim = {
 train = {
     "training" : True,
     "load_path" : None,
-    "run_step" : 100000000,
+    "run_step" : 200000,
     "print_period" : 5000,
     "save_period" : 50000,
     "test_iteration": 10,

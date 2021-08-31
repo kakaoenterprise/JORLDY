@@ -11,20 +11,20 @@ class VMPO(REINFORCE):
     def __init__(self,
                  optim_config={'name':'adam'},
                  batch_size=32,
-                 n_step=100,
-                 n_epoch=5,
+                 n_step=128,
+                 n_epoch=1,
                  _lambda=0.9,
                  clip_grad_norm=1.0,
                  # parameters unique to V-MPO
                  min_eta=1e-8,
                  min_alpha_mu=1e-8,
                  min_alpha_sigma = 1e-8,
-                 eps_eta=0.1,
+                 eps_eta=0.02,
                  eps_alpha_mu=0.1,
                  eps_alpha_sigma=0.1,
-                 eta=0.1, 
-                 alpha_mu=0.1,
-                 alpha_sigma=0.1,
+                 eta=1.0, 
+                 alpha_mu=1.0,
+                 alpha_sigma=1.0,
                  **kwargs,
                  ):
         super(VMPO, self).__init__(optim_config=optim_config, **kwargs)
@@ -84,15 +84,16 @@ class VMPO(REINFORCE):
                 m = Normal(mu, std)
                 z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
                 log_pi = m.log_prob(z)
+                log_prob = log_pi.sum(axis=-1, keepdims=True)
                 mu_old = mu
                 std_old = std
             else:
                 pi, value = self.network(state)
                 pi_old = pi
-                log_pi = torch.log(pi.gather(1, action.long()))
-                log_piall_old = torch.log(pi)
+                log_prob = torch.log(pi.gather(1, action.long()))
+                log_pi_old = torch.log(pi)
 
-            log_pi_old = log_pi
+            log_prob_old = log_prob
             
             next_value = self.network(next_state)[-1]
             delta = reward + (1 - done) * self.gamma * next_value - value
@@ -114,13 +115,13 @@ class VMPO(REINFORCE):
             for offset in range(0, len(reward), self.batch_size):
                 idx = idxs[offset : offset + self.batch_size]
 
-                _state, _action, _ret, _next_state, _adv, _log_pi_old =\
-                    map(lambda x: x[idx], [state, action, ret, next_state, adv, log_pi_old])
+                _state, _action, _ret, _next_state, _adv, _log_prob_old =\
+                    map(lambda x: x[idx], [state, action, ret, next_state, adv, log_prob_old])
                 
                 if self.action_type == "continuous":
                     _mu_old, _std_old = map(lambda x: x[idx], [mu_old, std_old])
                 else: 
-                    _log_piall_old, _pi_old = map(lambda x: x[idx], [log_piall_old, pi_old])
+                    _log_pi_old, _pi_old = map(lambda x: x[idx], [log_pi_old, pi_old])
 
                 # select top 50% of advantages
                 idx_tophalf = _adv > _adv.median()
@@ -134,10 +135,11 @@ class VMPO(REINFORCE):
                     m = Normal(mu, std)
                     z = torch.atanh(torch.clamp(_action, -1+1e-7, 1-1e-7))
                     log_pi = m.log_prob(z)
+                    log_prob = log_pi.sum(axis=-1, keepdims=True)
                 else:
                     pi, value = self.network(_state)
-                    log_pi = torch.log(pi.gather(1, _action.long()))
-                    log_piall = torch.log(pi)
+                    log_prob = torch.log(pi.gather(1, _action.long()))
+                    log_pi = torch.log(pi)
 
                 critic_loss = F.mse_loss(value, _ret).mean()
                 
@@ -145,8 +147,8 @@ class VMPO(REINFORCE):
                 eta_loss = self.eta * self.eps_eta + self.eta * torch.log(torch.mean(exp_adv_eta))
 
                 # calculate policy loss (actor_loss)
-                tophalf_logpi = log_pi[idx_tophalf.squeeze(), :]               
-                actor_loss = -torch.sum(psi.detach().unsqueeze(1) * tophalf_logpi)
+                tophalf_log_prob = log_prob[idx_tophalf.squeeze(), :]               
+                actor_loss = -torch.sum(psi.detach().unsqueeze(1) * tophalf_log_prob)
 
                 # calculate loss for alpha
                 # NOTE: assumes that std are in the same shape as mu (hence vectors)
@@ -168,7 +170,7 @@ class VMPO(REINFORCE):
 
                     alpha_loss = mu_loss + sigma_loss
                 else:
-                    KLD_pi = _pi_old.detach() * (_log_piall_old.detach() - log_piall)
+                    KLD_pi = _pi_old.detach() * (_log_pi_old.detach() - log_pi)
                     KLD_pi = torch.sum(KLD_pi, axis = len(_pi_old.shape)-1)
                     alpha_loss = torch.mean(self.alpha_mu * (self.eps_alpha_mu - KLD_pi.detach()) + \
                                             self.alpha_mu.detach() * KLD_pi)

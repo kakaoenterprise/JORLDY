@@ -13,7 +13,7 @@ class SAC(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
-                 actor = "sac_actor",
+                 actor = "continuous_policy",
                  critic = "sac_critic",
                  head = None,
                  optim_config = {'actor':'adam','critic':'adam','alpha':'adam',
@@ -29,9 +29,12 @@ class SAC(BaseAgent):
                  **kwargs,
                  ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.action_type = actor.split("_")[0]
+        assert self.action_type == "continuous"
+        
         self.actor = Network(actor, state_size, action_size, head=head).to(self.device)
-        self.critic = Network(critic, state_size+action_size, action_size, head=head).to(self.device)
-        self.target_critic = Network(critic, state_size+action_size, action_size, head=head).to(self.device)
+        self.critic = Network(critic, state_size, action_size, head=head).to(self.device)
+        self.target_critic = Network(critic, state_size, action_size, head=head).to(self.device)
         self.target_critic.load_state_dict(self.critic.state_dict())
         self.actor_optimizer = Optimizer(optim_config.actor, self.actor.parameters(), lr=optim_config.actor_lr)
         self.critic_optimizer = Optimizer(optim_config.critic, self.critic.parameters(), lr=optim_config.critic_lr)

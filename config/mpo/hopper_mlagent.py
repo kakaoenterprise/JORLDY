@@ -9,12 +9,13 @@ agent = {
     "name": "mpo",
     "actor": "continuous_policy",
     "critic": "ddpg_critic",
+    "critic_loss_type": "retrace", # one of ['1-step TD', 'retrace']
     "gamma": 0.99,
     "buffer_size": 50000,
-    "batch_size": 64,
-    "n_step": 4,
+    "batch_size": 32,
+    "n_step": 8,
     "start_train_step": 2000,
-    "target_update_period": 1000,
+    "n_epoch": 64,
     "clip_grad_norm": 1.0,
     
     "min_eta": 1e-8,
@@ -32,18 +33,18 @@ agent = {
 
 optim = {
     "name": "adam",
-    "lr": 5e-4,
+    "lr": 2e-4,
 }
 
 train = {
     "training" : True,
     "load_path" : None,
-    "run_step" : 200000,
+    "run_step" : 100000,
     "print_period" : 1000,
     "save_period" : 10000,
-    "test_iteration": 10,
+    "test_iteration" : 10,
     # distributed setting
     "distributed_batch_size" : 256,
-    "update_period" : agent["n_step"],
+    "update_period" : 128,
     "num_worker" : 8,
 }

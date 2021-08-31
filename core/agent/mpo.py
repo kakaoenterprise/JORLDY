@@ -15,37 +15,45 @@ class MPO(BaseAgent):
                  action_size,
                  optim_config={'name': 'adam'},
                  actor="discrete_policy",
-                 critic="ddpg_critic",
+                 critic="dqn",
                  head = None,
                  buffer_size=50000,
                  batch_size=64,
                  start_train_step=2000,
-                 target_update_period=500,
-                 n_step=100,
+                 n_epoch=64,
+                 n_step=8,
                  clip_grad_norm=1.0,
                  gamma=0.99,
                  device=None,
                  # parameters unique to MPO
-                 num_sample = 30,
+                 critic_loss_type = 'retrace', # one of ['1-step TD', 'retrace']
+                 num_sample=30,
                  min_eta=1e-8,
                  min_alpha_mu=1e-8,
                  min_alpha_sigma=1e-8,
-                 eps_eta=0.1,
-                 eps_alpha_mu=0.1,
-                 eps_alpha_sigma=0.1,
-                 eta=0.1, 
-                 alpha_mu=0.1,
-                 alpha_sigma=0.1,
+                 eps_eta=0.01,
+                 eps_alpha_mu=0.01,
+                 eps_alpha_sigma=5*1e-5,
+                 eta=1.0, 
+                 alpha_mu=1.0,
+                 alpha_sigma=1.0,
+                 **kwargs,
                  ):
 
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.head = head
         self.action_type = actor.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
         self.action_size = action_size
 
         self.actor = Network(actor, state_size, action_size, head=head).to(self.device)
-        self.critic = Network(critic, state_size+action_size, 1, head=head).to(self.device)
-        self.target_critic = Network(critic, state_size+action_size, 1, head=head).to(self.device)
+        self.target_actor = Network(actor, state_size, action_size, head=head).to(self.device)
+        self.target_actor.load_state_dict(self.actor.state_dict())
+
+        self.critic_loss_type = critic_loss_type
+        assert self.critic_loss_type in ['1-step TD', 'retrace']
+        self.critic = Network(critic, state_size, action_size, head=head).to(self.device)
+        self.target_critic = Network(critic, state_size, action_size, head=head).to(self.device)
         self.target_critic.load_state_dict(self.critic.state_dict())
         
         self.batch_size = batch_size
@@ -55,12 +63,9 @@ class MPO(BaseAgent):
         self.num_learn = 0
         self.time_t = 0
         self.start_train_step = start_train_step
-        self.target_update_stamp = 0
-        self.target_update_period = target_update_period
+        self.n_epoch = n_epoch
         
         self.num_sample = num_sample
-        
-        self.ones = None
         
         self.min_eta = torch.tensor(min_eta, device=self.device)
         self.min_alpha_mu = torch.tensor(min_alpha_mu, device=self.device)
@@ -98,17 +103,20 @@ class MPO(BaseAgent):
         else:
             pi = self.actor(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             action = torch.multinomial(pi, 1) if training else torch.argmax(pi, dim=-1, keepdim=True)
-            prob = pi.numpy()
             action = action.cpu().numpy()
+            prob = np.take(pi.cpu().numpy(), action)
         return {
             'action': action,
             'prob': prob,
         }
 
     def learn(self):
+            
         transitions = self.memory.sample(self.batch_size)
         for key in transitions.keys():
-            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+            # reshape: (batch_size, len_tr, item_dim)
+            #        -> (batch_size * len_tr, item_dim)
+            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device).view(-1, *transitions[key].shape[2:])
             
         state = transitions['state']
         action = transitions['action']
@@ -117,73 +125,84 @@ class MPO(BaseAgent):
         done = transitions['done']
         prob_b = transitions['prob']
         
-        action = torch.tensor(action, device=self.device)
-        
         if self.action_type == "continuous":
-            with torch.no_grad():
-                mu, std = self.actor(state)
-                
-                m = Normal(mu, std)
-                z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
-                log_pi = m.log_prob(z)
-                log_pi = log_pi.sum(axis=-1, keepdims=True)
-                
-                mu_old = mu
-                std_old = std
-                pi_old = torch.exp(log_pi)
-                
-                Qt_a = self.target_critic(state, action)
-                
-                next_mu, next_std = self.actor(next_state)
-                m = Normal(next_mu, next_std)
-                z = m.sample((self.num_sample,)) # (num_sample, batch_size, len_tr, dim_action)
-                next_action = torch.tanh(z)
-                
-                Qt_next = self.target_critic(next_state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), next_action) # (num_sample, batch_size, len_tr, 1)
-                
-                prob_t = pi_old
-                
-                # calculate Qret for Retrace
-                if self.ones == None: self.ones = torch.ones(prob_t.shape).to(self.device)
-                c = torch.min(self.ones, prob_t / prob_b)
-                
-                Qret = reward + Qt_next.mean(axis=0) - Qt_a
-                for i in reversed(range(reward.shape[1]-1)):
-                    Qret[:, i] += self.gamma * c[:, i+1] * Qret[:, i+1] * (1-done[:,i])
-                
-                Qret += Qt_a
-                
-            mu, std = self.actor(state)
             
+            mu, std = self.actor(state)
             Q = self.critic(state, action)
             m = Normal(mu, std)
             z = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
             log_pi = m.log_prob(z)
-            log_pi = log_pi.sum(axis=-1, keepdims=True)
-            pi = torch.exp(log_pi)
+            log_prob = log_pi.sum(axis=-1, keepdims=True)
+            prob = torch.exp(log_prob)
             
-            z_add = m.sample((self.num_sample, )) # (num_sample, batch_size, len_tr, dim_action)
-            action_add = torch.tanh(z_add)
-            log_pi_add = m.log_prob(z_add)
-            log_pi_add = log_pi_add.sum(axis=-1, keepdims=True)
-            Q_add = self.target_critic(state.unsqueeze(0).repeat(self.num_sample, 1, 1, 1), action_add)
+            with torch.no_grad():
+                mut, stdt = self.target_actor(state)
+                
+                mt = Normal(mut, stdt)
+                zt = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
+                log_pit = mt.log_prob(zt)
+                log_probt = log_pit.sum(axis=-1, keepdims=True)
+                
+                mu_old = mut
+                std_old = stdt
+                prob_t = torch.exp(log_probt)
+                
+                Qt_a = self.target_critic(state, action)
+                
+                next_mu, next_std = self.actor(next_state)
+                mn = Normal(next_mu, next_std)
+                zn = mn.sample((self.num_sample,)) # (num_sample, batch_size * len_tr, dim_action)
+                next_action = torch.tanh(zn)
+                
+                Qt_next = self.target_critic(next_state.unsqueeze(0).repeat(self.num_sample, 1, 1), next_action) # (num_sample, batch_size * len_tr, 1)
+                
+                c = torch.clip(prob/(prob_b+1e-6), max=1.)
+                
+                if self.critic_loss_type == '1-step TD':
+                    Qret = reward + self.gamma * (1-done) * Qt_next.mean(axis=0)
+                elif self.critic_loss_type == 'retrace':
+                    Qret = reward + self.gamma * Qt_next.mean(axis=0) * (1-done)
+
+                    # temporarily reshaping values
+                    # (batch_size * len_tr, item_dim) -> (batch_size, len_tr, item_dim)
+                    Qret = Qret.view(self.batch_size, -1, *Qret.shape[1:])
+                    Qt_a = Qt_a.view(self.batch_size, -1, *Qt_a.shape[1:])
+                    c = c.view(self.batch_size, -1, *c.shape[1:])
+                    done = done.view(self.batch_size, -1, *done.shape[1:])
+                    for i in reversed(range(Qret.shape[1]-1)):
+                        Qret[:, i] += self.gamma * c[:, i+1] * (1-done[:,i]) * (Qret[:, i+1] - Qt_a[:, i+1])
+                    Qret = Qret.view(-1, *Qret.shape[2:])
+        
+            zt_add = mt.sample((self.num_sample, )) # (num_sample, batch_size * len_tr, dim_action)
+            action_add = torch.tanh(zt_add)
+            log_pi_add = m.log_prob(zt_add)
+            log_prob_add = log_pi_add.sum(axis=-1, keepdims=True)
+            Qt_add = self.target_critic(state.unsqueeze(0).repeat(self.num_sample, 1, 1), action_add)
             
             critic_loss = F.mse_loss(Q, Qret).mean()
             
-            exp_Q_eta = torch.exp(Q.detach() / self.eta)
-            exp_Q_eta_add = torch.exp(Q_add.detach() / self.eta)
-            q = torch.softmax(exp_Q_eta_add, axis = 0)
+            # Calculate Vt_add, At_add using Qt_add
+            Vt_add = torch.mean(Qt_add, axis=0, keepdims=True)
+            At_add = Qt_add - Vt_add
+            At = At_add
             
-            actor_loss = -torch.mean(q.detach() * log_pi_add)
-            
+            ''' variational distribution q uses exp(At / eta) instead of exp(Qt / eta), for stable learning'''
+            q = torch.softmax(At_add / self.eta, axis = 0)
+            actor_loss = -torch.mean(torch.sum(q.detach() * log_prob_add, axis=0))
+
             eta_loss = self.eta * self.eps_eta + \
-                       self.eta * torch.mean(torch.log(exp_Q_eta_add.mean(axis=0)))
+                       self.eta * torch.mean(torch.log(torch.exp((At_add) / self.eta).mean(axis=0)))
             
-            ss = 1. / (std**2) # (batch_size, len_tr, action_dim)
+            ss = 1. / (std**2) # (batch_size * len_tr, action_dim)
             ss_old = 1. / (std_old ** 2)
 
+            '''
+            KL-Divergence losses(related to alpha) implemented using methods introduced from V-MPO paper
+            https://arxiv.org/abs/1909.12238
+            '''
+            
             # mu
-            d_mu = mu - mu_old.detach() # (batch_size, len_tr, action_dim)
+            d_mu = mu - mu_old.detach() # (batch_size * len_tr, action_dim)
             KLD_mu = 0.5 * torch.sum(d_mu* 1./ss_old.detach() * d_mu, axis = -1)
             mu_loss = torch.mean(self.alpha_mu * (self.eps_alpha_mu - KLD_mu.detach()) + \
                                  self.alpha_mu.detach() * KLD_mu)
@@ -199,44 +218,56 @@ class MPO(BaseAgent):
                 
         else:
             
-            # TODO: use DQN instead of DDPG_critic for critic, utilise the previous way of calculating Q, exp_Q_eta, etc.
+            pi = self.actor(state) # pi,Q: (batch_size, len_tr, dim_action)
+            pi_next = self.actor(next_state)
+            Q = self.critic(state)
+            Q_a = Q.gather(1, action.long())
+                
             with torch.no_grad():
                 # calculate Q_ret using Retrace
-                pi = self.actor(state)
-                shape_pi = pi.shape
-                pi_next = self.actor(next_state)
-                next_action = torch.multinomial(pi.reshape(-1, self.action_size), 1).reshape(*shape_pi[:-1], -1)
+                Qt = self.target_critic(state) # Q_target
+                Qt_next = self.target_critic(next_state)
+                pit = self.target_actor(state)
                 
-                ohv_action = torch.eye(self.action_size, device=self.device)[action.long()].squeeze(-2) # (batch_size, len_tr, action_size). one-hot vector of actions
-                ohv_next_action = torch.eye(self.action_size, device=self.device)[next_action.long()].squeeze(-2)
+                Qt_a = Qt.gather(1, action.long())
+                prob_t = pi.gather(1, action.long()) # (batch_size * len_tr, 1), target policy probability
                 
-                Qt_a = self.target_critic(state, ohv_action) # Q_target
-                Qt_next = self.target_critic(next_state, ohv_next_action)
+                c = torch.clip(prob_t/(prob_b+1e-6), max=1.)# (batch_size * len_tr, 1), prod of importance ratio and gamma
 
-                prob_t = pi.gather(2, action.long()) # (batch_size, len_tr, 1), target policy probability
-                
-                if self.ones == None: self.ones = torch.ones(prob_t.shape).to(self.device)
+                if self.critic_loss_type == '1-step TD':
+                    Qret = reward + self.gamma * (1-done) * torch.sum(pi_next * Qt_next, axis=-1, keepdim=True)
+                elif self.critic_loss_type == 'retrace':
+                    Qret = reward + self.gamma * torch.sum(pi_next * Qt_next, axis=-1, keepdim=True) * (1-done)
 
-                c = torch.min(self.ones, prob_t/prob_b.gather(2, action.long())) # (batch_size, len_tr, 1), prod of importance ratio and gamma
-                Qret = reward + Qt_next - Qt_a
-                for i in reversed(range(reward.shape[1]-1)): # along the trajectory length
-                    Qret[:, i] += self.gamma * c[:, i+1] * Qret[:, i+1] * (1-done[:,i])
-
-                Qret += Qt_a
-                pi_old = pi
+                    # temporarily reshaping values
+                    # (batch_size * len_tr, item_dim) -> (batch_size, len_tr, item_dim)
+                    Qret = Qret.view(self.batch_size, -1, *Qret.shape[1:])
+                    Qt_a = Qt_a.view(self.batch_size, -1, *Qt_a.shape[1:])
+                    c = c.view(self.batch_size, -1, *c.shape[1:])
+                    done = done.view(self.batch_size, -1, *done.shape[1:])
+                    for i in reversed(range(Qret.shape[1]-1)): # along the trajectory length
+                        Qret[:, i] += self.gamma * c[:, i+1] * (Qret[:, i+1] - Qt_a[:, i+1]) * (1-done[:,i])
+                    Qret = Qret.view(-1, *Qret.shape[2:])
                 
-            pi = self.actor(state) # pi,Q: (batch_size, len_tr, dim_action)
-            Q_a = self.critic(state, ohv_action)
-            
+                pi_old = pit
+                
             critic_loss = F.mse_loss(Q_a, Qret).mean()
+
+            # calculate V, Advantage of Qt
+            Vt = torch.sum(pi_old * Qt, axis=-1, keepdims=True)
+            At = Qt - Vt
             
-            exp_Q_eta = torch.exp(Q_a / self.eta)
-            q = exp_Q_eta / torch.sum(exp_Q_eta.detach(), axis = 2, keepdims=True)
-            
-            actor_loss = -torch.mean(q.detach() * torch.log(pi))
+            ''' variational distribution q uses exp(At / eta) instead of exp(Qt / eta), for stable learning'''
+            q = torch.softmax(At / self.eta, axis=-1)    
+            actor_loss = -torch.mean(torch.sum(q.detach() * torch.log(pi), axis=-1))
             
             eta_loss = self.eta * self.eps_eta + \
-                       self.eta * torch.mean(torch.log(torch.sum(pi * exp_Q_eta, axis=2)))
+                       self.eta * torch.mean(torch.log(torch.sum(pi_old * torch.exp(At / self.eta), axis=-1)))
+            
+            '''
+            KL-Divergence losses(related to alpha) implemented using methods introduced from V-MPO paper
+            https://arxiv.org/abs/1909.12238
+            '''
             
             KLD_pi = pi_old.detach() * (torch.log(pi_old.detach()) - torch.log(pi))
             KLD_pi = torch.sum(KLD_pi, axis = len(pi_old.shape)-1)
@@ -264,17 +295,11 @@ class MPO(BaseAgent):
             'eta': self.eta.item(),
             'alpha_mu': self.alpha_mu.item(),
             'alpha_sigma': self.alpha_sigma.item(),
-            'max_probt': prob_t.cpu().numpy().max(),
-            'max_probb': prob_b.cpu().numpy().max(),
             'min_Q': Q.detach().cpu().numpy().min(),
             'max_Q': Q.detach().cpu().numpy().max(),
+            'min_At': At.detach().cpu().numpy().min(),
+            'max_At': At.detach().cpu().numpy().max(),
         }
-        
-        if self.action_type == 'continuous':
-            result['min_mu'] = mu.detach().cpu().numpy().min()
-            result['max_mu'] = mu.detach().cpu().numpy().max()
-            result['min_std'] = std.detach().cpu().numpy().min()
-            result['max_std'] = std.detach().cpu().numpy().max()
             
         return result
     
@@ -285,6 +310,7 @@ class MPO(BaseAgent):
         self.alpha_sigma.data = torch.max(self.alpha_sigma, self.min_alpha_sigma)
         
     def update_target(self):
+        self.target_actor.load_state_dict(self.actor.state_dict())
         self.target_critic.load_state_dict(self.critic.state_dict())
         
     def save(self, path):
@@ -300,8 +326,9 @@ class MPO(BaseAgent):
         print(f"...Load model from {path}...")
         checkpoint = torch.load(os.path.join(path,"ckpt"),map_location=self.device)
         self.actor.load_state_dict(checkpoint["actor"])
+        self.target_actor.load_state_dict(self.actor.state_dict())
         self.critic.load_state_dict(checkpoint["critic"])
-        self.target_critic = copy.deepcopy(self.critic)
+        self.target_critic.load_state_dict(self.critic.state_dict())
         self.actor_optimizer.load_state_dict(checkpoint["actor_optimizer"])
         self.critic_optimizer.load_state_dict(checkpoint["critic_optimizer"])
         
@@ -312,15 +339,11 @@ class MPO(BaseAgent):
         self.memory.store(transitions)
         delta_t = step - self.time_t
         self.time_t = step
-        self.target_update_stamp += delta_t
         
         if self.memory.size > self.batch_size and self.time_t >= self.start_train_step:
-            result = self.learn()
-            
-        if self.num_learn > 0 and \
-           self.target_update_stamp > self.target_update_period:
+            for i in range(self.n_epoch):
+                result = self.learn()
             self.update_target()
-            self.target_update_stamp = 0
         
         return result
     
@@ -335,3 +358,4 @@ class MPO(BaseAgent):
             "weights": weights,
         }
         return sync_item
+
