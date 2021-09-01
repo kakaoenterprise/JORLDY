@@ -7,7 +7,7 @@ env = {
     "img_width": 84,
     "img_height": 84,
     "stack_frame": 4,
-#     "no_op": True,
+    "no_op": False,
     "reward_clip": True,
     "dead_penalty": False,
 }

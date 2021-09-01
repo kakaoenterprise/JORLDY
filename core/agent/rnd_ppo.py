@@ -35,9 +35,9 @@ class RND_PPO(PPO):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
         
-        self.rnd = Network(rnd_network, state_size, action_size, self.batch_size, 
+        self.rnd = Network(rnd_network, state_size, action_size, self.num_worker,
                            gamma_i, ri_normalize, obs_normalize, batch_norm).to(self.device)
-        
+
 #         self.optimizer.add_param_group({'params':self.rnd.parameters()})
         self.rnd_optimizer = optim.Adam(self.rnd.parameters(), lr=0.0001)
         
@@ -60,7 +60,7 @@ class RND_PPO(PPO):
         # set pi_old and advantage
         with torch.no_grad():
             # RND: calculate exploration reward, update moments of obs and r_i
-            self.rnd.update_rms(next_state, 'obs')
+            self.rnd.update_rms_obs(next_state)
             r_i = self.rnd(next_state, update_ri=True)
             r_i = r_i.unsqueeze(-1)
 
@@ -178,9 +178,6 @@ class RND_PPO(PPO):
             "network" : self.network.state_dict(),
             "rnd" : self.rnd.state_dict(),
             "optimizer" : self.optimizer.state_dict(),
-            "rnd_rms_obs": self.rnd.rms['obs'].save(),
-            "rnd_rms_ri": self.rnd.rms['ri'].save(),
-            "rnd_rff": self.rnd.rff.save(),
         }, os.path.join(path,"ckpt"))
 
     def load(self, path):
@@ -189,6 +186,3 @@ class RND_PPO(PPO):
         self.network.load_state_dict(checkpoint["network"])
         self.rnd.load_state_dict(checkpoint["rnd"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
-        self.rnd.rms['obs'].load(checkpoint["rnd_rms_obs"])
-        self.rnd.rms['ri'].load(checkpoint["rnd_rms_ri"])
-        self.rnd.rff.load(checkpoint["rnd_rff"])
