@@ -11,11 +11,13 @@ class ApeXBuffer(RainbowBuffer):
     def store(self, transitions, delta_t=1):
         if self.first_store:
             self.check_dim(transitions[0])
-            self.nstep_buffers = [deque(maxlen=self.n_step) for _ in range(len(transitions)//delta_t)]
+        
+        assert len(transitions) % self.num_worker == 0
+        partition = len(transitions) // self.num_worker
         
         for i, transition in enumerate(transitions):
             # MultiStep
-            nstep_buffer = self.nstep_buffers[i//delta_t]
+            nstep_buffer = self.nstep_buffers[i//partition]
             nstep_buffer.append(transition)
             if len(nstep_buffer) == self.n_step:
                 self.buffer[self.buffer_index], priority = self.prepare_nstep(nstep_buffer)

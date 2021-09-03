@@ -25,6 +25,7 @@ class RainbowIQN(Rainbow):
                 target_update_period=500,
                 # MultiStep
                 n_step = 4,
+                num_worker = 1,
                 # PER
                 alpha = 0.6,
                 beta = 0.4,
@@ -55,6 +56,7 @@ class RainbowIQN(Rainbow):
         
         # MultiStep
         self.n_step = n_step
+        self.num_worker = num_worker
         
         # PER
         self.alpha = alpha
@@ -62,7 +64,7 @@ class RainbowIQN(Rainbow):
         self.learn_period = learn_period
         self.learn_period_stamp = 0 
         self.uniform_sample_prob = uniform_sample_prob
-        self.beta_add = 1/self.explore_step
+        self.beta_add = 1/explore_step
         
         # IQN
         self.num_sample = num_sample
@@ -71,7 +73,7 @@ class RainbowIQN(Rainbow):
         self.sample_max = sample_max
         
         # MultiStep
-        self.memory = RainbowBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
+        self.memory = RainbowBuffer(buffer_size, n_step, num_worker, uniform_sample_prob)
         
     @torch.no_grad()
     def act(self, state, training=True):

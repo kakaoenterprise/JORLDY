@@ -67,12 +67,12 @@ class Noisy(DQN):
         self.time_t = step
         self.target_update_stamp += delta_t
         
-        if self.memory.size > self.batch_size and self.time_t >= self.start_train_step:
+        if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:
             result = self.learn()
 
         # Process per step if train start
         if self.num_learn > 0:
-            if self.target_update_stamp > self.target_update_period:
+            if self.target_update_stamp >= self.target_update_period:
                 self.update_target()
                 self.target_update_stamp = 0
         

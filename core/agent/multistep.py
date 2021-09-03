@@ -9,7 +9,7 @@ class Multistep(DQN):
     def __init__(self, n_step=5, **kwargs):
         super(Multistep, self).__init__(**kwargs)
         self.n_step = n_step
-        self.memory = MultistepBuffer(self.buffer_size, self.n_step)
+        self.memory = MultistepBuffer(self.buffer_size, self.n_step, self.num_worker)
     
     def learn(self):
 #         shapes of 1-step implementations: (batch_size, dimension_data)
@@ -57,18 +57,18 @@ class Multistep(DQN):
 
         # Process per step
         delta_t = step - self.time_t
-        self.memory.store(transitions, delta_t)
+        self.memory.store(transitions)
         self.time_t = step
         self.target_update_stamp += delta_t
         
-        if self.memory.size > self.batch_size and self.time_t >= self.start_train_step:
+        if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:
             result = self.learn()
 
         # Process per step if train start
         if self.num_learn > 0:
             self.epsilon_decay(delta_t)
 
-            if self.target_update_stamp > self.target_update_period:
+            if self.target_update_stamp >= self.target_update_period:
                 self.update_target()
                 self.target_update_stamp = 0
 

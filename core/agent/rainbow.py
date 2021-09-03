@@ -23,6 +23,7 @@ class Rainbow(DQN):
                 target_update_period=500,
                 # MultiStep
                 n_step = 4,
+                num_worker=1,
                 # PER
                 alpha = 0.6,
                 beta = 0.4,
@@ -52,6 +53,7 @@ class Rainbow(DQN):
         
         # MultiStep
         self.n_step = n_step
+        self.num_worker = num_worker
         
         # PER
         self.alpha = alpha
@@ -59,7 +61,7 @@ class Rainbow(DQN):
         self.learn_period = learn_period
         self.learn_period_stamp = 0 
         self.uniform_sample_prob = uniform_sample_prob
-        self.beta_add = 1/self.explore_step
+        self.beta_add = 1/explore_step
         
         # C51
         self.v_min = v_min
@@ -67,11 +69,11 @@ class Rainbow(DQN):
         self.num_support = num_support
         
         # MultiStep
-        self.memory = RainbowBuffer(buffer_size, self.n_step, self.uniform_sample_prob)
+        self.memory = RainbowBuffer(buffer_size, n_step, num_worker, uniform_sample_prob)
         
         # C51
-        self.delta_z = (self.v_max - self.v_min) / (self.num_support - 1)
-        self.z = torch.linspace(self.v_min, self.v_max, self.num_support, device=self.device).view(1, -1)
+        self.delta_z = (v_max - v_min) / (num_support - 1)
+        self.z = torch.linspace(v_min, v_max, num_support, device=self.device).view(1, -1)
     
     @torch.no_grad()
     def act(self, state, training=True):
@@ -177,19 +179,19 @@ class Rainbow(DQN):
         
         # Process per step
         delta_t = step - self.time_t
-        self.memory.store(transitions, delta_t)
+        self.memory.store(transitions)
         self.time_t = step
         self.target_update_stamp += delta_t
         self.learn_period_stamp += delta_t
         
-        if (self.learn_period_stamp > self.learn_period and
-            self.memory.buffer_counter > self.batch_size and
+        if (self.learn_period_stamp >= self.learn_period and
+            self.memory.buffer_counter >= self.batch_size and
             self.time_t >= self.start_train_step):
             result = self.learn()
             self.learn_period_stamp = 0
 
         # Process per step if train start
-        if self.num_learn > 0 and self.target_update_stamp > self.target_update_period:
+        if self.num_learn > 0 and self.target_update_stamp >= self.target_update_period:
             self.update_target()
             self.target_update_stamp = 0
             

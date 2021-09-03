@@ -340,7 +340,7 @@ class MPO(BaseAgent):
         delta_t = step - self.time_t
         self.time_t = step
         
-        if self.memory.size > self.batch_size and self.time_t >= self.start_train_step:
+        if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:
             for i in range(self.n_epoch):
                 result = self.learn()
             self.update_target()

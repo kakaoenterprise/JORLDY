@@ -4,9 +4,11 @@ import numpy as np
 from .replay_buffer import ReplayBuffer
 
 class MultistepBuffer(ReplayBuffer):
-    def __init__(self, buffer_size, n_step):
+    def __init__(self, buffer_size, n_step, num_worker):
         super(MultistepBuffer, self).__init__(buffer_size)
         self.n_step = n_step
+        self.num_worker = num_worker
+        self.nstep_buffers = [deque(maxlen=self.n_step) for _ in range(num_worker)]
         
     def prepare_nstep(self, batch):
         transition = {}
@@ -19,14 +21,15 @@ class MultistepBuffer(ReplayBuffer):
         
         return transition
         
-    def store(self, transitions, delta_t=1):
+    def store(self, transitions):
         if self.first_store:
             self.check_dim(transitions[0])
-            self.nstep_buffers = [deque(maxlen=self.n_step) for _ in range(len(transitions)//delta_t)]
+
+        assert len(transitions) % self.num_worker == 0
+        partition = len(transitions) // self.num_worker
         
-        # Issue: need to consider multiple actor
         for i, transition in enumerate(transitions):
-            nstep_buffer = self.nstep_buffers[i//delta_t]
+            nstep_buffer = self.nstep_buffers[i//partition]
             nstep_buffer.append(transition)
             if len(nstep_buffer) == self.n_step:
                 self.buffer.append(self.prepare_nstep(nstep_buffer))

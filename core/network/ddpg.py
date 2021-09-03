@@ -24,8 +24,8 @@ class DDPG_Actor(BaseNetwork):
         self.fc2 = torch.nn.Linear(D_hidden, D_hidden)
         self.mu = torch.nn.Linear(D_hidden, D_out)
 
-    def forward(self, state):
-        x = super(DDPG, self).forward(x)
-        x = torch.relu(self.fc1(state))
+    def forward(self, x):
+        x = super(DDPG_Actor, self).forward(x)
+        x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
         return torch.tanh(self.mu(x))

@@ -77,8 +77,8 @@ class PER(DQN):
         self.target_update_stamp += delta_t
         self.learn_period_stamp += delta_t
         
-        if (self.learn_period_stamp > self.learn_period and
-            self.memory.size > self.batch_size and
+        if (self.learn_period_stamp >= self.learn_period and
+            self.memory.size >= self.batch_size and
             self.time_t >= self.start_train_step):
             result = self.learn()
             self.learn_period_stamp = 0
@@ -87,7 +87,7 @@ class PER(DQN):
         if self.num_learn > 0:
             self.epsilon_decay(delta_t)
 
-            if self.target_update_stamp > self.target_update_period:
+            if self.target_update_stamp >= self.target_update_period:
                 self.update_target()
                 self.target_update_stamp = 0
 
