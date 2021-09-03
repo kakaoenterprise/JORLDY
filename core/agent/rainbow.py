@@ -23,7 +23,7 @@ class Rainbow(DQN):
                 target_update_period=500,
                 # MultiStep
                 n_step = 4,
-                num_worker=1,
+                num_workers=1,
                 # PER
                 alpha = 0.6,
                 beta = 0.4,
@@ -53,7 +53,7 @@ class Rainbow(DQN):
         
         # MultiStep
         self.n_step = n_step
-        self.num_worker = num_worker
+        self.num_workers = num_workers
         
         # PER
         self.alpha = alpha
@@ -69,7 +69,7 @@ class Rainbow(DQN):
         self.num_support = num_support
         
         # MultiStep
-        self.memory = RainbowBuffer(buffer_size, n_step, num_worker, uniform_sample_prob)
+        self.memory = RainbowBuffer(buffer_size, n_step, num_workers, uniform_sample_prob)
         
         # C51
         self.delta_z = (v_max - v_min) / (num_support - 1)

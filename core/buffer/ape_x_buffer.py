@@ -12,8 +12,8 @@ class ApeXBuffer(RainbowBuffer):
         if self.first_store:
             self.check_dim(transitions[0])
         
-        assert len(transitions) % self.num_worker == 0
-        partition = len(transitions) // self.num_worker
+        assert len(transitions) % self.num_workers == 0
+        partition = len(transitions) // self.num_workers
         
         for i, transition in enumerate(transitions):
             # MultiStep

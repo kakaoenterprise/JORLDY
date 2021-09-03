@@ -16,7 +16,7 @@ class PPO(REINFORCE):
                  vf_coef=1.0,
                  ent_coef=0.01,
                  clip_grad_norm=1.0,
-                 num_worker=1,
+                 num_workers=1,
                  **kwargs,
                  ):
         super(PPO, self).__init__(**kwargs)
@@ -29,7 +29,7 @@ class PPO(REINFORCE):
         self.vf_coef = vf_coef
         self.ent_coef = ent_coef
         self.clip_grad_norm = clip_grad_norm
-        self.num_worker = num_worker
+        self.num_workers = num_workers
         self.time_t = 0
         self.learn_stamp = 0
     

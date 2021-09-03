@@ -43,5 +43,5 @@ train = {
     "record_period" : 300000,
     # distributed setting
     "update_period" : agent["learn_period"],
-    "num_worker" : 16,
+    "num_workers" : 16,
 }

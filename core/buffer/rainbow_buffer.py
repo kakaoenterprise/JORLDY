@@ -5,16 +5,16 @@ from .multistep_buffer import MultistepBuffer
 
 # Reference: https://github.com/LeejwUniverse/following_deepmid/tree/master/jungwoolee_pytorch/100%20Algorithm_For_RL/01%20sum_tree
 class RainbowBuffer(PERBuffer, MultistepBuffer):
-    def __init__(self, buffer_size, n_step, num_worker=1, uniform_sample_prob=1e-3):
-        MultistepBuffer.__init__(self, buffer_size, n_step, num_worker)
+    def __init__(self, buffer_size, n_step, num_workers=1, uniform_sample_prob=1e-3):
+        MultistepBuffer.__init__(self, buffer_size, n_step, num_workers)
         PERBuffer.__init__(self, buffer_size, uniform_sample_prob)
         
     def store(self, transitions):
         if self.first_store:
             self.check_dim(transitions[0])
         
-        assert len(transitions) % self.num_worker == 0
-        partition = len(transitions) // self.num_worker
+        assert len(transitions) % self.num_workers == 0
+        partition = len(transitions) // self.num_workers
         
         for i, transition in enumerate(transitions):
             # MultiStep

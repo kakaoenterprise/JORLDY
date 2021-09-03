@@ -34,5 +34,5 @@ train = {
     "test_iteration": 10,
     # distributed setting
     "update_period" : 8,
-    "num_worker" : 16,
+    "num_workers" : 16,
 }

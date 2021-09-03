@@ -35,7 +35,7 @@ class RND_PPO(PPO):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
         
-        self.rnd = Network(rnd_network, state_size, action_size, self.num_worker,
+        self.rnd = Network(rnd_network, state_size, action_size, self.num_workers,
                            gamma_i, ri_normalize, obs_normalize, batch_norm).to(self.device)
 
         self.optimizer.add_param_group({'params':self.rnd.parameters()})

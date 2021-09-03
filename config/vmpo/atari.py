@@ -53,5 +53,5 @@ train = {
     # distributed setting
     "distributed_batch_size" : 256,
     "update_period" : agent["n_step"],
-    "num_worker" : 8,
+    "num_workers" : 8,
 }

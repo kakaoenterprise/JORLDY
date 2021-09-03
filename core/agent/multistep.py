@@ -9,7 +9,7 @@ class Multistep(DQN):
     def __init__(self, n_step=5, **kwargs):
         super(Multistep, self).__init__(**kwargs)
         self.n_step = n_step
-        self.memory = MultistepBuffer(self.buffer_size, self.n_step, self.num_worker)
+        self.memory = MultistepBuffer(self.buffer_size, self.n_step, self.num_workers)
     
     def learn(self):
 #         shapes of 1-step implementations: (batch_size, dimension_data)

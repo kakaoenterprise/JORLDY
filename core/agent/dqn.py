@@ -27,7 +27,7 @@ class DQN(BaseAgent):
                 start_train_step=2000,
                 target_update_period=500,
                 device=None,
-                num_worker=1,
+                num_workers=1,
                 **kwargs,
                 ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -51,7 +51,7 @@ class DQN(BaseAgent):
         self.target_update_period = target_update_period
         self.num_learn = 0
         self.time_t = 0
-        self.num_worker = num_worker
+        self.num_workers = num_workers
     
     @torch.no_grad()
     def act(self, state, training=True):
@@ -143,5 +143,5 @@ class DQN(BaseAgent):
         self.optimizer.load_state_dict(checkpoint["optimizer"])
     
     def set_distributed(self, id):
-        self.epsilon = id / self.num_worker
+        self.epsilon = id / self.num_workers
         return self

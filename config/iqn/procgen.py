@@ -45,5 +45,5 @@ train = {
     "record_period" : 300000,
     # distributed setting
     "update_period" : 32,
-    "num_worker" : 16,
+    "num_workers" : 16,
 }

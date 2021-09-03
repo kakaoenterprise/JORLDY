@@ -5,15 +5,15 @@ import ray
 import numpy as np
 
 class DistributedManager:
-    def __init__(self, Env, env_config, Agent, agent_config, num_worker):
+    def __init__(self, Env, env_config, Agent, agent_config, num_workers):
         try:
             ray.init(address='auto')
         except:
             ray.init()
         agent = Agent(**agent_config)
-        num_worker = num_worker if num_worker else os.cpu_count()
+        num_workers = num_workers if num_workers else os.cpu_count()
         Env, env_config, agent = map(ray.put, [Env, dict(env_config), agent])
-        self.actors = [Actor.remote(Env, env_config, agent, i) for i in range(num_worker)]
+        self.actors = [Actor.remote(Env, env_config, agent, i) for i in range(num_workers)]
 
     def run(self, step=1):
         assert step > 0

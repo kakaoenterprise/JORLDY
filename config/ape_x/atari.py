@@ -49,5 +49,5 @@ train = {
     # distributed setting
     "distributed_batch_size" : 512,
     "update_period" : 100,
-    "num_worker" : 128,
+    "num_workers" : 128,
 }

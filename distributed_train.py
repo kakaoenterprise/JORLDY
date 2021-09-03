@@ -21,7 +21,7 @@ if __name__ == "__main__":
     agent_config = {'state_size': env.state_size,
                     'action_size': env.action_size,
                     'optim_config': config.optim,
-                    'num_worker': config.train.num_worker}
+                    'num_workers': config.train.num_workers}
     agent_config.update(config.agent)
     if config.train.distributed_batch_size:
         agent_config["batch_size"] = config.train.distributed_batch_size
@@ -47,7 +47,7 @@ if __name__ == "__main__":
                               config.train.run_step, config.train.print_period,
                               MetricManager, TestManager, test_manager_config,
                               LogManager, log_manager_config, config_manager))
-    distributed_manager_config = (Env, config.env, Agent, agent_config, config.train.num_worker)
+    distributed_manager_config = (Env, config.env, Agent, agent_config, config.train.num_workers)
     interact = mp.Process(target=interact_process,
                             args=(DistributedManager, distributed_manager_config,
                                   trans_queue, interact_sync_queue,

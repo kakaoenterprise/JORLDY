@@ -3,9 +3,9 @@ import torch.nn.functional as F
 
 # codes from https://github.com/openai/random-network-distillation
 class RewardForwardFilter(torch.nn.Module):
-    def __init__(self, gamma, num_worker):
+    def __init__(self, gamma, num_workers):
         super(RewardForwardFilter, self).__init__()
-        self.rewems = torch.nn.Parameter(torch.zeros(num_worker), requires_grad=False)
+        self.rewems = torch.nn.Parameter(torch.zeros(num_workers), requires_grad=False)
         self.gamma = gamma
         
     def update(self, rews):
@@ -47,15 +47,15 @@ def normalize_obs(obs, m, v):
     return torch.clip((obs - m) / (torch.sqrt(v)+1e-7), min=-5., max=5.)
 
 class RND(torch.nn.Module):
-    def __init__(self, D_in, D_out, num_worker, gamma_i, 
+    def __init__(self, D_in, D_out, num_workers, gamma_i, 
                  ri_normalize=True, obs_normalize=True, batch_norm=True, D_hidden=256):
         super(RND, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
-        self.num_worker = num_worker
+        self.num_workers = num_workers
         self.rms_obs = RunningMeanStd(D_in)
         self.rms_ri = RunningMeanStd(1)
-        self.rff = RewardForwardFilter(gamma_i, num_worker)
+        self.rff = RewardForwardFilter(gamma_i, num_workers)
         self.obs_normalize = obs_normalize
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
@@ -100,7 +100,7 @@ class RND(torch.nn.Module):
         r_i = torch.mean(torch.square(p - t), axis = 1)
         
         if update_ri:
-            ri_T = r_i.view(self.num_worker, -1).T # (n_batch, n_workers)
+            ri_T = r_i.view(self.num_workers, -1).T # (n_batch, n_workers)
             rewems = torch.stack([self.rff.update(rit.detach()) for rit in ri_T]).ravel() # (n_batch, n_workers) -> (n_batch * n_workers)
             self.update_rms_ri(rewems)
         if self.ri_normalize: r_i = r_i / (torch.sqrt(self.rms_ri.var) + 1e-7)
@@ -108,15 +108,15 @@ class RND(torch.nn.Module):
         return r_i
         
 class RND_CNN(torch.nn.Module):
-    def __init__(self, D_in, D_out, num_worker, gamma_i, 
+    def __init__(self, D_in, D_out, num_workers, gamma_i, 
                  ri_normalize=True, obs_normalize=True, batch_norm=True, D_hidden=512):
         super(RND_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
-        self.num_worker = num_worker
+        self.num_workers = num_workers
         self.rms_obs = RunningMeanStd(D_in)
         self.rms_ri = RunningMeanStd(1)
-        self.rff = RewardForwardFilter(gamma_i, num_worker)
+        self.rff = RewardForwardFilter(gamma_i, num_workers)
         self.obs_normalize = obs_normalize
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
@@ -197,7 +197,7 @@ class RND_CNN(torch.nn.Module):
         r_i = torch.mean(torch.square(p - t), axis = 1)
         
         if update_ri:
-            ri_T = r_i.view(self.num_worker, -1).T # (n_batch, n_workers)
+            ri_T = r_i.view(self.num_workers, -1).T # (n_batch, n_workers)
             rewems = torch.stack([self.rff.update(rit.detach()) for rit in ri_T]).ravel() # (n_batch, n_workers) -> (n_batch * n_workers)
             self.update_rms_ri(rewems)
         if self.ri_normalize: r_i = r_i / (torch.sqrt(self.rms_ri.var) + 1e-7)

@@ -45,7 +45,7 @@ class ApeX(DQN):
         
         # MultiStep
         self.n_step = n_step
-        self.memory = ApeXBuffer(self.gamma, self.buffer_size, n_step, self.num_worker, uniform_sample_prob)
+        self.memory = ApeXBuffer(self.gamma, self.buffer_size, n_step, self.num_workers, uniform_sample_prob)
     
     @torch.no_grad()
     def act(self, state, training=True):
@@ -147,7 +147,7 @@ class ApeX(DQN):
         return result
 
     def set_distributed(self, id):
-        self.epsilon = self.epsilon**(1 + (id/(self.num_worker-1))*self.epsilon_alpha)
+        self.epsilon = self.epsilon**(1 + (id/(self.num_workers-1))*self.epsilon_alpha)
         return self
     
     def interact_callback(self, transitions):
