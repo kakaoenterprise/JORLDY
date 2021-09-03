@@ -1,52 +1,84 @@
-# RL Algorithms
+# JORLDY 
 
-# Implementation List
-### Algorithms
+[![license badge](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 
-- [Deep Q Network (DQN)](https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf)
-- [Double DQN](https://arxiv.org/abs/1509.06461)
-- [Dueling DQN](https://arxiv.org/abs/1511.06581)
-- [Prioritized Experience Replay (PER)](https://arxiv.org/abs/1511.05952)
-- [C51](https://arxiv.org/abs/1707.06887)
-- [Noisy](https://arxiv.org/abs/1706.10295)
-- [Quantile Regression DQN (QRDQN)](https://arxiv.org/abs/1710.10044)
-- [Implicit Quantile Network (IQN)](https://arxiv.org/abs/1806.06923)
-- [Rainbow [DQN, IQN]](https://arxiv.org/abs/1710.02298)
-- [REINFORCE [Discrete, Continuous]](https://people.cs.umass.edu/~barto/courses/cs687/williams92simple.pdf)
-- [Deep Deterministic Policy Gradient](https://arxiv.org/abs/1509.02971)
-- [Proximal Policy Optimization (PPO) [Discrete, Continuous]](https://arxiv.org/abs/1707.06347)
-- [Soft Actor Critic (SAC) [Continuous]](https://arxiv.org/abs/1801.01290)
-- [Maximum a posteriori Policy Optimization(MPO) [Discrete, Continuous]](https://arxiv.org/abs/1806.06920) 
-- [V-MPO [Discrete, Continuous]](https://arxiv.org/abs/1909.12238)
-
-### Environments
-
-- Gym (Cartpole, Pendulum, Mountain Car)
-- Atari (Alien, Asterix, Assault, Breakout, CrazyClimber, MontezumaRevenge, Pong, PrivateEye, Seaquest, Spaceinvaders) 
-- ML-Agents  (Hopper, Pong)
+**Join Our Reinforcement Learning framework for Developing Yours (JORLDY)** is an open-source Reinforcement Learning (RL) framework provided by [KakaoEnterpise](https://www.kakaoenterprise.com/). It provides various RL algorithms and environment and they can be easily used using single code. This repository is opened for helping RL researchers and students who study RL.
 
 
 
-# Install
+## :fire: Features
+
+- 20+ RL Algorithms and various RL environment are provided
+- Algorithms and environment are customizable
+- New algorithms are environment can be added 
+- Distributed RL algorithms are provided using [ray](https://github.com/ray-project/ray)
+- Benchmark of the algorithms is conducted in many RL environment
+
+
+
+## :arrow_down: Installation
 
 ```
- $ git clone https://github.kakaocorp.com/leonard-q/RL_Algorithms.git  
+ $ git clone https://github.com/kakaoenterprise/jorldy.git  
+ $ cd jorldy
  $ pip install -r requirements.txt  
- $ python main.py
 ```
 
 
 
-# Results
+## :rocket: QuickStart
 
-## Pong (DQN)
+<img src="./img/quickstart.png" alt="quickstart" width=60%/> 
 
-<img src="./img/pong_mlagent_score.png" alt="pong_mlagent_score" width=40%/>  <img src="./img/pong_result.gif" alt="pong_result" width=40%/>
 
-## BreakOut (DQN)
 
-<img src="./img/breakout_score.png" alt="breakout_score" width=40%/>  <img src="./img/breakout_result.gif" alt="breakout_result" width=20%/>
+## :card_index_dividers: Release 
 
-## Hopper (SAC)
+| Version |   Release Date   |   Source   |   Download   |
+| :-----: | :--------------: | :--------: | :----------: |
+|  1.0.0  | October xx, 2021 | [Source]() | [Download]() |
 
-<img src="./img/hopper_mlagent_score.png" alt="hopper_mlagent_score" width=40%/>  <img src="./img/hopper_result.gif" alt="hopper_result" width=40%/>
+
+
+## :page_facing_up: Documentation
+
+- [Implementation List](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/main/docs/Implementation_list.md)
+- [Benchmark](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/main/docs/Benchmark.md)
+- [Distributed Architecture](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/main/docs/Distributed_Architecture.md)
+
+
+
+- [How to use](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/main/docs/How_to_use.md)
+- [How to add RL algorithm](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/main/docs/How_to_add_rl_algorithm.md)
+- [How to add environment](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/main/docs/How_to_add_environment.md)
+- [How to add network](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/main/docs/How_to_add_network.md)
+
+
+
+## :busts_in_silhouette: Contributors
+
+<img src="./img/contributors.png" alt="contributors" width=80%/> 
+
+
+
+## :eyes: Reference
+
+- [Deepmind DQN Zoo](https://github.com/deepmind/dqn_zoo)
+- [OpenAI baselines](https://github.com/openai/baselines)
+- [Ray](https://github.com/ray-project/ray)
+- [Unity ML-Agents](https://github.com/Unity-Technologies/ml-agents)
+- [gym-super-mario-bros](https://pypi.org/project/gym-super-mario-bros/)
+- [Procgen](https://openai.com/blog/procgen-benchmark/)
+- [LeejwUniverse RL Rainbow Pytorch](https://github.com/LeejwUniverse/RL_Rainbow_Pytorch)
+- [pathak22 noreward-rl](https://github.com/pathak22/noreward-rl)
+- [jcwleo mario_rl](https://github.com/jcwleo/mario_rl) 
+- [openai random-network-distillation](https://github.com/openai/random-network-distillation)
+
+
+
+## :copyright: License
+
+[Apache License 2.0]()
+
+
+
