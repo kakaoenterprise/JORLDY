@@ -42,38 +42,20 @@
 
 ## :page_facing_up: Documentation
 
-- [Implementation List](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/main/docs/Implementation_list.md)
-- [Benchmark](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/main/docs/Benchmark.md)
-- [Distributed Architecture](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/main/docs/Distributed_Architecture.md)
+- [Implementation List](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/Implementation_list.md)
+- [Benchmark](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/Benchmark.md)
+- [Distributed Architecture](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/Distributed_Architecture.md)
+- [Reference](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/Reference.md)
 
 
-
-- [How to use](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/main/docs/How_to_use.md)
-- [How to add RL algorithm](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/main/docs/How_to_add_rl_algorithm.md)
-- [How to add environment](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/main/docs/How_to_add_environment.md)
-- [How to add network](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/main/docs/How_to_add_network.md)
-
-
+- [How to use](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/How_to_use.md)
+- [How to add RL algorithm](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/How_to_add_rl_algorithm.md)
+- [How to add environment](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/How_to_add_environment.md)
+- [How to add network](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/How_to_add_network.md)
 
 ## :busts_in_silhouette: Contributors
 
 <img src="./img/contributors.png" alt="contributors" width=80%/> 
-
-
-
-## :eyes: Reference
-
-- [Deepmind DQN Zoo](https://github.com/deepmind/dqn_zoo)
-- [OpenAI baselines](https://github.com/openai/baselines)
-- [Ray](https://github.com/ray-project/ray)
-- [Unity ML-Agents](https://github.com/Unity-Technologies/ml-agents)
-- [gym-super-mario-bros](https://pypi.org/project/gym-super-mario-bros/)
-- [Procgen](https://openai.com/blog/procgen-benchmark/)
-- [LeejwUniverse RL Rainbow Pytorch](https://github.com/LeejwUniverse/RL_Rainbow_Pytorch)
-- [pathak22 noreward-rl](https://github.com/pathak22/noreward-rl)
-- [jcwleo mario_rl](https://github.com/jcwleo/mario_rl) 
-- [openai random-network-distillation](https://github.com/openai/random-network-distillation)
-
 
 
 ## :copyright: License
