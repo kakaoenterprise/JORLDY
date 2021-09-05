@@ -35,7 +35,7 @@ class DDPG(BaseAgent):
                  action_size,
                  actor= "ddpg_actor",
                  critic= "ddpg_critic",
-                 head = None,
+                 head = 'mlp',
                  optim_config = {'actor':'adam','critic':'adam',
                                 'actor_lr':5e-4,'critic_lr':1e-3},
                  gamma= 0.99,

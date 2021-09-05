@@ -13,7 +13,7 @@ class Rainbow(DQN):
                 state_size,
                 action_size,
                 network='rainbow',
-                head=None,
+                head='mlp',
                 optim_config={'name':'adam'},
                 gamma=0.99,
                 explore_step=90000,

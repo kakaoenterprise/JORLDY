@@ -12,7 +12,7 @@ class IQN(DQN):
                 state_size,
                 action_size,
                 network='iqn',
-                head=None,
+                head='mlp',
                 optim_config={'name':'adam'},
                 num_sample=64,
                 embedding_dim=64,

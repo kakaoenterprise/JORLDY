@@ -15,7 +15,7 @@ class RainbowIQN(Rainbow):
                 state_size,
                 action_size,
                 network='rainbow_iqn',
-                head=None,
+                head='mlp',
                 optim_config={'name':'adam'},
                 gamma=0.99,
                 explore_step=90000,

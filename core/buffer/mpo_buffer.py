@@ -4,8 +4,8 @@ import numpy as np
 from .multistep_buffer import MultistepBuffer
 
 class MPOBuffer(MultistepBuffer):
-    def __init__(self, buffer_size, n_step):
-        super(MPOBuffer, self).__init__(buffer_size, n_step)
+    def __init__(self, buffer_size, n_step, num_workers):
+        super(MPOBuffer, self).__init__(buffer_size, n_step, num_workers)
         
     def prepare_nstep(self, batch):
         transition = {}

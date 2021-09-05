@@ -15,7 +15,7 @@ class SAC(BaseAgent):
                  action_size,
                  actor = "continuous_policy",
                  critic = "sac_critic",
-                 head = None,
+                 head = 'mlp',
                  optim_config = {'actor':'adam','critic':'adam','alpha':'adam',
                                 'actor_lr':5e-4,'critic_lr':1e-3,'alpha_lr':3e-4},
                  use_dynamic_alpha = False,

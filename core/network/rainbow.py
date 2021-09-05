@@ -6,13 +6,12 @@ from .base import BaseNetwork
 from .noisy import noisy_l, init_weights
 
 class Rainbow(BaseNetwork):
-    def __init__(self, D_in, D_out, N_atom, D_hidden=512, head=None):
-        D_in, D_hidden = super(Rainbow, self).__init__(D_in, D_hidden, head)
+    def __init__(self, D_in, D_out, N_atom, D_hidden=512, head='mlp'):
+        D_head_out = super(Rainbow, self).__init__(D_in, D_hidden, head)
         self.D_out = D_out
         self.N_atom = N_atom
         
-        self.l1 = torch.nn.Linear(D_in, D_hidden)
-        self.l2 = torch.nn.Linear(D_hidden, D_hidden)
+        self.l = torch.nn.Linear(D_head_out, D_hidden)
         
         self.mu_w_a1, self.sig_w_a1, self.mu_b_a1, self.sig_b_a1 = init_weights((D_hidden, D_hidden))
         self.mu_w_v1, self.sig_w_v1, self.mu_b_v1, self.sig_b_v1 = init_weights((D_hidden, D_hidden))
@@ -23,8 +22,7 @@ class Rainbow(BaseNetwork):
     def forward(self, x, is_train):
         x = super(Rainbow, self).forward(x)
         
-        x = F.relu(self.l1(x))
-        x = F.relu(self.l2(x))
+        x = F.relu(self.l(x))
         
         x_a = F.relu(noisy_l(x, self.mu_w_a1, self.sig_w_a1, self.mu_b_a1, self.sig_b_a1, is_train))
         x_v = F.relu(noisy_l(x, self.mu_w_v1, self.sig_w_v1, self.mu_b_v1, self.sig_b_v1, is_train))

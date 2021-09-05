@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 class CNN(torch.nn.Module):
-    def __init__(self, D_in, D_out, D_hidden=512):
+    def __init__(self, D_in, D_hidden=512):
         super(CNN, self).__init__()
         
         self.conv1 = torch.nn.Conv2d(in_channels=D_in[0], out_channels=32, kernel_size=8, stride=4)
@@ -12,7 +12,7 @@ class CNN(torch.nn.Module):
         self.conv3 = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
         dim3 = ((dim2[0] - 3)//1 + 1, (dim2[1] - 3)//1 + 1)
         
-        self.fc = torch.nn.Linear(64*dim3[0]*dim3[1], D_hidden)
+        self.D_head_out = 64*dim3[0]*dim3[1]
         
     def forward(self, x):
         x = (x-(255.0/2))/(255.0/2)
@@ -20,9 +20,19 @@ class CNN(torch.nn.Module):
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
         x = x.view(x.size(0), -1)
-        x = F.relu(self.fc(x))
         return x
-        
+
+class MLP(torch.nn.Module):
+    def __init__(self, D_in, D_hidden=512):
+        super(MLP, self).__init__()
+
+        self.l = torch.nn.Linear(D_in, D_hidden)
+        self.D_head_out = D_hidden
+
+    def forward(self, x):
+        x = F.relu(self.l(x))
+        return x
+
 
 import sys, inspect, re
 

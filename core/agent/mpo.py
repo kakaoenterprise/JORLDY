@@ -16,7 +16,7 @@ class MPO(BaseAgent):
                  optim_config={'name': 'adam'},
                  actor="discrete_policy",
                  critic="dqn",
-                 head = None,
+                 head = 'mlp',
                  buffer_size=50000,
                  batch_size=64,
                  start_train_step=2000,
@@ -25,6 +25,7 @@ class MPO(BaseAgent):
                  clip_grad_norm=1.0,
                  gamma=0.99,
                  device=None,
+                 num_workers=1,
                  # parameters unique to MPO
                  critic_loss_type = 'retrace', # one of ['1-step TD', 'retrace']
                  num_sample=30,
@@ -85,7 +86,7 @@ class MPO(BaseAgent):
         self.critic_optimizer = Optimizer(**optim_config, params=list(self.critic.parameters()))
 
         self.gamma = gamma
-        self.memory = MPOBuffer(buffer_size, self.n_step)
+        self.memory = MPOBuffer(buffer_size, n_step, num_workers)
         
     @torch.no_grad()
     def act(self, state, training=True):

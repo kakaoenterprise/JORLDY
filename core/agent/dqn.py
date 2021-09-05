@@ -16,7 +16,7 @@ class DQN(BaseAgent):
                 action_size,
                 optim_config={'name':'adam'},
                 network='dqn',
-                head=None,
+                head='mlp',
                 gamma=0.99,
                 epsilon_init=1.0,
                 epsilon_min=0.1,

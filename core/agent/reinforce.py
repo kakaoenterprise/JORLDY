@@ -14,7 +14,7 @@ class REINFORCE(BaseAgent):
                  state_size,
                  action_size,
                  network="discrete_policy",
-                 head=None,
+                 head='mlp',
                  optim_config={'name':'adam'},
                  gamma=0.99,
                  use_standardization=False,

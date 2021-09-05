@@ -56,16 +56,14 @@ def init_weights(shape):
     return mu_w, sig_w, mu_b, sig_b
     
 class Noisy(BaseNetwork):
-    def __init__(self, D_in, D_out, D_hidden=512, head=None):
-        D_in, D_hidden = super(Noisy, self).__init__(D_in, D_hidden, head)
-
-        self.mu_w, self.sig_w, self.mu_b, self.sig_b = init_weights((D_hidden, D_out))
-        self.l1 = torch.nn.Linear(D_in, D_hidden)
-        self.l2 = torch.nn.Linear(D_hidden, D_hidden)
-    
+    def __init__(self, D_in, D_out, D_hidden=512, head='mlp'):
+        D_head_out = super(Noisy, self).__init__(D_in, D_hidden, head)
+        self.l = torch.nn.Linear(D_head_out, D_hidden)
+        self.mu_w1, self.sig_w1, self.mu_b1, self.sig_b1 = init_weights((D_hidden, D_hidden))
+        self.mu_w2, self.sig_w2, self.mu_b2, self.sig_b2 = init_weights((D_hidden, D_out)) 
+           
     def forward(self, x, is_train):
         x = super(Noisy, self).forward(x)
-        x = F.relu(self.l1(x))
-        x = F.relu(self.l2(x))
-    
-        return noisy_l(x, self.mu_w, self.sig_w, self.mu_b, self.sig_b, is_train)
+        x = F.relu(self.l(x))
+        x = F.relu(noisy_l(x, self.mu_w1, self.sig_w1, self.mu_b1, self.sig_b1, is_train))
+        return noisy_l(x, self.mu_w2, self.sig_w2, self.mu_b2, self.sig_b2, is_train)

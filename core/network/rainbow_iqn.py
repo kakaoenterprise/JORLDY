@@ -6,14 +6,14 @@ from .base import BaseNetwork
 from .noisy import noisy_l, init_weights
 
 class Rainbow_IQN(BaseNetwork):
-    def __init__(self, D_in, D_out, D_em, N_sample, D_hidden=512, head=None):
-        D_in, D_hidden = super(Rainbow_IQN, self).__init__(D_in, D_hidden, head)
+    def __init__(self, D_in, D_out, D_em, N_sample, D_hidden=512, head='mlp'):
+        D_head_out = super(Rainbow_IQN, self).__init__(D_in, D_hidden, head)
         self.D_out = D_out
         
         self.N_sample = N_sample
         self.i_pi = (torch.arange(0, D_em) * np.pi).view(1, 1, D_em)
         
-        self.state_embed = torch.nn.Linear(D_in, D_hidden)
+        self.state_embed = torch.nn.Linear(D_head_out, D_hidden)
         self.sample_embed = torch.nn.Linear(D_em, D_hidden)
         
         self.l1 = torch.nn.Linear(D_hidden, D_hidden)
