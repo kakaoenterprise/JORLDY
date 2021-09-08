@@ -1,13 +1,24 @@
 import torch
 import torch.nn.functional as F
 
+from .rnd import *
+
 class ICM(torch.nn.Module):
-    def __init__(self, D_in, D_out, eta, action_type):
+    def __init__(self, D_in, D_out, num_workers, gamma, eta, action_type, 
+                 ri_normalize=True, obs_normalize=True, batch_norm=True):
         super(ICM, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
+        self.num_workers = num_workers
         self.eta = eta
         self.action_type = action_type
+                
+        self.rms_obs = RunningMeanStd(D_in)
+        self.rms_ri = RunningMeanStd(1)
+        self.rff = RewardForwardFilter(gamma, num_workers)
+        self.obs_normalize = obs_normalize
+        self.ri_normalize = ri_normalize
+        self.batch_norm = batch_norm
         
         feature_size = 256
         
@@ -30,11 +41,33 @@ class ICM(torch.nn.Module):
         
             self.inverse_loss = torch.nn.MSELoss()
             
-    def forward(self, s, a, s_next):
-        s = F.elu(self.fc1(s))
-        s = F.elu(self.fc2(s))
+        if self.batch_norm:
+            self.bn1 = torch.nn.BatchNorm1d(256)
+            self.bn2 = torch.nn.BatchNorm1d(feature_size)
+            
+            self.bn1_next = torch.nn.BatchNorm1d(256)
+     
+    def update_rms_obs(self, v):
+        self.rms_obs.update(v)
+        
+    def update_rms_ri(self, v):
+        self.rms_ri.update(v)
+        
+    def forward(self, s, a, s_next, update_ri=False):
+        if self.obs_normalize: s = normalize_obs(s, self.rms_obs.mean, self.rms_obs.var)
+        if self.obs_normalize: s_next = normalize_obs(s_next, self.rms_obs.mean, self.rms_obs.var)
+        
+        if self.batch_norm:
+            s = F.elu(self.bn1(self.fc1(s)))
+            s = F.elu(self.bn2(self.fc2(s)))
 
-        s_next = F.elu(self.fc1(s_next))
+            s_next = F.elu(self.bn1_next(self.fc1(s_next)))
+        else:
+            s = F.elu(self.fc1(s))
+            s = F.elu(self.fc2(s))
+
+            s_next = F.elu(self.fc1(s_next))            
+        
         s_next = F.elu(self.fc2(s_next))
         
         # Forward Model
@@ -44,6 +77,12 @@ class ICM(torch.nn.Module):
         x_forward = self.forward_fc2(x_forward)
         
         r_i = (self.eta * 0.5) * torch.sum(torch.abs(x_forward - s_next), axis = 1)
+        
+        if update_ri:
+            ri_T = r_i.view(self.num_workers, -1).T # (n_batch, n_workers)
+            rewems = torch.stack([self.rff.update(rit.detach()) for rit in ri_T]).ravel() # (n_batch, n_workers) -> (n_batch * n_workers)
+            self.update_rms_ri(rewems)
+        if self.ri_normalize: r_i = r_i / (torch.sqrt(self.rms_ri.var) + 1e-7)
         
         l_f = self.forward_loss(x_forward, s_next.detach())
         
@@ -61,12 +100,21 @@ class ICM(torch.nn.Module):
         return r_i, l_f, l_i
         
 class ICM_CNN(torch.nn.Module):
-    def __init__(self, D_in, D_out, eta, action_type):
+    def __init__(self, D_in, D_out, num_workers, gamma, eta, action_type,
+                 ri_normalize=True, obs_normalize=True, batch_norm=True):
         super(ICM_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
+        self.num_workers = num_workers
         self.eta = eta
         self.action_type = action_type
+
+        self.rms_obs = RunningMeanStd(D_in)
+        self.rms_ri = RunningMeanStd(1)
+        self.rff = RewardForwardFilter(gamma, num_workers)
+        self.obs_normalize = obs_normalize
+        self.ri_normalize = ri_normalize
+        self.batch_norm = batch_norm
         
         self.conv1 = torch.nn.Conv2d(in_channels=self.D_in[0], out_channels=32, kernel_size=3, stride=2)
         self.conv2 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
@@ -96,20 +144,48 @@ class ICM_CNN(torch.nn.Module):
         
             self.inverse_loss = torch.nn.MSELoss()   
             
-    def forward(self, s, a, s_next):
-        s = (s-(255.0/2))/(255.0/2)
-        s_next = (s_next-(255.0/2))/(255.0/2)
+        if self.batch_norm:
+            self.bn1 = torch.nn.BatchNorm2d(32)
+            self.bn2 = torch.nn.BatchNorm2d(32)
+            self.bn3 = torch.nn.BatchNorm2d(32)
+            self.bn4 = torch.nn.BatchNorm2d(32)
+                        
+            self.bn1_next = torch.nn.BatchNorm2d(32)
+            self.bn2_next = torch.nn.BatchNorm2d(32)
+            self.bn3_next = torch.nn.BatchNorm2d(32)
+            
+    def update_rms_obs(self, v):
+        self.rms_obs.update(v/255.0)
         
-        s = F.elu(self.conv1(s))
-        s = F.elu(self.conv2(s))
-        s = F.elu(self.conv3(s))
-        s = F.elu(self.conv4(s))
-        s = s.view(s.size(0), -1)
+    def update_rms_ri(self, v):
+        self.rms_ri.update(v)
         
-        s_next = F.elu(self.conv1(s_next))
-        s_next = F.elu(self.conv2(s_next))
-        s_next = F.elu(self.conv3(s_next))
+    def forward(self, s, a, s_next, update_ri=False):
+        if self.obs_normalize: s = normalize_obs(s, self.rms_obs.mean, self.rms_obs.var)
+        if self.obs_normalize: s_next = normalize_obs(s_next, self.rms_obs.mean, self.rms_obs.var)
+        
+        if self.batch_norm:
+            s = F.elu(self.bn1(self.conv1(s)))
+            s = F.elu(self.bn2(self.conv2(s)))
+            s = F.elu(self.bn3(self.conv3(s)))
+            s = F.elu(self.bn4(self.conv4(s)))
+
+            s_next = F.elu(self.bn1_next(self.conv1(s_next)))
+            s_next = F.elu(self.bn2_next(self.conv2(s_next)))
+            s_next = F.elu(self.bn3_next(self.conv3(s_next)))
+            
+        else:
+            s = F.elu(self.conv1(s))
+            s = F.elu(self.conv2(s))
+            s = F.elu(self.conv3(s))
+            s = F.elu(self.conv4(s))
+
+            s_next = F.elu(self.conv1(s_next))
+            s_next = F.elu(self.conv2(s_next))
+            s_next = F.elu(self.conv3(s_next))
+        
         s_next = F.elu(self.conv4(s_next))
+        s = s.view(s.size(0), -1)
         s_next = s_next.view(s_next.size(0), -1)
         
         # Forward Model
@@ -119,6 +195,12 @@ class ICM_CNN(torch.nn.Module):
         x_forward = self.forward_fc2(x_forward)
         
         r_i = (self.eta * 0.5) * torch.sum(torch.abs(x_forward - s_next), axis = 1)
+        
+        if update_ri:
+            ri_T = r_i.view(self.num_workers, -1).T # (n_batch, n_workers)
+            rewems = torch.stack([self.rff.update(rit.detach()) for rit in ri_T]).ravel() # (n_batch, n_workers) -> (n_batch * n_workers)
+            self.update_rms_ri(rewems)
+        if self.ri_normalize: r_i = r_i / (torch.sqrt(self.rms_ri.var) + 1e-7)
         
         l_f = self.forward_loss(x_forward, s_next.detach())
         

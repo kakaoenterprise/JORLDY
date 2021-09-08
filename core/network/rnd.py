@@ -166,9 +166,6 @@ class RND_CNN(torch.nn.Module):
             p = F.relu(self.bn1_predict(self.conv1_predict(s_next)))
             p = F.relu(self.bn2_predict(self.conv2_predict(p)))
             p = F.relu(self.bn3_predict(self.conv3_predict(p)))
-#             p = self.bn1_predict(F.relu(self.conv1_predict(s_next)))
-#             p = self.bn2_predict(F.relu(self.conv2_predict(p)))
-#             p = self.bn3_predict(F.relu(self.conv3_predict(p)))
         else:
             p = F.relu(self.conv1_predict(s_next)) 
             p = F.relu(self.conv2_predict(p)) 
@@ -183,9 +180,6 @@ class RND_CNN(torch.nn.Module):
             t = F.relu(self.bn1_target(self.conv1_target(s_next)))
             t = F.relu(self.bn2_target(self.conv2_target(t)))
             t = F.relu(self.bn3_target(self.conv3_target(t)))
-#             t = self.bn1_target(F.relu(self.conv1_target(s_next)))
-#             t = self.bn2_target(F.relu(self.conv2_target(t)))
-#             t = self.bn3_target(F.relu(self.conv3_target(t)))
         else:
             t = F.relu(self.conv1_target(s_next)) 
             t = F.relu(self.conv2_target(t)) 

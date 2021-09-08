@@ -19,12 +19,19 @@ class ICM_PPO(PPO):
                  eta = 0.01,
                  extrinsic_coeff = 1.0,
                  intrinsic_coeff = 0.01,
+                 obs_normalize=True,
+                 ri_normalize=True,
+                 batch_norm=True,
                  **kwargs,
                  ):
         super(ICM_PPO, self).__init__(state_size=state_size,
                                       action_size=action_size,
                                       **kwargs)
-        self.icm = Network(icm_network, state_size, action_size, eta, self.action_type).to(self.device)
+        self.obs_normalize = obs_normalize
+        self.ri_normalize = ri_normalize
+        self.batch_norm = batch_norm
+        
+        self.icm = Network(icm_network, state_size, action_size, self.num_workers, self.gamma, eta, self.action_type, ri_normalize, obs_normalize, batch_norm).to(self.device)
         self.optimizer.add_param_group({'params':self.icm.parameters()})
         
         self.beta = beta
@@ -32,7 +39,7 @@ class ICM_PPO(PPO):
         self.eta = eta
         self.extrinsic_coeff = extrinsic_coeff
         self.intrinsic_coeff = intrinsic_coeff
-
+        
     def learn(self):
         transitions = self.memory.rollout()
         for key in transitions.keys():
@@ -47,7 +54,8 @@ class ICM_PPO(PPO):
         # set prob_a_old and advantage
         with torch.no_grad():            
             #ICM 
-            r_i, _, _ = self.icm(state, action, next_state)
+            self.icm.update_rms_obs(next_state)
+            r_i, _, _ = self.icm(state, action, next_state, update_ri=True)
             reward = self.extrinsic_coeff * reward + self.intrinsic_coeff * r_i.unsqueeze(1)
         
             if self.action_type == "continuous":

@@ -55,6 +55,8 @@
 
 ## :busts_in_silhouette: Contributors
 
+:mailbox: Contact: [Leonard.Q](leonard.q@kakaoenterprise.com), [Ramanuzan.Lee](ramanuzan.lee@kakaoenterprise.com), [Royce.Choi](royce.choi@kakaoenterprise.com)
+
 <img src="./img/contributors.png" alt="contributors" width=80%/> 
 
 
