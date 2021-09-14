@@ -3,7 +3,7 @@ import os, inspect
 working_path = os.path.dirname(os.path.realpath(__file__))
 file_list = os.listdir(working_path)
 module_list = [file.replace(".py", "") for file in file_list 
-               if file.endswith(".py") and file.replace(".py","") not in ["__init__"]]
+               if file.endswith(".py") and file.replace(".py","") not in ["__init__", "base"]]
 
 for module_name in module_list:
     module_path = f"{__name__}.{module_name}"

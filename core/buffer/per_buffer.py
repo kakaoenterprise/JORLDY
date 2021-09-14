@@ -5,20 +5,15 @@ from .replay_buffer import ReplayBuffer
 # Reference: https://github.com/LeejwUniverse/following_deepmid/tree/master/jungwoolee_pytorch/100%20Algorithm_For_RL/01%20sum_tree
 class PERBuffer(ReplayBuffer):
     def __init__(self, buffer_size, uniform_sample_prob=1e-3):
-        self.buffer_size = buffer_size 
-        self.tree_size = (buffer_size * 2) - 1
-        self.first_leaf_index = buffer_size - 1 
-        
-        self.buffer = np.zeros(buffer_size, dtype=tuple) # define replay buffer
+        super(PERBuffer, self).__init__(buffer_size)
+        self.tree_size = (self.buffer_size * 2) - 1
+        self.first_leaf_index = self.buffer_size - 1 
+
         self.sum_tree = np.zeros(self.tree_size) # define sum tree
-        
-        self.buffer_index = 0 # define replay buffer index.
         self.tree_index = self.first_leaf_index # define sum_tree leaf node index.
-        self.buffer_counter = 0
+        
         self.max_priority = 1.0
         self.uniform_sample_prob = uniform_sample_prob
-        
-        self.first_store = True
         
     def store(self, transitions):
         if self.first_store:
@@ -26,13 +21,13 @@ class PERBuffer(ReplayBuffer):
         
         for transition in transitions:
             self.buffer[self.buffer_index] = transition
-            self.add_tree_data()
+            new_priority = transition['priority'] if "priority" in transition else self.max_priority
+            self.add_tree_data(new_priority)
 
             self.buffer_counter = min(self.buffer_counter + 1, self.buffer_size)
             self.buffer_index = (self.buffer_index + 1) % self.buffer_size
                 
-    def add_tree_data(self, new_priority=None):
-        new_priority = np.asscalar(new_priority) if new_priority is not None else self.max_priority 
+    def add_tree_data(self, new_priority):
         self.update_priority(new_priority, self.tree_index)
 
         self.tree_index += 1 # count current sum_tree index
@@ -98,7 +93,7 @@ class PERBuffer(ReplayBuffer):
         sampled_p = np.mean(priorities) 
         mean_p = self.sum_tree[0]/self.buffer_counter
         return transitions, weights, indices, sampled_p, mean_p
-    
+
     @property
     def size(self):
-        return self.buffer_counter
+        return self.buffer_counter    

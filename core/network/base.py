@@ -10,7 +10,6 @@ class BaseNetwork(torch.nn.Module):
         self.head = head_dict[head](D_in, D_hidden)
         return self.head.D_head_out
     
-    def forward(self, x):
-        x = self.head(x)
+    def forward(self, x, *args, **kwargs):
+        x = self.head(x, *args, **kwargs)
         return x
-        

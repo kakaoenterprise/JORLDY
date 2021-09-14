@@ -2,14 +2,18 @@ import traceback
 
 # Interact
 def interact_process(DistributedManager, distributed_manager_config,
-                     trans_queue, sync_queue, run_step, update_period):
+                     trans_queue, sync_queue, run_step, update_period, mode='sync'):
     distributed_manager = DistributedManager(*distributed_manager_config)
+    num_workers = distributed_manager.num_workers
     step = 0
     try:
         while step < run_step:
-            step += update_period
-            trans_queue.put(distributed_manager.run(update_period))
-            distributed_manager.sync(sync_queue.get())
+            transitions = distributed_manager.run(update_period)
+            delta_t = len(transitions) / num_workers
+            step += delta_t
+            trans_queue.put((int(step), transitions))
+            if mode=='sync' or sync_queue.full():
+                distributed_manager.sync(sync_queue.get())
     except Exception as e:
         traceback.print_exc()
     finally:

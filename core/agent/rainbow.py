@@ -1,3 +1,4 @@
+from collections import deque
 import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
@@ -5,7 +6,7 @@ import numpy as np
 
 from core.network import Network
 from core.optimizer import Optimizer
-from core.buffer import RainbowBuffer
+from core.buffer import PERBuffer
 from .dqn import DQN
 
 class Rainbow(DQN):
@@ -54,6 +55,7 @@ class Rainbow(DQN):
         # MultiStep
         self.n_step = n_step
         self.num_workers = num_workers
+        self.tmp_buffer = deque(maxlen=n_step)
         
         # PER
         self.alpha = alpha
@@ -69,7 +71,7 @@ class Rainbow(DQN):
         self.num_support = num_support
         
         # MultiStep
-        self.memory = RainbowBuffer(buffer_size, n_step, num_workers, uniform_sample_prob)
+        self.memory = PERBuffer(buffer_size, uniform_sample_prob)
         
         # C51
         self.delta_z = (v_max - v_min) / (num_support - 1)
@@ -205,3 +207,16 @@ class Rainbow(DQN):
         q_action = torch.sum(z_action * p_logit, dim=-1)
         
         return p_logit, q_action
+    
+    def interact_callback(self, transition):
+        _transition = {}
+        self.tmp_buffer.append(transition)
+        if len(self.tmp_buffer) == self.n_step:
+            _transition['state'] = self.tmp_buffer[0]['state']
+            _transition['next_state'] = self.tmp_buffer[-1]['next_state']
+            
+            for key in self.tmp_buffer[0].keys():
+                if key not in ['state', 'next_state']:
+                    _transition[key] = np.stack([t[key] for t in self.tmp_buffer], axis=1)
+                    
+        return _transition

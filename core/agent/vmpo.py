@@ -67,7 +67,7 @@ class VMPO(REINFORCE):
         return {'action': action.cpu().numpy()}
 
     def learn(self):
-        transitions = self.memory.rollout()
+        transitions = self.memory.sample()
         for key in transitions.keys():
             transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
             
@@ -213,7 +213,7 @@ class VMPO(REINFORCE):
         self.time_t = step
         self.learn_stamp += delta_t
         
-        # Process per epi
+        # Process per n_step
         if self.learn_stamp >= self.n_step :
             result = self.learn()
             self.learn_stamp = 0

@@ -1,16 +1,25 @@
 import numpy as np
 
-from .replay_buffer import ReplayBuffer
+from .base import BaseBuffer
 
-class RolloutBuffer(ReplayBuffer):
-    def __init__(self, **kwargs):
+class RolloutBuffer(BaseBuffer):
+    def __init__(self):
         self.buffer = list()
         self.first_store = True
-    
-    def rollout(self):
+  
+    def store(self, transitions):
+        if self.first_store:
+            self.check_dim(transitions[0])
+        self.buffer += transitions 
+        
+    def sample(self):
         transitions = {}
         for key in self.buffer[0].keys():
             transitions[key] = np.stack([b[key][0] for b in self.buffer], axis=0)
             
-        self.clear()
+        self.buffer.clear()
         return transitions
+    
+    @property
+    def size(self):
+        return len(self.buffer)

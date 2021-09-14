@@ -1,15 +1,18 @@
+from collections import deque
+import numpy as np
 import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 
-from core.buffer import MultistepBuffer
+from core.buffer import ReplayBuffer
 from .dqn import DQN
 
 class Multistep(DQN):
     def __init__(self, n_step=5, **kwargs):
         super(Multistep, self).__init__(**kwargs)
         self.n_step = n_step
-        self.memory = MultistepBuffer(self.buffer_size, self.n_step, self.num_workers)
+        self.tmp_buffer = deque(maxlen=n_step)
+        self.memory = ReplayBuffer(self.buffer_size)
     
     def learn(self):
 #         shapes of 1-step implementations: (batch_size, dimension_data)
@@ -73,3 +76,16 @@ class Multistep(DQN):
                 self.target_update_stamp = 0
 
         return result
+    def interact_callback(self, transition):
+        _transition = {}
+        self.tmp_buffer.append(transition)
+        if len(self.tmp_buffer) == self.n_step:
+            _transition['state'] = self.tmp_buffer[0]['state']
+            _transition['next_state'] = self.tmp_buffer[-1]['next_state']
+
+            for key in self.tmp_buffer[0].keys():
+                if key not in ['state', 'next_state']:
+                    _transition[key] = np.stack([t[key] for t in self.tmp_buffer], axis=1)
+        
+        return _transition
+        

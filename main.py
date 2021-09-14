@@ -42,8 +42,9 @@ if __name__ == "__main__":
             transition = {'state': state, 'next_state': next_state,
                           'reward': reward, 'done': done}
             transition.update(action_dict)
-            result = agent.process(agent.interact_callback([transition]), step)
-            if result:
+            transition = agent.interact_callback(transition)
+            if transition:
+                result = agent.process([transition], step)
                 metric_manager.append(result)
         state = next_state
 

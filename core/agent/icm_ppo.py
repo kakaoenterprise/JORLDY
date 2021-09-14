@@ -41,7 +41,7 @@ class ICM_PPO(PPO):
         self.intrinsic_coeff = intrinsic_coeff
         
     def learn(self):
-        transitions = self.memory.rollout()
+        transitions = self.memory.sample()
         for key in transitions.keys():
             transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
 
@@ -138,21 +138,6 @@ class ICM_PPO(PPO):
             'l_f': l_f.item(),
             'l_i': l_i.item(),
         }
-        return result
-
-    def process(self, transitions, step):
-        result = {}
-        # Process per step
-        self.memory.store(transitions)
-        delta_t = step - self.time_t
-        self.time_t = step
-        self.learn_stamp += delta_t
-        
-        # Process per epi
-        if self.learn_stamp >= self.n_step :
-            result = self.learn()
-            self.learn_stamp = 0
-        
         return result
     
     def save(self, path):

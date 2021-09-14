@@ -46,7 +46,7 @@ class REINFORCE(BaseAgent):
         return {'action': action.cpu().numpy()}
     
     def learn(self):
-        transitions = self.memory.rollout()
+        transitions = self.memory.sample()
         
         state = transitions['state']
         action = transitions['action']

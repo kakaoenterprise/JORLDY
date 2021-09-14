@@ -68,3 +68,6 @@ class BaseAgent(ABC):
     
     def interact_callback(self, transitions):
         return transitions
+    
+    def get_transition(self, transitions):
+        pass

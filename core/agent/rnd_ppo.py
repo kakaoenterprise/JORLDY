@@ -46,7 +46,7 @@ class RND_PPO(PPO):
                 param.requires_grad = False
 
     def learn(self):
-        transitions = self.memory.rollout()
+        transitions = self.memory.sample()
         for key in transitions.keys():
             transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
 

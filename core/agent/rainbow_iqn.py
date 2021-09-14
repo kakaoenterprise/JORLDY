@@ -1,3 +1,4 @@
+from collections import deque
 import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
@@ -7,7 +8,7 @@ import time
 
 from core.network import Network
 from core.optimizer import Optimizer
-from core.buffer import RainbowBuffer
+from core.buffer import PERBuffer
 from .rainbow import Rainbow
 
 class RainbowIQN(Rainbow):
@@ -57,6 +58,7 @@ class RainbowIQN(Rainbow):
         # MultiStep
         self.n_step = n_step
         self.num_workers = num_workers
+        self.tmp_buffer = deque(maxlen=n_step)
         
         # PER
         self.alpha = alpha
@@ -73,7 +75,7 @@ class RainbowIQN(Rainbow):
         self.sample_max = sample_max
         
         # MultiStep
-        self.memory = RainbowBuffer(buffer_size, n_step, num_workers, uniform_sample_prob)
+        self.memory = PERBuffer(buffer_size, uniform_sample_prob)
         
     @torch.no_grad()
     def act(self, state, training=True):

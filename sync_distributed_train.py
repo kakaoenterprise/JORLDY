@@ -7,7 +7,7 @@ from manager import *
 from process import *
 
 # default_config_path = "config.YOUR_AGENT.YOUR_ENV"
-default_config_path = "config.rnd_ppo.mario"
+default_config_path = "config.dqn.cartpole"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -58,14 +58,13 @@ if __name__ == "__main__":
         save_path = path_queue.get()
         step, print_stamp, save_stamp = 0, 0, 0
         while step < config.train.run_step:
-            step += config.train.update_period
-            print_stamp += config.train.update_period
-            save_stamp += config.train.update_period
-            try: interact_sync_queue.get_nowait()
-            except: pass
+            _step, transitions_list = trans_queue.get()
+            delta_t = _step - step
+            print_stamp += delta_t
+            save_stamp += delta_t
+            step = _step
+            result = agent.process(transitions_list, step)
             interact_sync_queue.put(agent.sync_out())
-            transitions = trans_queue.get()
-            result = agent.process(transitions, step)
             result_queue.put((step, result))
             if print_stamp >= config.train.print_period or step >= config.train.run_step:
                 try: manage_sync_queue.get_nowait()

@@ -1,13 +1,14 @@
+from collections import deque
+import os, copy
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.distributions import Normal, Categorical
-import numpy as np
-import os, copy
 
 from .base import BaseAgent
 from core.network import Network
 from core.optimizer import Optimizer
-from core.buffer import MPOBuffer
+from core.buffer import ReplayBuffer
 
 class MPO(BaseAgent):
     def __init__(self,
@@ -40,7 +41,6 @@ class MPO(BaseAgent):
                  alpha_sigma=1.0,
                  **kwargs,
                  ):
-
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.head = head
         self.action_type = actor.split("_")[0]
@@ -86,7 +86,8 @@ class MPO(BaseAgent):
         self.critic_optimizer = Optimizer(**optim_config, params=list(self.critic.parameters()))
 
         self.gamma = gamma
-        self.memory = MPOBuffer(buffer_size, n_step, num_workers)
+        self.tmp_buffer = deque(maxlen=n_step)
+        self.memory = ReplayBuffer(buffer_size)
         
     @torch.no_grad()
     def act(self, state, training=True):
@@ -360,3 +361,11 @@ class MPO(BaseAgent):
         }
         return sync_item
 
+    def interact_callback(self, transition):
+        _transition = {}
+        self.tmp_buffer.append(transition)
+        if len(self.tmp_buffer) == self.n_step:
+            for key in self.tmp_buffer[0].keys():
+                    _transition[key] = np.stack([t[key] for t in self.tmp_buffer], axis=1)
+                    
+        return _transition
