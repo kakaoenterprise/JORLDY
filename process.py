@@ -1,4 +1,5 @@
 import traceback
+import time
 
 # Interact
 def interact_process(DistributedManager, distributed_manager_config,
@@ -12,8 +13,10 @@ def interact_process(DistributedManager, distributed_manager_config,
             delta_t = len(transitions) / num_workers
             step += delta_t
             trans_queue.put((int(step), transitions))
-            if mode=='sync' or sync_queue.full():
+            if mode=='sync' or sync_queue.qsize() > 0:
                 distributed_manager.sync(sync_queue.get())
+            while trans_queue.qsize() == 10:
+                time.sleep(0.1)
     except Exception as e:
         traceback.print_exc()
     finally:
@@ -36,7 +39,7 @@ def manage_process(Agent, agent_config,
     try:
         while step < run_step:
             wait = True
-            while wait or not result_queue.empty():
+            while wait or result_queue.qsize() > 0:
                 _step, result = result_queue.get()
                 metric_manager.append(result)
                 wait = False

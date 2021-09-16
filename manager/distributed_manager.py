@@ -39,7 +39,7 @@ class DistributedManager:
 
             if self.sync_item is not None:
                 ray.get([self.actors[id].sync.remote(self.sync_item) for id in runned_ids])
-            self.running_ids.extend([self.actors[id].run.remote(step) for id in runned_ids])
+            self.running_ids += [self.actors[id].run.remote(step) for id in runned_ids]
         
         return transitions
         
@@ -51,6 +51,8 @@ class DistributedManager:
             self.sync_item = ray.put(sync_item)
         
     def terminate(self):
+        if len(self.running_ids) > 0:
+            ray.get(self.running_ids)
         ray.shutdown()
 
 @ray.remote

@@ -56,16 +56,17 @@ if __name__ == "__main__":
     interact.start()
     try:
         save_path = path_queue.get()
-        step, print_stamp, save_stamp = 0, 0, 0
+        step, _step, print_stamp, save_stamp = 0, 0, 0, 0
         while step < config.train.run_step:
             transitions_list = []
-            while step == 0 or not trans_queue.empty():
+            while (_step == 0 or trans_queue.qsize() > 0) and\
+                  (_step - step < config.train.update_period):
                 _step, transitions = trans_queue.get()
                 transitions_list += transitions
-                delta_t = _step - step
-                print_stamp += delta_t
-                save_stamp += delta_t
-                step = _step
+            delta_t = _step - step
+            print_stamp += delta_t
+            save_stamp += delta_t
+            step = _step
             result = agent.process(transitions_list, step)
             try: interact_sync_queue.get_nowait()
             except: pass
