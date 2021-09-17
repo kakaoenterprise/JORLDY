@@ -58,12 +58,12 @@ if __name__ == "__main__":
         save_path = path_queue.get()
         step, print_stamp, save_stamp = 0, 0, 0
         while step < config.train.run_step:
-            _step, transitions_list = trans_queue.get()
+            _step, transitions = trans_queue.get()
             delta_t = _step - step
             print_stamp += delta_t
             save_stamp += delta_t
             step = _step
-            result = agent.process(transitions_list, step)
+            result = agent.process(transitions, step)
             interact_sync_queue.put(agent.sync_out())
             result_queue.put((step, result))
             if print_stamp >= config.train.print_period or step >= config.train.run_step:
