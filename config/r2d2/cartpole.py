@@ -10,7 +10,7 @@ agent = {
     "name": "r2d2",
     "network": "r2d2",
     "head": "mlp_lstm",
-    "gamma": 0.997,
+    "gamma": 0.95,
     "buffer_size": 50000,
     "batch_size": 64,
     "clip_grad_norm": 40.0,
@@ -19,12 +19,13 @@ agent = {
     # MultiStep
     "n_step": 3,
     # PER
-    "alpha": 0.6,
-    "beta": 0.4,
+    "alpha": 0.9,
+    "beta": 0.6,
     "uniform_sample_prob": 1e-3,
     # R2D2
-    "seq_len": 5,
-    "n_burn_in": 2,
+    "seq_len": 4,
+    "n_burn_in": 1,
+    "zero_padding": True,
 }
 
 optim = {

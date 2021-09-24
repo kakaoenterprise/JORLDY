@@ -23,14 +23,14 @@ agent = {
     "start_train_step": 50000,
     "target_update_period": 2500,
     # MultiStep
-    "n_step": 5,
+    "n_step": 3,
     # PER
-    "alpha": 0.6,
-    "beta": 0.4,
+    "alpha": 0.9,
+    "beta": 0.6,
     "uniform_sample_prob": 1e-3,
     # R2D2
-    "seq_len": 10,
-    "n_burn_in": 4,
+    "seq_len": 4,
+    "n_burn_in": 1,
 }
 
 optim = {
@@ -51,5 +51,5 @@ train = {
     # distributed setting
     "distributed_batch_size" : 512,
     "update_period" : 100,
-    "num_workers" : 8,
+    "num_workers" : 32,
 }

@@ -106,7 +106,7 @@ class RainbowIQN(Rainbow):
         logit, tau = self.network(state, True)
         logits, q_action = self.logits2Q(logit)
         action_eye = torch.eye(self.action_size, device=self.device)
-        action_onehot = action_eye[action[:,0].long()]
+        action_onehot = action_eye[action.long()]
 
         theta_pred = action_onehot @ logits
         tau = torch.transpose(tau, 1, 2)

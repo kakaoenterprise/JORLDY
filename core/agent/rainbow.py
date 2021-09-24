@@ -104,7 +104,7 @@ class Rainbow(DQN):
         p_logit, q_action = self.logits2Q(logit)
         
         action_eye = torch.eye(self.action_size).to(self.device)
-        action_onehot = action_eye[action[:, 0].long()]
+        action_onehot = action_eye[action.long()]
         
         p_action = torch.squeeze(action_onehot @ p_logit, 1)
 
@@ -213,10 +213,11 @@ class Rainbow(DQN):
         self.tmp_buffer.append(transition)
         if len(self.tmp_buffer) == self.n_step:
             _transition['state'] = self.tmp_buffer[0]['state']
+            _transition['action'] = self.tmp_buffer[0]['action']
             _transition['next_state'] = self.tmp_buffer[-1]['next_state']
             
             for key in self.tmp_buffer[0].keys():
-                if key not in ['state', 'next_state']:
+                if key not in ['state', 'action', 'next_state']:
                     _transition[key] = np.stack([t[key] for t in self.tmp_buffer], axis=1)
                     
         return _transition

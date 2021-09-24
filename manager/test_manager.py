@@ -25,7 +25,12 @@ class TestManager:
                 if record and i == 0: 
                     frames.append(self.env.get_frame())
                 action_dict = agent.act(state, training=False)
-                state, reward, done = self.env.step(action_dict['action'])
+                next_state, reward, done = self.env.step(action_dict['action'])
+                transition = {'state': state, 'next_state': next_state,
+                              'reward': reward, 'done': done}
+                transition.update(action_dict)
+                agent.interact_callback(transition)
+                state = next_state
             scores.append(self.env.score)
             
         if record:

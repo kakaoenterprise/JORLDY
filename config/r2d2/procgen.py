@@ -22,8 +22,8 @@ agent = {
     # MultiStep
     "n_step": 5,
     # PER
-    "alpha": 0.6,
-    "beta": 0.4,
+    "alpha": 0.9,
+    "beta": 0.6,
     "uniform_sample_prob": 1e-3,
     # Sequence Length
     "m": 80,

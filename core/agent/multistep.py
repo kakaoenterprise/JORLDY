@@ -29,7 +29,7 @@ class Multistep(DQN):
         done = transitions['done']
         
         eye = torch.eye(self.action_size).to(self.device)
-        one_hot_action = eye[action[:, 0].view(-1).long()]
+        one_hot_action = eye[action.view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
         with torch.no_grad():
             max_Q = torch.max(q).item()
@@ -81,10 +81,11 @@ class Multistep(DQN):
         self.tmp_buffer.append(transition)
         if len(self.tmp_buffer) == self.n_step:
             _transition['state'] = self.tmp_buffer[0]['state']
+            _transition['action'] = self.tmp_buffer[0]['action']
             _transition['next_state'] = self.tmp_buffer[-1]['next_state']
 
             for key in self.tmp_buffer[0].keys():
-                if key not in ['state', 'next_state']:
+                if key not in ['state', 'action', 'next_state']:
                     _transition[key] = np.stack([t[key] for t in self.tmp_buffer], axis=1)
         
         return _transition

@@ -42,7 +42,7 @@ class ApeX(DQN):
         # MultiStep
         self.n_step = n_step
         self.memory = PERBuffer(self.buffer_size, uniform_sample_prob)
-        self.tmp_buffer = deque(maxlen=n_step)
+        self.tmp_buffer = deque(maxlen=n_step+1)
     
     @torch.no_grad()
     def act(self, state, training=True):
@@ -69,7 +69,7 @@ class ApeX(DQN):
         done = transitions['done']
 
         eye = torch.eye(self.action_size).to(self.device)
-        one_hot_action = eye[action[:, 0].view(-1).long()]
+        one_hot_action = eye[action.view(-1).long()]
         q = (self.network(state) * one_hot_action).sum(1, keepdims=True)
 
         with torch.no_grad():
@@ -109,6 +109,7 @@ class ApeX(DQN):
             "max_Q": max_Q,
             "sampled_p": sampled_p,
             "mean_p": mean_p,
+            "num_learn": self.num_learn,
         }
 
         return result
@@ -118,8 +119,7 @@ class ApeX(DQN):
         
         # Process per step
         delta_t = step - self.time_t
-        if len(transitions) != 0:
-            self.memory.store(transitions)
+        self.memory.store(transitions)
         self.time_t = step
         self.target_update_stamp += delta_t
         self.learn_period_stamp += delta_t
@@ -144,13 +144,14 @@ class ApeX(DQN):
     def interact_callback(self, transition):
         _transition = {}
         self.tmp_buffer.append(transition)
-        if len(self.tmp_buffer) == self.n_step:
+        if len(self.tmp_buffer) == self.tmp_buffer.maxlen:
             _transition['state'] = self.tmp_buffer[0]['state']
-            _transition['next_state'] = self.tmp_buffer[-1]['next_state']
+            _transition['action'] = self.tmp_buffer[0]['action']
+            _transition['next_state'] = self.tmp_buffer[-1]['state']
 
             for key in self.tmp_buffer[0].keys():
-                if key not in ['state', 'next_state']:
-                    _transition[key] = np.stack([t[key] for t in self.tmp_buffer], axis=1)
+                if key not in ['state', 'action', 'next_state']:
+                    _transition[key] = np.stack([t[key] for t in self.tmp_buffer][:-1], axis=1)
                     
             target_q = self.tmp_buffer[-1]['q']
             for i in reversed(range(self.n_step)):
