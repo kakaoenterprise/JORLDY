@@ -9,7 +9,7 @@ agent = {
     "name": "mpo",
     "actor": "discrete_policy",
     "critic": "dqn",
-    "critic_loss_type": "1-step TD", # one of ['1-step TD', 'retrace']
+    "critic_loss_type": "1step_TD", # one of ['1step_TD', 'retrace']
     "gamma": 0.99,
     "buffer_size": 50000,
     "batch_size": 64,

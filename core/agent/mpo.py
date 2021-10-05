@@ -28,7 +28,7 @@ class MPO(BaseAgent):
                  device=None,
                  num_workers=1,
                  # parameters unique to MPO
-                 critic_loss_type = 'retrace', # one of ['1-step TD', 'retrace']
+                 critic_loss_type = 'retrace', # one of ['1step_TD', 'retrace']
                  num_sample=30,
                  min_eta=1e-8,
                  min_alpha_mu=1e-8,
@@ -51,14 +51,14 @@ class MPO(BaseAgent):
         self.target_actor = Network(actor, state_size, action_size, head=head).to(self.device)
         self.target_actor.load_state_dict(self.actor.state_dict())
 
+        assert critic_loss_type in ['1step_TD', 'retrace']
         self.critic_loss_type = critic_loss_type
-        assert self.critic_loss_type in ['1-step TD', 'retrace']
         self.critic = Network(critic, state_size, action_size, head=head).to(self.device)
         self.target_critic = Network(critic, state_size, action_size, head=head).to(self.device)
         self.target_critic.load_state_dict(self.critic.state_dict())
         
         self.batch_size = batch_size
-        self.n_step = n_step
+        self.n_step = n_step if critic_loss_type == 'retrace' else 1
         self.clip_grad_norm = clip_grad_norm
 
         self.num_learn = 0
@@ -94,7 +94,6 @@ class MPO(BaseAgent):
         self.actor.train(training)
         if self.action_type == "continuous":
             mu, std = self.actor(torch.as_tensor(state, dtype=torch.float32, device=self.device))
-
             m = Normal(mu, std)
             z = m.sample() if training else mu
             action = torch.tanh(z)
@@ -113,7 +112,6 @@ class MPO(BaseAgent):
         }
 
     def learn(self):
-            
         transitions = self.memory.sample(self.batch_size)
         for key in transitions.keys():
             # reshape: (batch_size, len_tr, item_dim)
@@ -128,7 +126,6 @@ class MPO(BaseAgent):
         prob_b = transitions['prob']
         
         if self.action_type == "continuous":
-            
             mu, std = self.actor(state)
             Q = self.critic(state, action)
             m = Normal(mu, std)
@@ -139,7 +136,6 @@ class MPO(BaseAgent):
             
             with torch.no_grad():
                 mut, stdt = self.target_actor(state)
-                
                 mt = Normal(mut, stdt)
                 zt = torch.atanh(torch.clamp(action, -1+1e-7, 1-1e-7))
                 log_pit = mt.log_prob(zt)
@@ -156,11 +152,11 @@ class MPO(BaseAgent):
                 zn = mn.sample((self.num_sample,)) # (num_sample, batch_size * len_tr, dim_action)
                 next_action = torch.tanh(zn)
                 
-                Qt_next = self.target_critic(next_state.unsqueeze(0).repeat(self.num_sample, 1, 1), next_action) # (num_sample, batch_size * len_tr, 1)
+                Qt_next = self.target_critic(next_state.unsqueeze(0).repeat_interleave(self.num_sample, dim=0), next_action) # (num_sample, batch_size * len_tr, 1)
                 
                 c = torch.clip(prob/(prob_b+1e-6), max=1.)
                 
-                if self.critic_loss_type == '1-step TD':
+                if self.critic_loss_type == '1step_TD':
                     Qret = reward + self.gamma * (1-done) * Qt_next.mean(axis=0)
                 elif self.critic_loss_type == 'retrace':
                     Qret = reward + self.gamma * Qt_next.mean(axis=0) * (1-done)
@@ -179,7 +175,7 @@ class MPO(BaseAgent):
             action_add = torch.tanh(zt_add)
             log_pi_add = m.log_prob(zt_add)
             log_prob_add = log_pi_add.sum(axis=-1, keepdims=True)
-            Qt_add = self.target_critic(state.unsqueeze(0).repeat(self.num_sample, 1, 1), action_add)
+            Qt_add = self.target_critic(state.unsqueeze(0).repeat_interleave(self.num_sample, dim=0), action_add)
             
             critic_loss = F.mse_loss(Q, Qret).mean()
             
@@ -219,7 +215,6 @@ class MPO(BaseAgent):
             alpha_loss = mu_loss + sigma_loss
                 
         else:
-            
             pi = self.actor(state) # pi,Q: (batch_size, len_tr, dim_action)
             pi_next = self.actor(next_state)
             Q = self.critic(state)
@@ -236,7 +231,7 @@ class MPO(BaseAgent):
                 
                 c = torch.clip(prob_t/(prob_b+1e-6), max=1.)# (batch_size * len_tr, 1), prod of importance ratio and gamma
 
-                if self.critic_loss_type == '1-step TD':
+                if self.critic_loss_type == '1step_TD':
                     Qret = reward + self.gamma * (1-done) * torch.sum(pi_next * Qt_next, axis=-1, keepdim=True)
                 elif self.critic_loss_type == 'retrace':
                     Qret = reward + self.gamma * torch.sum(pi_next * Qt_next, axis=-1, keepdim=True) * (1-done)

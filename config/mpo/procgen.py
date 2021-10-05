@@ -14,7 +14,7 @@ agent = {
     "actor":"discrete_policy",
     "head": "cnn",
     "critic": "dqn",
-    "critic_loss_type": "retrace", # one of ['1-step TD', 'retrace']
+    "critic_loss_type": "retrace", # one of ['1step_TD', 'retrace']
     "gamma": 0.99,
     "buffer_size": 50000,
     "batch_size": 64,
