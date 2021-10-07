@@ -66,7 +66,7 @@ class IQN(DQN):
         action_onehot = action_eye[action.long()]
 
         theta_pred = action_onehot @ logits
-        tau = torch.transpose(tau, 1, 2)
+        tau = torch.transpose(tau, 1, 2).contiguous()
         
         with torch.no_grad():
             # Get Theta Target 
@@ -109,7 +109,7 @@ class IQN(DQN):
         return result
     
     def logits2Q(self, logits):
-        _logits = torch.transpose(logits, 1, 2)
+        _logits = torch.transpose(logits, 1, 2).contiguous()
 
         q_action = torch.mean(_logits, dim=-1)
         return _logits, q_action
