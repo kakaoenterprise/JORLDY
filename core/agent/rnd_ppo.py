@@ -22,7 +22,6 @@ class RND_PPO(PPO):
                  obs_normalize=True,
                  ri_normalize=True,
                  batch_norm=True,
-                 seq_len=5, #RND_RNN
                  **kwargs,
                  ):
         super(RND_PPO, self).__init__(state_size=state_size,
@@ -38,16 +37,6 @@ class RND_PPO(PPO):
         self.obs_normalize = obs_normalize
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
-        
-        # RNN
-        self.seq_len = seq_len
-        self.state_seq = None 
-        
-        if "rnn" in self.rnd_network:
-            if type(state_size)==int: 
-                state_size = [seq_len]+[state_size]
-            else: 
-                state_size = [seq_len]+state_size 
         
         self.rnd = Network(rnd_network, state_size, action_size, self.num_workers,
                            gamma_i, ri_normalize, obs_normalize, batch_norm).to(self.device)
@@ -69,14 +58,7 @@ class RND_PPO(PPO):
         else:
             pi, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
             action = torch.multinomial(pi, 1) if training else torch.argmax(pi, dim=-1, keepdim=True)
-        
-        if "rnn" in self.rnd_network:
-            if self.state_seq is None:
-                self.state_seq = np.repeat(np.zeros_like(np.expand_dims(state, axis=1)), self.seq_len, axis=1)
-            else:
-                self.state_seq = np.concatenate([self.state_seq[:,1:], np.expand_dims(state, axis=1)], axis=1)
-            return {'action': action.cpu().numpy(), 'state_seq': self.state_seq}
-                
+
         return {'action': action.cpu().numpy()}
     
     def learn(self):
@@ -90,17 +72,11 @@ class RND_PPO(PPO):
         next_state = transitions['next_state']
         done = transitions['done']
 
-        if "rnn" in self.rnd_network:
-            state_seq = transitions['state_seq']
-            next_state_rnd = torch.cat((state_seq[:,1:], next_state.unsqueeze(1)), axis=1)
-        else:
-            next_state_rnd = next_state
-        
         # set pi_old and advantage
         with torch.no_grad():
             # RND: calculate exploration reward, update moments of obs and r_i
-            self.rnd.update_rms_obs(next_state_rnd)
-            r_i = self.rnd(next_state_rnd, update_ri=True)
+            self.rnd.update_rms_obs(next_state)
+            r_i = self.rnd(next_state, update_ri=True)
             r_i = r_i.unsqueeze(-1)
  
             # Scaling extrinsic and intrinsic reward
@@ -148,11 +124,11 @@ class RND_PPO(PPO):
             for offset in range(0, len(reward), self.batch_size):
                 idx = idxs[offset : offset + self.batch_size]
                 
-                _state, _action, _ret, _next_state, _next_state_rnd, _adv, _prob_old =\
-                    map(lambda x: x[idx], [state, action, ret, next_state, next_state_rnd, adv, prob_old])
+                _state, _action, _ret, _next_state, _adv, _prob_old =\
+                    map(lambda x: x[idx], [state, action, ret, next_state, adv, prob_old])
                 _ret_i, _adv_i = map(lambda x: x[idx], [ret_i, adv_i])
                                 
-                _r_i = self.rnd.forward(_next_state_rnd) * self.intrinsic_coeff
+                _r_i = self.rnd.forward(_next_state) * self.intrinsic_coeff
                                 
                 if self.action_type == "continuous":
                     mu, std, value = self.network(_state)

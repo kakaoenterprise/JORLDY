@@ -27,14 +27,13 @@ agent = {
     "clip_grad_norm": 1.0,
     "use_standardization": False,
     # Parameters for Random Network Distillation
-    "rnd_network": "rnd_cnn_rnn", # rnd_mlp, rnd_cnn, rnd_mlp_rnn, rnd_cnn_rnn
+    "rnd_network": "rnd_cnn", # rnd_mlp, rnd_cnn
     "gamma_i": 0.99,
     "extrinsic_coeff": 1.0,
     "intrinsic_coeff": 1.0,
     "obs_normalize": True,
     "ri_normalize": True,
     "batch_norm": True,
-    "seq_len": 8, # for "rnn"
 }
 
 optim = {
