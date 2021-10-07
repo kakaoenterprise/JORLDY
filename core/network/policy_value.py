@@ -24,7 +24,16 @@ class ContinuousPolicyValue(BaseNetwork):
         x = super(DiscretePolicyValue, self).forward(x)
         x = F.relu(self.l(x))
         return self.v_i(x)
-    
+
+class ContinuousPolicySeparateValue(ContinuousPolicyValue):
+    def __init__(self, D_in, D_out, D_hidden=512, head='mlp'):
+        super(ContinuousPolicySeparateValue, self).__init__(D_in, D_out, D_hidden, head)
+        self.v_i = torch.nn.Linear(D_hidden, 1)
+        
+    def get_vi(self, x):
+        x = super(ContinuousPolicyValue, self).forward(x)
+        x = F.relu(self.l(x))
+        return self.v_i(x)
     
 class DiscretePolicyValue(BaseNetwork):
     def __init__(self, D_in, D_out, D_hidden=512, head='mlp'):
@@ -44,4 +53,12 @@ class DiscretePolicyValue(BaseNetwork):
         x = F.relu(self.l(x))
         return self.v_i(x)
     
-    
+class DiscretePolicySeparateValue(DiscretePolicyValue):
+    def __init__(self, D_in, D_out, D_hidden=512, head='mlp'):
+        super(DiscretePolicySeparateValue, self).__init__(D_in, D_out, D_hidden, head)
+        self.v_i = torch.nn.Linear(D_hidden, 1)
+        
+    def get_vi(self, x):
+        x = super(DiscretePolicyValue, self).forward(x)
+        x = F.relu(self.l(x))
+        return self.v_i(x)

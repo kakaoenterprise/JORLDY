@@ -14,7 +14,7 @@ env = {
 
 agent = {
     "name":"rnd_ppo",
-    "network":"discrete_policy_value",
+    "network":"discrete_policy_separate_value",
     "head": "cnn",
     "gamma":0.99,
     "batch_size":8,
