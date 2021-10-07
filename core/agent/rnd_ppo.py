@@ -89,20 +89,20 @@ class RND_PPO(PPO):
         reward = transitions['reward']
         next_state = transitions['next_state']
         done = transitions['done']
-        
+
         if "rnn" in self.rnd_network:
             state_seq = transitions['state_seq']
             next_state_rnd = torch.cat((state_seq[:,1:], next_state.unsqueeze(1)), axis=1)
         else:
             next_state_rnd = next_state
-                
+        
         # set pi_old and advantage
         with torch.no_grad():
             # RND: calculate exploration reward, update moments of obs and r_i
             self.rnd.update_rms_obs(next_state_rnd)
             r_i = self.rnd(next_state_rnd, update_ri=True)
             r_i = r_i.unsqueeze(-1)
-                        
+ 
             # Scaling extrinsic and intrinsic reward
             reward *= self.extrinsic_coeff
             r_i *= self.intrinsic_coeff

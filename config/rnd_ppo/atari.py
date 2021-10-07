@@ -27,7 +27,7 @@ agent = {
     "clip_grad_norm": 1.0,
     "use_standardization": False,
     # Parameters for Random Network Distillation
-    "rnd_network": "rnd_cnn",
+    "rnd_network": "rnd_cnn", # rnd_mlp, rnd_cnn, rnd_mlp_rnn, rnd_cnn_rnn
     "gamma_i": 0.99,
     "extrinsic_coeff": 2.0,
     "intrinsic_coeff": 1.0,
@@ -53,5 +53,5 @@ train = {
     # distributed setting
     "distributed_batch_size" : 1024,
     "update_period" : agent["n_step"],
-    "num_workers" : 128,
+    "num_workers" : 64,
 }

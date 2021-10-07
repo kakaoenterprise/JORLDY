@@ -17,7 +17,7 @@ agent = {
     "network":"discrete_policy_value",
     "head": "cnn",
     "gamma":0.99,
-    "batch_size":16,
+    "batch_size":8,
     "n_step": 128,
     "n_epoch": 4,
     "_lambda": 0.95,
@@ -27,14 +27,14 @@ agent = {
     "clip_grad_norm": 1.0,
     "use_standardization": False,
     # Parameters for Random Network Distillation
-    "rnd_network": "cnn", # mlp, cnn, mlp_rnn, cnn_rnn
+    "rnd_network": "rnd_cnn_rnn", # rnd_mlp, rnd_cnn, rnd_mlp_rnn, rnd_cnn_rnn
     "gamma_i": 0.99,
     "extrinsic_coeff": 1.0,
     "intrinsic_coeff": 1.0,
     "obs_normalize": True,
     "ri_normalize": True,
     "batch_norm": True,
-    "seq_len": 4, # for "rnn"
+    "seq_len": 8, # for "rnn"
 }
 
 optim = {
@@ -52,7 +52,7 @@ train = {
     "record" : True,
     "record_period" : 250000,
     # distributed setting
-    "distributed_batch_size" : 1024,
+    "distributed_batch_size" : 256,
     "update_period" : agent["n_step"],
     "num_workers" : 64,
 }

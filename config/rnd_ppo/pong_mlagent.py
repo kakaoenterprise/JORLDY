@@ -1,9 +1,8 @@
-### RND PPO CartPole Config ###
+### RND PPO Pong_ML-Agents Config ###
 
 env = {
-    "name":"cartpole",
-    "mode": "discrete",
-    "render":False,
+    "name": "pong_mlagent",
+    "train_mode": True
 }
 
 agent = {
@@ -19,10 +18,10 @@ agent = {
     "ent_coef": 0.0,
     "clip_grad_norm": 1.0,
     # Parameters for Random Network Distillation
-    "rnd_network": "rnd_mlp", # rnd_mlp, rnd_cnn, rnd_mlp_rnn, rnd_cnn_rnn
+    "rnd_network": "rnd_mlp_rnn", # rnd_mlp, rnd_cnn, rnd_mlp_rnn, rnd_cnn_rnn
     "gamma_i": 0.99,
     "extrinsic_coeff": 1.0,
-    "intrinsic_coeff": 0.001,
+    "intrinsic_coeff": 1.0,
     "obs_normalize": True,
     "ri_normalize": True,
     "batch_norm": True,
@@ -37,9 +36,9 @@ optim = {
 train = {
     "training" : True,
     "load_path" : None,
-    "run_step" : 100000,
-    "print_period" : 1000,
-    "save_period" : 10000,
+    "run_step" : 200000,
+    "print_period" : 5000,
+    "save_period" : 50000,
     "test_iteration": 10,
     # distributed setting
     "distributed_batch_size" : 512,
