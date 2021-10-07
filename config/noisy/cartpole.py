@@ -15,11 +15,13 @@ agent = {
     "batch_size": 32,
     "start_train_step": 10000,
     "target_update_period": 200,
+    #noisy 
+    "noise_type": 'independent' # [independent, factorized]
 }
 
 optim = {
     "name": "adam",
-    "lr": 2.5e-4,
+    "lr": 0.0001,
 }
 
 train = {

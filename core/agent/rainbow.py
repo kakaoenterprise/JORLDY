@@ -30,6 +30,8 @@ class Rainbow(DQN):
                 beta = 0.4,
                 learn_period = 4,
                 uniform_sample_prob = 1e-3,
+                # Noisy 
+                noise_type = 'factorized', # [independent, factorized]
                 # C51
                 v_min = -10,
                 v_max = 10,
@@ -39,8 +41,8 @@ class Rainbow(DQN):
                 ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size        
-        self.network = Network(network, state_size, action_size, num_support, head=head).to(self.device)
-        self.target_network = Network(network, state_size, action_size, num_support, head=head).to(self.device)
+        self.network = Network(network, state_size, action_size, num_support, noise_type, head=head).to(self.device)
+        self.target_network = Network(network, state_size, action_size, num_support, noise_type, head=head).to(self.device)
         self.target_network.load_state_dict(self.network.state_dict())
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma
@@ -111,9 +113,9 @@ class Rainbow(DQN):
         target_dist = torch.zeros(self.batch_size, self.num_support, device=self.device, requires_grad=False)
         with torch.no_grad():
             # Double
-            _, next_q_action = self.logits2Q(self.network(next_state, False))
+            _, next_q_action = self.logits2Q(self.network(next_state, True))
             
-            target_p_logit, _ = self.logits2Q(self.target_network(next_state, False))
+            target_p_logit, _ = self.logits2Q(self.target_network(next_state, True))
             
             target_action = torch.argmax(next_q_action, -1, keepdim=True)
             target_action_onehot = action_eye[target_action.long()]

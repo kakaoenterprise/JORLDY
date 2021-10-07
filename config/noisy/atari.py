@@ -9,7 +9,7 @@ env = {
     "stack_frame": 4,
     "no_op": False,
     "reward_clip": True,
-    "dead_penalty": True,
+    "dead_penalty": False,
 }
 
 agent = {
@@ -19,14 +19,16 @@ agent = {
     "gamma": 0.99,
     "explore_step": 1000000,
     "buffer_size": 1000000,
-    "batch_size": 32,
+    "batch_size": 64,
     "start_train_step": 100000,
     "target_update_period": 10000,
+    #noisy 
+    "noise_type": 'factorized' # [independent, factorized]
 }
 
 optim = {
     "name": "adam",
-    "lr": 2.5e-4,
+    "lr": 0.0001,
 }
 
 train = {

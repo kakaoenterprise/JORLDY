@@ -28,6 +28,8 @@ agent = {
     "beta": 0.4,
     "learn_period": 4,
     "uniform_sample_prob": 1e-3,
+    # Noisy 
+    "noise_type": 'factorized', # [independent, factorized]
     # C51
     "v_min": -10,
     "v_max": 10,

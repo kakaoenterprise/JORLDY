@@ -26,6 +26,8 @@ agent = {
     "beta": 0.4,
     "learn_period": 4,
     "uniform_sample_prob": 1e-3,
+    # Noisy 
+    "noise_type": 'factorized'noise_type, # [independent, factorized]
     # IQN
     "num_sample": 64,
     "embedding_dim": 64,

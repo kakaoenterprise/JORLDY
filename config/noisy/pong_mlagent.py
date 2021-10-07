@@ -14,6 +14,8 @@ agent = {
     "batch_size": 32,
     "start_train_step": 25000,
     "target_update_period": 1000,
+    #noisy 
+    "noise_type": 'factorized' # [independent, factorized]
 }
 
 optim = {
