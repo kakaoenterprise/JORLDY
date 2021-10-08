@@ -6,7 +6,6 @@ from .base import BaseBuffer
 
 class ReplayBuffer(BaseBuffer):
     def __init__(self, buffer_size):
-#         self.buffer = deque(maxlen=buffer_size)
         self.buffer = np.zeros(buffer_size, dtype=dict) # define replay buffer
         self.buffer_index = 0
         self.buffer_size = buffer_size
@@ -18,7 +17,6 @@ class ReplayBuffer(BaseBuffer):
         if self.first_store:
             self.check_dim(transitions[0])
         
-#         self.buffer += transitions
         for transition in transitions:
             self.buffer[self.buffer_index] = transition
             self.buffer_index = (self.buffer_index + 1) % self.buffer_size
@@ -26,7 +24,6 @@ class ReplayBuffer(BaseBuffer):
                 
                 
     def sample(self, batch_size):
-#         batch = random.sample(self.buffer, batch_size)
         batch_idx = np.random.randint(self.buffer_counter, size=batch_size)
         batch = self.buffer[batch_idx]
         
@@ -38,5 +35,4 @@ class ReplayBuffer(BaseBuffer):
     
     @property
     def size(self):
-#         return len(self.buffer)
         return self.buffer_counter        

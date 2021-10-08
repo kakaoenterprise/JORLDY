@@ -8,8 +8,8 @@ env = {
     "img_height": 84,
     "stack_frame": 4,
     "no_op": False,
-    "reward_clip": True,
-    "dead_penalty": True,
+    "reward_clip": False,
+    "dead_penalty": False,
 }
 
 agent = {
@@ -31,6 +31,7 @@ agent = {
     # R2D2
     "seq_len": 4,
     "n_burn_in": 1,
+    "zero_padding": False,
 }
 
 optim = {

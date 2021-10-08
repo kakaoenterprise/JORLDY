@@ -1,6 +1,5 @@
 from collections import deque
 from itertools import islice
-import time
 import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
@@ -64,7 +63,7 @@ class R2D2(ApeX):
         state = transitions['state'][:,:self.seq_len]
         action = transitions['action']
         reward = transitions['reward'][:,-self.n_step:]
-        next_state = transitions['next_state'][:,self.n_step-1:]
+        next_state = transitions['state'][:,self.n_step:]
         done = transitions['done'][:,-self.n_step:]
         hidden_h = transitions['hidden_h'].transpose(0,1).contiguous()
         hidden_c = transitions['hidden_c'].transpose(0,1).contiguous()
@@ -138,10 +137,11 @@ class R2D2(ApeX):
             _transition['next_hidden_c'] = self.tmp_buffer[self.n_step]['hidden_c']
             
             for key in self.tmp_buffer[0].keys():
-                if key not in ['action', 'hidden_h', 'hidden_c']:
-                    if key == 'q':
+                if key not in ['action', 'hidden_h', 'hidden_c', 'next_state']:
+                    if key in ['q', 'state']:
                         _transition[key] = np.stack([t[key] for t in self.tmp_buffer], axis=1)
                     else:
+                        # _transition[key] = np.stack([t[key] for t in self.tmp_buffer][-self.n_step-1:-1], axis=1) # if remove zero padding
                         _transition[key] = np.stack([t[key] for t in self.tmp_buffer][:-1], axis=1)
             
             #state sequence zero padding
@@ -149,7 +149,6 @@ class R2D2(ApeX):
                 lack_dims = self.tmp_buffer.maxlen - len(self.tmp_buffer)
                 zero_state = np.zeros((1 , lack_dims, *transition['state'].shape[1:]))
                 _transition['state'] = np.concatenate((zero_state, _transition['state']), axis=1)
-                _transition['next_state'] = np.concatenate((zero_state, _transition['next_state']), axis=1)
                 zero_reward = np.zeros((1 , lack_dims, *transition['reward'].shape[1:]))
                 _transition['reward'] = np.concatenate((zero_reward, _transition['reward']), axis=1)
                 zero_done = np.zeros((1 , lack_dims, *transition['done'].shape[1:]))
