@@ -5,7 +5,7 @@ import ray
 import numpy as np
 
 class DistributedManager:
-    def __init__(self, Env, env_config, Agent, agent_config, num_workers, mode='sync'):
+    def __init__(self, Env, env_config, Agent, agent_config, num_workers, mode):
         try:
             ray.init(address='auto')
         except:

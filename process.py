@@ -1,9 +1,9 @@
 import traceback
 import time
 
-# Interact
+# Interact (Async)
 def interact_process(DistributedManager, distributed_manager_config,
-                     trans_queue, sync_queue, run_step, update_period, mode='sync'):
+                     trans_queue, sync_queue, run_step, update_period):
     distributed_manager = DistributedManager(*distributed_manager_config)
     num_workers = distributed_manager.num_workers
     step = 0
@@ -13,7 +13,7 @@ def interact_process(DistributedManager, distributed_manager_config,
             delta_t = len(transitions) / num_workers
             step += delta_t
             trans_queue.put((int(step), transitions))
-            if mode=='sync' or sync_queue.qsize() > 0:
+            if sync_queue.qsize() > 0:
                 distributed_manager.sync(sync_queue.get())
             while trans_queue.qsize() == 10:
                 time.sleep(0.1)
