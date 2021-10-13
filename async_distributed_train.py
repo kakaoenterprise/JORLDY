@@ -51,7 +51,7 @@ if __name__ == "__main__":
     interact = mp.Process(target=interact_process,
                             args=(DistributedManager, distributed_manager_config,
                                   trans_queue, interact_sync_queue,
-                                  config.train.run_step, config.train.update_period, 'async'))
+                                  config.train.run_step, config.train.update_period))
     manage.start()
     interact.start()
     try:
