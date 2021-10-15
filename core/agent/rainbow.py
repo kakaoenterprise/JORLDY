@@ -123,7 +123,7 @@ class Rainbow(DQN):
             
             Tz = self.z
             for i in reversed(range(self.n_step)):
-                Tz = reward[:, i].expand(-1,self.num_support) + (1 - done[:, i])*self.gamma*self.z
+                Tz = reward[:, i].expand(-1,self.num_support) + (1 - done[:, i])*self.gamma*Tz
             
             b = torch.clamp(Tz - self.v_min, 0, self.v_max - self.v_min)/ self.delta_z
             l = torch.floor(b).long()
@@ -202,8 +202,8 @@ class Rainbow(DQN):
         return result
     
     def logits2Q(self, logits):
-        logits_max = torch.max(logits, -1, keepdim=True).values
-        p_logit = F.softmax(logits - logits_max, dim=-1)
+        _logits = logits.view(logits.shape[0], self.action_size, self.num_support)
+        p_logit = F.softmax(_logits, dim=-1)
 
         z_action = self.z.expand(p_logit.shape[0], self.action_size, self.num_support)
         q_action = torch.sum(z_action * p_logit, dim=-1)

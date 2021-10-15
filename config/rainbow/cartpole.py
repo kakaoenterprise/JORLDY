@@ -19,14 +19,14 @@ agent = {
     # MultiStep
     "n_step": 3,
     # PER
-    "alpha": 0.6,
+    "alpha": 0.5,
     "beta": 0.4,
     "learn_period": 4,
     "uniform_sample_prob": 1e-3,
     # Noisy 
     "noise_type": 'factorized', # [independent, factorized]
     # C51
-    "v_min": -10,
+    "v_min": -1,
     "v_max": 10,
     "num_support": 51
 }
