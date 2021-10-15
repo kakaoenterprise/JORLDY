@@ -30,8 +30,6 @@ if __name__ == "__main__":
     if config.train.load_path:
         agent.load(config.train.load_path)
 
-    trans_queue = mp.Queue()
-    interact_sync_queue = mp.Queue(1)
     result_queue = mp.Queue()
     manage_sync_queue = mp.Queue(1)
     path_queue = mp.Queue(1)
@@ -47,24 +45,20 @@ if __name__ == "__main__":
                               config.train.run_step, config.train.print_period,
                               MetricManager, TestManager, test_manager_config,
                               LogManager, log_manager_config, config_manager))
-    distributed_manager_config = (Env, config.env, Agent, agent_config, config.train.num_workers)
-    interact = mp.Process(target=interact_process,
-                            args=(DistributedManager, distributed_manager_config,
-                                  trans_queue, interact_sync_queue,
-                                  config.train.run_step, config.train.update_period))
+    
+    distributed_manager = DistributedManager(Env, config.env, Agent, agent_config, config.train.num_workers, 'sync')
+    
     manage.start()
-    interact.start()
     try:
         save_path = path_queue.get()
         step, print_stamp, save_stamp = 0, 0, 0
         while step < config.train.run_step:
-            _step, transitions = trans_queue.get()
-            delta_t = _step - step
-            print_stamp += delta_t
-            save_stamp += delta_t
-            step = _step
+            transitions = distributed_manager.run(config.train.update_period)
+            step += config.train.update_period
+            print_stamp += config.train.update_period
+            save_stamp += config.train.update_period
             result = agent.process(transitions, step)
-            interact_sync_queue.put(agent.sync_out())
+            distributed_manager.sync(agent.sync_out())
             result_queue.put((step, result))
             if print_stamp >= config.train.print_period or step >= config.train.run_step:
                 try: manage_sync_queue.get_nowait()
@@ -76,17 +70,12 @@ if __name__ == "__main__":
                 save_stamp = 0
     except Exception as e:
         traceback.print_exc()
-        interact.terminate()
         manage.terminate()
     else:
-        print("Optimize process done.")
-        interact.join()
-        print("Interact process done.")
+        print("Main process done.")
         manage.join()
         print("Manage process done.")
     finally:
-        trans_queue.close()
-        interact_sync_queue.close()
         result_queue.close()
         manage_sync_queue.close()
         path_queue.close()
