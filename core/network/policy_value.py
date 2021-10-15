@@ -10,7 +10,6 @@ class ContinuousPolicyValue(BaseNetwork):
         self.mu = torch.nn.Linear(D_hidden, D_out)
         self.log_std = torch.nn.Linear(D_hidden, D_out)
         self.v = torch.nn.Linear(D_hidden, 1)
-        self.v_i = torch.nn.Linear(D_hidden, 1)
 
     def forward(self, x):
         x = super(ContinuousPolicyValue, self).forward(x)
@@ -20,11 +19,6 @@ class ContinuousPolicyValue(BaseNetwork):
         log_std = torch.tanh(self.log_std(x))
         return mu, log_std.exp(), self.v(x)
     
-    def get_vi(self, x):
-        x = super(DiscretePolicyValue, self).forward(x)
-        x = F.relu(self.l(x))
-        return self.v_i(x)
-
 class ContinuousPolicySeparateValue(ContinuousPolicyValue):
     def __init__(self, D_in, D_out, D_hidden=512, head='mlp'):
         super(ContinuousPolicySeparateValue, self).__init__(D_in, D_out, D_hidden, head)
@@ -41,18 +35,12 @@ class DiscretePolicyValue(BaseNetwork):
         self.l = torch.nn.Linear(D_head_out, D_hidden)
         self.pi = torch.nn.Linear(D_hidden, D_out)
         self.v = torch.nn.Linear(D_hidden, 1)
-        self.v_i = torch.nn.Linear(D_hidden, 1)
         
     def forward(self, x):
         x = super(DiscretePolicyValue, self).forward(x)
         x = F.relu(self.l(x))
         return F.softmax(self.pi(x), dim=-1), self.v(x)
 
-    def get_vi(self, x):
-        x = super(DiscretePolicyValue, self).forward(x)
-        x = F.relu(self.l(x))
-        return self.v_i(x)
-    
 class DiscretePolicySeparateValue(DiscretePolicyValue):
     def __init__(self, D_in, D_out, D_hidden=512, head='mlp'):
         super(DiscretePolicySeparateValue, self).__init__(D_in, D_out, D_hidden, head)
