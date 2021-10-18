@@ -8,7 +8,6 @@ blessings==1.7
 cachetools==4.2.2
 certifi==2021.5.30
 cffi==1.14.6
-chardet==4.0.0
 click==8.0.1
 cloudpickle==1.6.0
 colorama==0.4.4
