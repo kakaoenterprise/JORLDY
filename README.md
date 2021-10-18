@@ -23,6 +23,7 @@
  $ cd jorldy
  $ pip install -r requirements.txt  
  $ pip install gym[atari]
+ $ pip install gym-super-mario-bros
 ```
 
 
