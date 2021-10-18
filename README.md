@@ -22,6 +22,7 @@
  $ git clone https://github.com/kakaoenterprise/jorldy.git  
  $ cd jorldy
  $ pip install -r requirements.txt  
+ $ pip install gym[atari]
 ```
 
 
