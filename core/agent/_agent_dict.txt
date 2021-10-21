@@ -1,4 +1,4 @@
-### Class Dictionary ###
+### Agent Dictionary ###
 format: (key, class)
 ------------------------
 ('ape_x', <class 'core.agent.ape_x.ApeX'>)
@@ -12,7 +12,6 @@ format: (key, class)
 ('mpo', <class 'core.agent.mpo.MPO'>)
 ('multistep', <class 'core.agent.multistep.Multistep'>)
 ('noisy', <class 'core.agent.noisy.Noisy'>)
-('ou_noise', <class 'core.agent.ddpg.OU_noise'>)
 ('per', <class 'core.agent.per.PER'>)
 ('ppo', <class 'core.agent.ppo.PPO'>)
 ('qrdqn', <class 'core.agent.qrdqn.QRDQN'>)

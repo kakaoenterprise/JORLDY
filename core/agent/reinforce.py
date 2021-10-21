@@ -1,6 +1,6 @@
 import torch
 torch.backends.cudnn.benchmark = True
-from torch.distributions import Normal, Categorical
+from torch.distributions import Normal
 import numpy as np
 import os
 

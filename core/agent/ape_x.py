@@ -1,12 +1,8 @@
 from collections import deque
 import torch
 torch.backends.cudnn.benchmark = True
-import torch.nn.functional as F
 import numpy as np
-import copy
 
-from core.network import Network
-from core.optimizer import Optimizer
 from core.buffer import PERBuffer
 from .dqn import DQN
 
@@ -76,7 +72,6 @@ class ApeX(DQN):
             max_Q = torch.max(q).item()
             next_q = self.network(next_state)
             max_a = torch.argmax(next_q, axis=1)
-            max_eye = torch.eye(self.action_size).to(self.device)
             max_one_hot_action = eye[max_a.view(-1).long()]
 
             next_target_q = self.target_network(next_state)

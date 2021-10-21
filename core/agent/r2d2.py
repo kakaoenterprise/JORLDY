@@ -2,13 +2,8 @@ from collections import deque
 from itertools import islice
 import torch
 torch.backends.cudnn.benchmark = True
-import torch.nn.functional as F
 import numpy as np
-import copy
 
-from core.network import Network
-from core.optimizer import Optimizer
-from core.buffer import PERBuffer
 from .ape_x import ApeX
 
 class R2D2(ApeX):

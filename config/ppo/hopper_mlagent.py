@@ -29,7 +29,7 @@ train = {
     "run_step" : 300000,
     "print_period" : 5000,
     "save_period" : 50000,
-    "test_iteration": 10,
+    "eval_iteration": 10,
     # distributed setting
     "distributed_batch_size" : 256,
     "update_period" : agent["n_step"],

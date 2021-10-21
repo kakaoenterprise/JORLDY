@@ -26,10 +26,10 @@ def interact_process(DistributedManager, distributed_manager_config,
 def manage_process(Agent, agent_config,
                    result_queue, sync_queue, path_queue,
                    run_step, print_period, MetricManager,
-                   TestManager, test_manager_config,
+                   EvalManager, eval_manager_config,
                    LogManager, log_manager_config, config_manager):
     agent = Agent(**agent_config)
-    test_manager = TestManager(*test_manager_config)
+    eval_manager = EvalManager(*eval_manager_config)
     metric_manager = MetricManager()
     log_manager = LogManager(*log_manager_config)
     path_queue.put(log_manager.path)
@@ -47,7 +47,7 @@ def manage_process(Agent, agent_config,
             step = _step
             if print_stamp >= print_period or step >= run_step: 
                 agent.sync_in(**sync_queue.get())
-                score, frames = test_manager.test(agent, step)
+                score, frames = eval_manager.evaluate(agent, step)
                 metric_manager.append({"score": score})
                 statistics = metric_manager.get_statistics()
                 print(f"Step : {step} / {statistics}")

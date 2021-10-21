@@ -15,7 +15,6 @@
 - Benchmark of the algorithms is conducted in many RL environment
 
 
-
 ## :arrow_down: Installation
 
 ```
@@ -30,7 +29,7 @@
 
 ## :rocket: QuickStart
 
-<img src="./img/quickstart.png" alt="quickstart" width=60%/> 
+<img src="./resrc/quickstart.png" alt="quickstart" width=60%/> 
 
 
 
@@ -42,24 +41,33 @@
 
 
 
+## :mag: How to
+
+- [How to use](./docs/How_to_use.md)
+- [How to customize config](./config/README.md)
+- [How to customize agent](./core/agent/README.md)
+- [How to customize environment](./core/env/README.md)
+- [How to customize network](./core/network/README.md)
+- [How to customize buffer](./core/buffer/README.md)
+
+
+
 ## :page_facing_up: Documentation
 
-- [Implementation List](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/Implementation_list.md)
-- [Benchmark](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/Benchmark.md)
-- [Distributed Architecture](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/Distributed_Architecture.md)
-- [Reference](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/Reference.md)
+- [Distributed Architecture](./docs/Distributed_Architecture.md)
+- [Role of Managers](./manager/README.md)
+- [Implementation List](./docs/Implementation_list.md)
+- [Naming Convention](./docs/Naming_convention.md)
+- [Benchmark](https://www.notion.so/rlnote/Benchmark-c7642d152cad4980bc03fe804fe9e88a)
+- [Reference](./docs/Reference.md)
 
 
-- [How to use](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/How_to_use.md)
-- [How to add RL algorithm](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/How_to_add_rl_algorithm.md)
-- [How to add environment](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/How_to_add_environment.md)
-- [How to add network](https://github.kakaocorp.com/leonard-q/RL_Algorithms/blob/master/docs/How_to_add_network.md)
 
 ## :busts_in_silhouette: Contributors
 
-:mailbox: Contact: [Leonard.Q](leonard.q@kakaoenterprise.com), [Ramanuzan.Lee](ramanuzan.lee@kakaoenterprise.com), [Royce.Choi](royce.choi@kakaoenterprise.com)
+:mailbox: Contact: atech.rl@kakaocorp.com
 
-<img src="./img/contributors.png" alt="contributors" width=80%/> 
+<img src="./resrc/contributors.png" alt="contributors" width=80%/> 
 
 
 ## :copyright: License

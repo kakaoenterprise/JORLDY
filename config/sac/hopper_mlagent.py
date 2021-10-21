@@ -33,7 +33,7 @@ train = {
     "run_step" : 1000000,
     "print_period" : 10000,
     "save_period" : 10000,
-    "test_iteration": 10,
+    "eval_iteration": 10,
     # distributed setting
     "update_period": 128,
     "num_workers": 16,

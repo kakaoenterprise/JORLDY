@@ -32,7 +32,7 @@ if __name__ == "__main__":
     path_queue = mp.Queue(1)
     
     record_period = config.train.record_period if config.train.record_period else config.train.run_step//10
-    test_manager_config = (Env(**config.env), config.train.test_iteration, config.train.record, record_period)
+    eval_manager_config = (Env(**config.env), config.train.eval_iteration, config.train.record, record_period)
     log_id = config.train.id if config.train.id else config.agent.name
     log_manager_config = (config.env.name, log_id, config.train.experiment)
     agent_config['device'] = "cpu"
@@ -40,7 +40,7 @@ if __name__ == "__main__":
                         args=(Agent, agent_config,
                               result_queue, manage_sync_queue, path_queue,
                               config.train.run_step, config.train.print_period, 
-                              MetricManager, TestManager, test_manager_config,
+                              MetricManager, EvalManager, eval_manager_config,
                               LogManager, log_manager_config, config_manager))
     manage.start()
     try:

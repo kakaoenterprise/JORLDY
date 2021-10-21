@@ -49,7 +49,7 @@ train = {
     "run_step" : 30000000,
     "print_period" : 10000,
     "save_period" : 500000,
-    "test_iteration": 1,
+    "eval_iteration": 1,
     "record": True,
     "record_period": 500000,
     # distributed setting

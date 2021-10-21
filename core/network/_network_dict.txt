@@ -1,4 +1,4 @@
-### Class Dictionary ###
+### Network Dictionary ###
 format: (key, class)
 ------------------------
 ('continuous_policy', <class 'core.network.policy.ContinuousPolicy'>)
@@ -18,8 +18,6 @@ format: (key, class)
 ('r2d2', <class 'core.network.r2d2.R2D2'>)
 ('rainbow', <class 'core.network.rainbow.Rainbow'>)
 ('rainbow_iqn', <class 'core.network.rainbow_iqn.Rainbow_IQN'>)
-('reward_forward_filter', <class 'core.network.rnd.RewardForwardFilter'>)
 ('rnd_cnn', <class 'core.network.rnd.RND_CNN'>)
 ('rnd_mlp', <class 'core.network.rnd.RND_MLP'>)
-('running_mean_std', <class 'core.network.rnd.RunningMeanStd'>)
 ('sac_critic', <class 'core.network.sac.SAC_Critic'>)

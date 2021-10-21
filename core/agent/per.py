@@ -1,6 +1,5 @@
 import torch
 torch.backends.cudnn.benchmark = True
-import torch.nn.functional as F
 
 from .dqn import DQN
 from core.buffer import PERBuffer

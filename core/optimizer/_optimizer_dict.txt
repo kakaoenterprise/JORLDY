@@ -1,4 +1,4 @@
-### Class Dictionary ###
+### Optimizer Dictionary ###
 format: (key, class)
 ------------------------
 ('adadelta', <class 'torch.optim.adadelta.Adadelta'>)

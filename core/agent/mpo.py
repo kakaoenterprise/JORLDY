@@ -1,9 +1,9 @@
 from collections import deque
-import os, copy
+import os
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.distributions import Normal, Categorical
+from torch.distributions import Normal
 
 from .base import BaseAgent
 from core.network import Network

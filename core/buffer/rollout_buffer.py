@@ -4,8 +4,8 @@ from .base import BaseBuffer
 
 class RolloutBuffer(BaseBuffer):
     def __init__(self):
+        super(RolloutBuffer, self).__init__()
         self.buffer = list()
-        self.first_store = True
   
     def store(self, transitions):
         if self.first_store:

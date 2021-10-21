@@ -5,7 +5,7 @@ from procgen import ProcgenEnv
 from .utils import ImgProcessor
 from .base import BaseEnv
 
-class Procgen(BaseEnv):
+class _Procgen(BaseEnv):
     def __init__(self,
                  name,
                  render=False,
@@ -81,66 +81,66 @@ class Procgen(BaseEnv):
         raw_image = self.env.render(mode="rgb_array")
         return cv2.resize(raw_image, dsize=(256, 256))
     
-class Coinrun(Procgen):
+class Coinrun(_Procgen):
     def __init__(self, **kwargs):
         super(Coinrun, self).__init__('coinrun', **kwargs)
         
-class Bigfish(Procgen):
+class Bigfish(_Procgen):
     def __init__(self, **kwargs):
         super(Bigfish, self).__init__('bigfish', **kwargs)
         
-class Bossfight(Procgen):
+class Bossfight(_Procgen):
     def __init__(self, **kwargs):
         super(Bossfight, self).__init__('bossfight', **kwargs)
         
-class Caveflyer(Procgen):
+class Caveflyer(_Procgen):
     def __init__(self, **kwargs):
         super(Caveflyer, self).__init__('caveflyer', **kwargs)
         
-class Chaser(Procgen):
+class Chaser(_Procgen):
     def __init__(self, **kwargs):
         super(Chaser, self).__init__('chaser', **kwargs)
         
-class Climber(Procgen):
+class Climber(_Procgen):
     def __init__(self, **kwargs):
         super(Climber, self).__init__('climber', **kwargs)
         
-class Dodgeball(Procgen):
+class Dodgeball(_Procgen):
     def __init__(self, **kwargs):
         super(Dodgeball, self).__init__('dodgeball', **kwargs)
         
-class Fruitbot(Procgen):
+class Fruitbot(_Procgen):
     def __init__(self, **kwargs):
         super(Fruitbot, self).__init__('fruitbot', **kwargs)
         
-class Heist(Procgen):
+class Heist(_Procgen):
     def __init__(self, **kwargs):
         super(Heist, self).__init__('heist', **kwargs)
         
-class Jumper(Procgen):
+class Jumper(_Procgen):
     def __init__(self, **kwargs):
         super(Jumper, self).__init__('jumper', **kwargs)
         
-class Leaper(Procgen):
+class Leaper(_Procgen):
     def __init__(self, **kwargs):
         super(Leaper, self).__init__('leaper', **kwargs)
         
-class Maze(Procgen):
+class Maze(_Procgen):
     def __init__(self, **kwargs):
         super(Maze, self).__init__('maze', **kwargs)
 
-class Miner(Procgen):
+class Miner(_Procgen):
     def __init__(self, **kwargs):
         super(Miner, self).__init__('miner', **kwargs)
         
-class Ninja(Procgen):
+class Ninja(_Procgen):
     def __init__(self, **kwargs):
         super(Ninja, self).__init__('ninja', **kwargs)
         
-class Plunder(Procgen):
+class Plunder(_Procgen):
     def __init__(self, **kwargs):
         super(Plunder, self).__init__('plunder', **kwargs)
         
-class Starpilot(Procgen):
+class Starpilot(_Procgen):
     def __init__(self, **kwargs):
         super(Starpilot, self).__init__('starpilot', **kwargs)

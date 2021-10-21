@@ -34,7 +34,7 @@ train = {
     "run_step" : 100000,
     "print_period" : 1000,
     "save_period" : 10000,
-    "test_iteration": 5,
+    "eval_iteration": 5,
     # distributed setting
     "update_period" : agent["learn_period"],
     "num_workers" : 8,

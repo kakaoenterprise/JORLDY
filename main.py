@@ -24,7 +24,7 @@ if __name__ == "__main__":
         agent.load(config.train.load_path)
 
     record_period = config.train.record_period if config.train.record_period else config.train.run_step//10
-    test_manager = TestManager(Env(**config.env), config.train.test_iteration, 
+    eval_manager = EvalManager(Env(**config.env), config.train.eval_iteration, 
                                config.train.record, record_period)
     metric_manager = MetricManager()
     log_id = config.train.id if config.train.id else config.agent.name
@@ -53,7 +53,7 @@ if __name__ == "__main__":
             state = env.reset()
 
         if step % config.train.print_period == 0:
-            score, frames = test_manager.test(agent, step)
+            score, frames = eval_manager.evaluate(agent, step)
             metric_manager.append({"score": score})
             statistics = metric_manager.get_statistics()
             print(f"{episode} Episode / Step : {step} / {statistics}")

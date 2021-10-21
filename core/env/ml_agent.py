@@ -13,7 +13,7 @@ def match_build():
         return {"Windows": "Windows",
                 "Darwin" : "Mac"}[os]
 
-class MLAgent(BaseEnv):
+class _MLAgent(BaseEnv):
     def __init__(self, env_name, train_mode=True, id=None):
         env_path = f"./core/env/mlagents/{env_name}/{match_build()}/{env_name}"
         id = np.random.randint(65534) if id is None else id
@@ -69,7 +69,7 @@ class MLAgent(BaseEnv):
     def close(self):
         self.env.close()
 
-class HopperMLAgent(MLAgent):
+class HopperMLAgent(_MLAgent):
     def __init__(self, **kwargs):
         env_name = "Hopper"
         super(HopperMLAgent, self).__init__(env_name, **kwargs)
@@ -77,7 +77,7 @@ class HopperMLAgent(MLAgent):
         self.state_size = 19*4
         self.action_size = 3
         
-class PongMLAgent(MLAgent):
+class PongMLAgent(_MLAgent):
     def __init__(self, **kwargs):
         env_name = "Pong"
         super(PongMLAgent, self).__init__(env_name, **kwargs)
@@ -85,7 +85,7 @@ class PongMLAgent(MLAgent):
         self.state_size = 8*1
         self.action_size = 3
         
-class WormMLAgent(MLAgent):
+class WormMLAgent(_MLAgent):
     def __init__(self, **kwargs):
         env_name = "Worm"
         super(WormMLAgent, self).__init__(env_name, **kwargs)

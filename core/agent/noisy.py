@@ -2,11 +2,9 @@ import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np
-import copy
 
 from core.network import Network
 from core.optimizer import Optimizer
-from core.buffer import ReplayBuffer
 from .dqn import DQN
 
 class Noisy(DQN):

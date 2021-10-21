@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-from .utils import head_dict
+from .head import head_dict
 
 class BaseNetwork(torch.nn.Module):
     def __init__(self, D_in, D_hidden, head):

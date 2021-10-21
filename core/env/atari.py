@@ -6,7 +6,7 @@ from .base import BaseEnv
 
 COMMON_VERSION = 'Deterministic-v4'
 
-class Atari(BaseEnv):
+class _Atari(BaseEnv):
     def __init__(self,
                  name,
                  render=False,
@@ -106,50 +106,50 @@ class Atari(BaseEnv):
     def get_frame(self):
         return self.env.ale.getScreenRGB2()
 
-class Breakout(Atari):
+class Breakout(_Atari):
     def __init__(self, **kwargs):
         super(Breakout, self).__init__(f"Breakout{COMMON_VERSION}", **kwargs)
 
-class Pong(Atari):
+class Pong(_Atari):
     def __init__(self, **kwargs):
         super(Pong, self).__init__(f"Pong{COMMON_VERSION}", **kwargs)
 
-class Asterix(Atari):
+class Asterix(_Atari):
     def __init__(self, **kwargs):
         super(Asterix, self).__init__(f"Asterix{COMMON_VERSION}", **kwargs)
 
-class Assault(Atari):
+class Assault(_Atari):
     def __init__(self, **kwargs):
         super(Assault, self).__init__(f"Assualt{COMMON_VERSION}", **kwargs)
 
-class Seaquest(Atari):
+class Seaquest(_Atari):
     def __init__(self, **kwargs):
         super(Seaquest, self).__init__(f"Seaquest{COMMON_VERSION}", **kwargs)
 
-class Spaceinvaders(Atari):
+class Spaceinvaders(_Atari):
     def __init__(self, **kwargs):
         super(Spaceinvaders, self).__init__(f"SpaceInvaders{COMMON_VERSION}", **kwargs)
 
-class Alien(Atari):
+class Alien(_Atari):
     def __init__(self, **kwargs):
         super(Alien, self).__init__(f"Alien{COMMON_VERSION}", **kwargs)
         
-class CrazyClimber(Atari):
+class CrazyClimber(_Atari):
     def __init__(self, **kwargs):
         super(CrazyClimber, self).__init__(f"CrazyClimber{COMMON_VERSION}", **kwargs)
 
-class Enduro(Atari):
+class Enduro(_Atari):
     def __init__(self, **kwargs):
         super(Enduro, self).__init__(f"Enduro{COMMON_VERSION}", **kwargs)
 
-class Qbert(Atari):
+class Qbert(_Atari):
     def __init__(self, **kwargs):
         super(Qbert, self).__init__(f"Qbert{COMMON_VERSION}", **kwargs)
         
-class PrivateEye(Atari):
+class PrivateEye(_Atari):
     def __init__(self, **kwargs):
         super(PrivateEye, self).__init__(f"PrivateEye{COMMON_VERSION}", **kwargs)
         
-class MontezumaRevenge(Atari):
+class MontezumaRevenge(_Atari):
     def __init__(self, **kwargs):
         super(MontezumaRevenge, self).__init__(f"MontezumaRevenge{COMMON_VERSION}", **kwargs)

@@ -6,12 +6,11 @@ from .base import BaseBuffer
 
 class ReplayBuffer(BaseBuffer):
     def __init__(self, buffer_size):
+        super(ReplayBuffer, self).__init__()
         self.buffer = np.zeros(buffer_size, dtype=dict) # define replay buffer
         self.buffer_index = 0
         self.buffer_size = buffer_size
         self.buffer_counter = 0
-        
-        self.first_store = True
     
     def store(self, transitions):
         if self.first_store:

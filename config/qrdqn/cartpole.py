@@ -32,5 +32,5 @@ train = {
     "run_step" : 100000,
     "print_period" : 1000,
     "save_period" : 10000,
-    "test_iteration": 10,
+    "eval_iteration": 10,
 }

@@ -8,8 +8,6 @@ import numpy as np
 from .ppo import PPO
 from core.network import Network
 
-import torch.optim as optim
-
 class RND_PPO(PPO):
     def __init__(self,
                  state_size,

@@ -3,8 +3,6 @@ import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import numpy as np
-import copy
-import time
 
 from core.network import Network
 from core.optimizer import Optimizer

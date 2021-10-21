@@ -1,10 +1,9 @@
 import torch
 import torch.nn.functional as F
-from torch.distributions import Normal, Categorical
+from torch.distributions import Normal
 import numpy as np
 
 from .reinforce import REINFORCE
-from core.network import Network
 from core.optimizer import Optimizer
 
 class VMPO(REINFORCE):

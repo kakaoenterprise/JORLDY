@@ -3,18 +3,18 @@ from collections import OrderedDict
 
 from torch.optim import *
 
-class_dict = {}
+optimizer_dict = {}
+naming_rule = lambda x: re.sub('([a-z])([A-Z])', r'\1_\2', x).lower()
 for class_name, _class in inspect.getmembers(sys.modules[__name__], inspect.isclass):
-    naming_rule = lambda x: re.sub('([a-z])([A-Z])', r'\1_\2', x).lower()
-    class_dict[naming_rule(class_name)] = _class
+    optimizer_dict[naming_rule(class_name)] = _class
 
 working_path = os.path.dirname(os.path.realpath(__file__))
-class_dict = OrderedDict(sorted(class_dict.items()))
-with open(os.path.join(working_path, "_class_dict.txt"), 'w') as f:
-    f.write('### Class Dictionary ###\n')
+optimizer_dict = OrderedDict(sorted(optimizer_dict.items()))
+with open(os.path.join(working_path, "_optimizer_dict.txt"), 'w') as f:
+    f.write('### Optimizer Dictionary ###\n')
     f.write('format: (key, class)\n')
     f.write('------------------------\n')
-    for item in class_dict.items():
+    for item in optimizer_dict.items():
         f.write(str(item) + '\n')
     
 class Optimizer:  
@@ -24,7 +24,7 @@ class Optimizer:
             print("### name variable must be string! ###")
             raise Exception
         name = name.lower()
-        if not name in class_dict.keys():
-            print(f"### can use only follows {[opt for opt in class_dict.keys()]}")
+        if not name in optimizer_dict.keys():
+            print(f"### can use only follows {[opt for opt in optimizer_dict.keys()]}")
             raise Exception
-        return class_dict[name](*args, **kwargs)
+        return optimizer_dict[name](*args, **kwargs)

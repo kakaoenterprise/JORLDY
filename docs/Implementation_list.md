@@ -29,6 +29,11 @@
 
 - [Rainbow [DQN, IQN]](https://arxiv.org/abs/1710.02298)
 
+**Distributed**
+
+- [APE-X](https://arxiv.org/pdf/1803.00933.pdf)
+- [R2D2](https://openreview.net/pdf?id=r1lyTjAqYX)
+
 **Policy Optimization, Actor-Critic**
 
 - [REINFORCE [Discrete, Continuous]](https://people.cs.umass.edu/~barto/courses/cs687/williams92simple.pdf)

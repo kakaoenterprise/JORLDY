@@ -1,33 +1,13 @@
 import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
-from torch.distributions import Normal
 import os 
-import numpy as np
 
 from core.network import Network
 from core.optimizer import Optimizer
 from core.buffer import ReplayBuffer
 from .base import BaseAgent
-
-# OU noise class 
-class OU_noise:
-    def __init__(self, action_size, mu, theta, sigma):
-        self.action_size = action_size
-        
-        self.mu = mu
-        self.theta = theta
-        self.sigma = sigma
-        
-        self.reset()
-
-    def reset(self):
-        self.X = np.ones((1, self.action_size), dtype=np.float32) * self.mu
-
-    def sample(self):
-        dx = self.theta * (self.mu - self.X) + self.sigma * np.random.randn(len(self.X))
-        self.X = self.X + dx
-        return self.X
+from .utils import OU_Noise
     
 class DDPG(BaseAgent):
     def __init__(self,
@@ -62,7 +42,7 @@ class DDPG(BaseAgent):
         self.actor_optimizer = Optimizer(optim_config.actor, self.actor.parameters(), lr=optim_config.actor_lr)
         self.critic_optimizer = Optimizer(optim_config.critic, self.critic.parameters(), lr=optim_config.critic_lr)
         
-        self.OU = OU_noise(action_size, mu, theta, sigma)
+        self.OU = OU_Noise(action_size, mu, theta, sigma)
         
         self.gamma = gamma
         self.tau = tau

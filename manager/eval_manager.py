@@ -1,6 +1,6 @@
 import numpy as np 
 
-class TestManager:
+class EvalManager:
     def __init__(self, env, iteration=10, record=None, record_period=None):
         self.env = env
         self.iteration = iteration if iteration else 10
@@ -10,7 +10,7 @@ class TestManager:
         self.record_stamp = 0
         self.time_t = 0
     
-    def test(self, agent, step):
+    def evaluate(self, agent, step):
         scores = []
         frames = []
         self.record_stamp += step - self.time_t

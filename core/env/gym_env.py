@@ -2,7 +2,7 @@ import gym
 import numpy as np
 from .base import BaseEnv
 
-class Gym(BaseEnv):
+class _Gym(BaseEnv):
     def __init__(self,
                  name,
                  mode,
@@ -42,7 +42,7 @@ class Gym(BaseEnv):
     def close(self):
         self.env.close()
         
-class Cartpole(Gym):
+class Cartpole(_Gym):
     def __init__(self,
                 mode='discrete',
                 **kwargs):
@@ -65,13 +65,13 @@ class Cartpole(Gym):
         next_state, reward, done = map(lambda x: np.expand_dims(x, 0), [next_state, [reward], [done]]) # for (1, ?)
         return (next_state, reward, done)    
     
-class Pendulum(Gym):
+class Pendulum(_Gym):
     def __init__(self,
                 **kwargs
                 ):
         super(Pendulum, self).__init__('Pendulum-v0', 'continuous', **kwargs)
 
-class MountainCar(Gym):
+class MountainCar(_Gym):
     def __init__(self,
                 **kwargs
                 ):

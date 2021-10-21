@@ -1,6 +1,17 @@
 from abc import *
 
 class BaseBuffer(ABC):
+    def __init__(self):
+        self.first_store = True
+
+    def check_dim(self, transition):
+        print("########################################")
+        print("You should check dimension of transition")
+        for key, val in transition.items():
+            print(f"{key}: {val.shape}")
+        print("########################################")
+        self.first_store = False
+
     @abstractmethod
     def store(self, transitions):
         """
@@ -22,10 +33,3 @@ class BaseBuffer(ABC):
         transitions = [{}]
         return transitions
         
-    def check_dim(self, transition):
-        print("########################################")
-        print("You should check dimension of transition")
-        for key, val in transition.items():
-            print(f"{key}: {val.shape}")
-        print("########################################")
-        self.first_store = False
