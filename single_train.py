@@ -7,7 +7,7 @@ from manager import *
 from process import *
 
 # default_config_path = "config.YOUR_AGENT.YOUR_ENV"
-default_config_path = "config.rnd_dqn.mario"
+default_config_path = "config.dqn.cartpole"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
