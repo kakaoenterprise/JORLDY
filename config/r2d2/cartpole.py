@@ -30,7 +30,7 @@ agent = {
 
 optim = {
     "name": "adam",
-    "eps": 1e-4,
+    # "eps": 1e-4,
     "lr": 1e-4,
 }
 
