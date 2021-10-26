@@ -8,7 +8,7 @@ env = {
     "img_height": 84,
     "stack_frame": 4,
     "no_op": False,
-    "reward_clip": False,
+    "reward_clip": True,
     "dead_penalty": False,
 }
 
@@ -16,17 +16,17 @@ agent = {
     "name": "r2d2",
     "network": "r2d2",
     "head": "cnn_lstm",
-    "gamma": 0.997,
+    "gamma": 0.99,
     "buffer_size": 2000000,
-    "batch_size": 64,
+    "batch_size": 32,
     "clip_grad_norm": 40.0,
-    "start_train_step": 50000,
-    "target_update_period": 2500,
+    "start_train_step": 100000,
+    "target_update_period": 10000,
     # MultiStep
     "n_step": 3,
     # PER
-    "alpha": 0.9,
-    "beta": 0.6,
+    "alpha": 0.5,
+    "beta": 0.4,
     "uniform_sample_prob": 1e-3,
     # R2D2
     "seq_len": 4,
@@ -36,7 +36,7 @@ agent = {
 
 optim = {
     "name": "adam",
-    "eps": 1e-4,
+    # "eps": 1e-4,
     "lr": 1e-4,
 }
 
