@@ -7,6 +7,19 @@ import numpy as np
 from .reinforce import REINFORCE
 
 class PPO(REINFORCE):
+    """PPO agent. 
+    
+    Args: 
+        batch_size (int): the number of samples in the one batch.
+        n_step (int): The number of steps to run for each environment per update.
+        n_epoch (int): Number of epoch when optimizing the surrogate.
+        _lambda (float): Factor for trade-off of bias vs variance for Generalized Advantage Estimator.
+        epsilon_clip (float): probability ratio clipping interval.
+        vf_coef (float): Value function coefficient for the loss calculation.
+        ent_coef (float): Entropy coefficient for the loss calculation.
+        clip_grad_norm (float): gradient clipping threshold.
+        num_workers: the number of agents in distributed learning.
+    """
     def __init__(self,
                  batch_size=32,
                  n_step=128,
