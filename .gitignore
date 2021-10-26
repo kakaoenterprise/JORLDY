@@ -1,7 +1,7 @@
 *.pyc
 *.DS_Store
 UnitySDK.log
-/logs/
+**/logs/
 **/.vscode/
 **/_hist/
 **/_dev/

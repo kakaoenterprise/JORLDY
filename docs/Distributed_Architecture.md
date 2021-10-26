@@ -32,4 +32,4 @@ Async distributed train script has __interact process__, __main process__ and __
 ### Timeline
 <img src="../resrc/async_distributed_train_timeline.png" alt="timeline" width=80%/> 
 
-reference: [manager/distributed_manager.py](../manager/distributed_manager.py), [process](../process.py)
+reference: [manager/distributed_manager.py](../jorldy/manager/distributed_manager.py), [process](../jorldy/process.py)

@@ -37,7 +37,7 @@
 
 | Version |   Release Date   |   Source   |   Download   |
 | :-----: | :--------------: | :--------: | :----------: |
-|  1.0.0  | October xx, 2021 | [Source]() | [Download]() |
+|  0.0.1  | November 03, 2021 | [Source]() | [Download]() |
 
 
 
@@ -72,7 +72,4 @@
 
 ## :copyright: License
 
-[Apache License 2.0]()
-
-
-
+[Apache License 2.0](./LICENSE.md)
