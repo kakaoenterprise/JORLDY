@@ -6,9 +6,9 @@
 - **Note**: If you implement a new environment, agent, or network according to the our documentation and run **main.py**, **_class_dict.txt** will be updated automatically.
 
 ### Agents
-- A list of implemented agents can be found in [_agent_dict.txt](../core/agent/_agent_dict.txt).
+- A list of implemented agents can be found in [_agent_dict.txt](../jorldy/jorldy/core/agent/_agent_dict.txt).
 
-- Example: You can check the key of the Ape-X agent in [_agent_dict.txt](../core/agent/_agent_dict.txt): *('ape_x', <class 'core.agent.ape_x.ApeX'>)*. If you want to use the Ape-X agent, write agent.name as *ape_x* in config file.
+- Example: You can check the key of the Ape-X agent in [_agent_dict.txt](../jorldy/core/agent/_agent_dict.txt): *('ape_x', <class 'core.agent.ape_x.ApeX'>)*. If you want to use the Ape-X agent, write agent.name as *ape_x* in config file.
 
 ```python
 agent = {
@@ -19,16 +19,16 @@ agent = {
 ```
 
 ### Environments
-- Provided environments list can be found in [_env_dict.txt](../core/env/_env_dict.txt).
+- Provided environments list can be found in [_env_dict.txt](../jorldy/core/env/_env_dict.txt).
 
-- Example: You can check the key of the Procgen starpilot environment in [_env_dict.txt](../core/env/_env_dict.txt): *('starpilot', <class 'core.env.procgen.Starpilot'>)*. If you want to use the starpilot environment, it should be defined in the command using the key of starpilot environment. ex) python main.py --config config.dqn.procgen --env.name starpilot.
+- Example: You can check the key of the Procgen starpilot environment in [_env_dict.txt](../jorldy/core/env/_env_dict.txt): *('starpilot', <class 'core.env.procgen.Starpilot'>)*. If you want to use the starpilot environment, it should be defined in the command using the key of starpilot environment. ex) python main.py --config config.dqn.procgen --env.name starpilot.
 
 ### Networks
-- A list of implemented networks can be found in [_network_dict.txt](../core/network/_network_dict.txt).
-- If the network you want to use requires a head element, you should also include head in the config. A list of implemented heads can be found in [_head_dict.txt](../core/network/_head_dict.txt).
-- **Note**: To use head in your customized network, you should inherit the [BaseNetwork class](../core/network/base.py). We refer to [How to customize network](../core/network/README.md).
+- A list of implemented networks can be found in [_network_dict.txt](../jorldy/core/network/_network_dict.txt).
+- If the network you want to use requires a head element, you should also include head in the config. A list of implemented heads can be found in [_head_dict.txt](../jorldy/core/network/_head_dict.txt).
+- **Note**: To use head in your customized network, you should inherit the [BaseNetwork class](../jorldy/core/network/base.py). We refer to [How to customize network](../jorldy/core/network/README.md).
 
-- Example 1: You can check the key of the PPO discrete policy network in [_network_dict.txt](../core/network/_network_dict.txt): *('discrete_policy_value', <class 'core.network.policy_value.DiscretePolicyValue'>)*. If you want to use the PPO discrete policy network, write agent.network as *discrete_policy_value* in config file. 
+- Example 1: You can check the key of the PPO discrete policy network in [_network_dict.txt](../jorldy/core/network/_network_dict.txt): *('discrete_policy_value', <class 'core.network.policy_value.DiscretePolicyValue'>)*. If you want to use the PPO discrete policy network, write agent.network as *discrete_policy_value* in config file. 
 ```python
 agent = {
     "name":"ppo",

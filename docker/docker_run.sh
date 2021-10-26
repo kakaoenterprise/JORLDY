@@ -1,0 +1,1 @@
+docker run -it --rm --name jorldy -v `pwd`/jorldy:/jorldy jorldy /bin/bash
