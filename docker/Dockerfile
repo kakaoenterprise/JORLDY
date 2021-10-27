@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:1.8.1-cuda10.2-cudnn7-devel
+FROM pytorch/pytorch:1.8.1-cuda11.1-cudnn8-runtime
 
 RUN apt-get update 
 RUN apt-get -y install libgl1-mesa-glx
