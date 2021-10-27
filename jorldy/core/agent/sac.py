@@ -10,6 +10,25 @@ from core.buffer import ReplayBuffer
 from .base import BaseAgent
 
 class SAC(BaseAgent):
+    """Soft actor critic (SAC) agent. 
+    
+    Args:
+        state_size (int): dimension of state.
+        action_size (int): dimension of action.
+        actor (str): key of actor network class in _network_dict.txt.
+        critic (str): key of critic network class in _network_dict.txt.
+        head (str): key of head in _head_dict.txt.
+        optim_config (dict): dictionary of the optimizer info.
+        use_dynamic_alpha (bool): parameter that determine whether to use autotunning entropy adjustment.
+        gamma (float): discount factor.
+        tau (float): the soft update coefficient.
+        buffer_size (int): the size of the memory buffer.
+        batch_size (int): the number of samples in the one batch.
+        start_train_step (int): steps to start learning.
+        static_log_alpha (float): static value used as log alpha when use_dynamic_alpha is false.
+        device (str): device to use. (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
+
+    """
     def __init__(self,
                  state_size,
                  action_size,

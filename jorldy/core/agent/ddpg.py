@@ -10,7 +10,7 @@ from .base import BaseAgent
 from .utils import OU_Noise
     
 class DDPG(BaseAgent):
-    """DDPG agent. 
+    """Deep deterministic policy gradient (DDPG) agent. 
     
     Args: 
         state_size (int): dimension of state.
