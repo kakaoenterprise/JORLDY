@@ -14,7 +14,6 @@ class C51(DQN):
         v_min (float): minimum value of support.
         v_max (float): maximum value of support.
         num_support (int): number of support.
-        
     """
     def __init__(self, state_size, action_size, v_min, v_max, num_support , **kwargs):
         super(C51, self).__init__(state_size, action_size*num_support, **kwargs)  

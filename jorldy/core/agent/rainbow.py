@@ -31,8 +31,6 @@ class Rainbow(DQN):
         learn_period (int): period to train (unit: step)
         uniform_sample_prob (float): ratio of uniform random sampling.
         noise_type (str): NoisyNet noise type. ('factorized': Factorized Gaussian Noise, else: Independent Gaussian Noise)
-        state_size (int): dimension of state.
-        action_size (int): dimension of action.
         v_min (float): minimum value of support.
         v_max (float): maximum value of support.
         num_support (int): number of support.
