@@ -7,7 +7,7 @@ import numpy as np
 from .reinforce import REINFORCE
 
 class PPO(REINFORCE):
-    """PPO agent. 
+    """ Proximal Policy Optimization (PPO) agent. 
     
     Args: 
         batch_size (int): the number of samples in the one batch.

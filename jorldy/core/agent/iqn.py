@@ -15,7 +15,8 @@ class IQN(DQN):
         action_size (int): dimension of action.
         network (str): key of network class in _network_dict.txt.
         head (str): key of head in _head_dict.txt.
-        optim_config (dict): dictionary of the optimizer info. (key: 'name', value: name of optimizer)
+        optim_config (dict): dictionary of the optimizer info. 
+            (key: 'name', value: name of optimizer)
         num_sample (int): the number of sample points
         embedding_dim (int): dimension of sample point embedding.
         sample_min (float): quantile minimum thresholds (tau_min).

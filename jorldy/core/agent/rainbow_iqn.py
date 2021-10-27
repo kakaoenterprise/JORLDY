@@ -17,7 +17,8 @@ class RainbowIQN(Rainbow):
         action_size (int): dimension of action.
         network (str): key of network class in _network_dict.txt.
         head (str): key of head in _head_dict.txt.
-        optim_config (dict): dictionary of the optimizer info. (key: 'name', value: name of optimizer)
+        optim_config (dict): dictionary of the optimizer info. 
+            (key: 'name', value: name of optimizer)
         gamma (float): discount factor.
         explore_step (int): the number of steps the epsilon decays.
         buffer_size (int): the size of the memory buffer.
@@ -30,7 +31,8 @@ class RainbowIQN(Rainbow):
         beta (float): initial value of degree to use importance sampling.
         learn_period (int): period to train (unit: step)
         uniform_sample_prob (float): ratio of uniform random sampling.
-        noise_type (str): NoisyNet noise type. ('factorized': Factorized Gaussian Noise, else: Independent Gaussian Noise)
+        noise_type (str): NoisyNet noise type. One of ['factorized', 'independent']
+            ('factorized': Factorized Gaussian Noise, else: Independent Gaussian Noise)
         num_sample (int): number of sample points
         embedding_dim (int): dimension of sample point embedding.
         sample_min (float): quantile minimum thresholds (tau_min).

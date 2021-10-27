@@ -15,19 +15,21 @@ class DQN(BaseAgent):
     Args: 
         state_size (int): dimension of state.
         action_size (int): dimension of action.
-        optim_config (dict): dictionary of the optimizer info. (key: 'name', value: name of optimizer)
+        optim_config (dict): dictionary of the optimizer info. 
+            (key: 'name', value: name of optimizer)
         network (str): key of network class in _network_dict.txt.
         head (str): key of head in _head_dict.txt.
         gamma (float): discount factor.
         epsilon_init (float): initial epsilon value (random action ratio) in decaying epsilon-greedy policy.
-        epsilon_min (float): final epsilon value (random action ratio) in decaying epsilon-greedy policy.
-        epsilon_eval (float): evaluate time epsilon value (random action ratio).
+        epsilon_min (float): final epsilon value in decaying epsilon-greedy policy.
+        epsilon_eval (float): evaluate time epsilon value.
         explore_step (int): the number of steps the epsilon decays.
         buffer_size (int): the size of the memory buffer.
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning. 
         target_update_period (int): period to update the target network (unit: step)
-        device (str): device to use. (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
+        device (str): device to use. 
+            (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
         num_workers: the number of agents in distributed learning
     """
     def __init__(self,

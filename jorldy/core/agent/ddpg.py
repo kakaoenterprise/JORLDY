@@ -27,7 +27,8 @@ class DDPG(BaseAgent):
         mu (float): the drift coefficient of the Ornstein-Uhlenbeck process for action exploration.
         theta (float): reversion of the time constant of the Ornstein-Uhlenbeck process.
         sigma (float): diffusion coefficient of the Ornstein-Uhlenbeck process. 
-        device (str): device to use. (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
+        device (str): device to use. 
+            (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
     """
     def __init__(self,
                  state_size,

@@ -8,7 +8,7 @@ class PER(DQN):
     """Prioritized experience replay (PER) agent. 
     
     Args: 
-        alpha (float): prioritization exponent.
+        alpha (float): priority exponent.
         beta (float): initial value of degree to use importance sampling.
         learn_period (int): period to train (unit: step)
         uniform_sample_prob (float): ratio of uniform random sampling.

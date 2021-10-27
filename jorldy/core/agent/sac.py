@@ -26,7 +26,8 @@ class SAC(BaseAgent):
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
         static_log_alpha (float): static value used as log alpha when use_dynamic_alpha is false.
-        device (str): device to use. (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
+        device (str): device to use. 
+            (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
 
     """
     def __init__(self,

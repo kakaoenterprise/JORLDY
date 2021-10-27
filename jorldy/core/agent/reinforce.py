@@ -20,7 +20,8 @@ class REINFORCE(BaseAgent):
         optim_config (dict): dictionary of the optimizer info.
         gamma (float): discount factor.
         use_standardization (bool): parameter that determine whether to use standardization for return.
-        device (str): device to use. (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
+        device (str): device to use. 
+            (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
     """
     def __init__(self,
                  state_size,
