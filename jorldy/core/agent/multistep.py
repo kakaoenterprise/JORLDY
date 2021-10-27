@@ -11,7 +11,7 @@ class Multistep(DQN):
     """Multistep DQN agent. 
     
     Args: 
-        n_step: number of steps in multi-step Q learning.
+        n_step (int): number of steps in multi-step Q learning.
     """
     def __init__(self, n_step=5, **kwargs):
         super(Multistep, self).__init__(**kwargs)

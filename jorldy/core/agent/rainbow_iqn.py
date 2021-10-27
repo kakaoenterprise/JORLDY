@@ -10,7 +10,7 @@ from core.buffer import PERBuffer
 from .rainbow import Rainbow
 
 class RainbowIQN(Rainbow):
-    """Rainbow agent. 
+    """Rainbow IQN agent. 
     
     Args: 
         state_size (int): dimension of state.

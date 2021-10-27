@@ -9,6 +9,19 @@ from .ppo import PPO
 from core.network import Network
 
 class RND_PPO(PPO):
+    """Random Network Distillation (RND) with PPO agent. 
+    
+    Args: 
+        state_size (int): dimension of state.
+        action_size (int): dimension of action.
+        rnd_network (str): key of network class in _network_dict.txt.
+        gamma_i (float): discount factor of intrinsic reward.
+        extrinsic_coeff (float): coefficient of extrinsic reward.        
+        intrinsic_coeff (float): coefficient of intrinsic reward.
+        obs_normalize (bool): parameter that determine whether to normalize observation.
+        ri_normalize (bool): parameter that determine whether to normalize intrinsic reward.
+        batch_norm (bool): parameter that determine whether to use batch normalization.
+    """
     def __init__(self,
                  state_size,
                  action_size,
