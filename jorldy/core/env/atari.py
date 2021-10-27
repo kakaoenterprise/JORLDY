@@ -15,7 +15,7 @@ class _Atari(BaseEnv):
                  img_height=84,
                  stack_frame=4,
                  id=0,
-                 life_key='ale.lives',
+                 life_key='lives',
                  no_op=False,
                  reward_clip=False,
                  reward_scale=None,
@@ -104,7 +104,7 @@ class _Atari(BaseEnv):
         return True
     
     def get_frame(self):
-        return self.env.ale.getScreenRGB2()
+        return self.env.ale.getScreenRGB()
 
 class Breakout(_Atari):
     def __init__(self, **kwargs):
@@ -120,7 +120,7 @@ class Asterix(_Atari):
 
 class Assault(_Atari):
     def __init__(self, **kwargs):
-        super(Assault, self).__init__(f"Assualt{COMMON_VERSION}", **kwargs)
+        super(Assault, self).__init__(f"Assault{COMMON_VERSION}", **kwargs)
 
 class Seaquest(_Atari):
     def __init__(self, **kwargs):
