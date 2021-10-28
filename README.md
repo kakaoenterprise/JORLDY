@@ -21,7 +21,7 @@
  $ git clone https://github.com/kakaoenterprise/jorldy.git  
  $ cd jorldy
  $ pip install -r requirements.txt  
- $ pip install gym[atari]
+ $ pip install --upgrade gym[atari,accept-rom-license]
  $ pip install gym-super-mario-bros
 ```
 
@@ -44,18 +44,18 @@
 ## :mag: How to
 
 - [How to use](./docs/How_to_use.md)
-- [How to customize config](./config/README.md)
-- [How to customize agent](./core/agent/README.md)
-- [How to customize environment](./core/env/README.md)
-- [How to customize network](./core/network/README.md)
-- [How to customize buffer](./core/buffer/README.md)
+- [How to customize config](./jorldy/config/README.md)
+- [How to customize agent](./jorldy/core/agent/README.md)
+- [How to customize environment](./jorldy/core/env/README.md)
+- [How to customize network](./jorldy/core/network/README.md)
+- [How to customize buffer](./jorldy/core/buffer/README.md)
 
 
 
 ## :page_facing_up: Documentation
 
 - [Distributed Architecture](./docs/Distributed_Architecture.md)
-- [Role of Managers](./manager/README.md)
+- [Role of Managers](./jorldy/manager/README.md)
 - [Implementation List](./docs/Implementation_list.md)
 - [Naming Convention](./docs/Naming_convention.md)
 - [Benchmark](https://www.notion.so/rlnote/Benchmark-c7642d152cad4980bc03fe804fe9e88a)
