@@ -18,14 +18,34 @@
 ## :arrow_down: Installation
 
 ```
- $ git clone https://github.com/kakaoenterprise/jorldy.git  
- $ cd jorldy
- $ pip install -r requirements.txt  
- $ pip install --upgrade gym[atari,accept-rom-license]
- $ pip install gym-super-mario-bros
+ $ git clone https://github.com/kakaoenterprise/JORLDY.git  
+ $ cd JORLDY
+ $ pip install -r requirements.txt
 ```
 
+__:whale: To use docker__
 
+(customize if necessary)
+```
+ $ cd JORLDY
+
+ # build
+ $ docker build -t jorldy -f ./docker/Dockerfile .
+ 
+ # run (mac, linux)
+ $ docker run -it --rm --name jorldy -v `pwd`/jorldy:/jorldy jorldy /bin/bash
+```
+
+__:heavy_plus_sign: To use additional environments__
+
+(atari and super-mario-bros need to be installed manually due to licensing issues)
+```
+ # To use atari
+ $ pip install --upgrade gym[atari,accept-rom-license]
+ 
+ # To use super-mario-bros
+ $ pip install gym-super-mario-bros
+```
 
 ## :rocket: QuickStart
 
