@@ -10,6 +10,19 @@ from core.buffer import RolloutBuffer
 from .base import BaseAgent
 
 class REINFORCE(BaseAgent):
+    """REINFORCE agent. 
+    
+    Args: 
+        state_size (int): dimension of state.
+        action_size (int): dimension of action.
+        network (str): key of network class in _network_dict.txt.
+        head (str): key of head in _head_dict.txt.
+        optim_config (dict): dictionary of the optimizer info.
+        gamma (float): discount factor.
+        use_standardization (bool): parameter that determine whether to use standardization for return.
+        device (str): device to use. 
+            (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
+    """
     def __init__(self,
                  state_size,
                  action_size,

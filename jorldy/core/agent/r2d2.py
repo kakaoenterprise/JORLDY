@@ -7,6 +7,14 @@ import numpy as np
 from .ape_x import ApeX
 
 class R2D2(ApeX):
+    """ Recurrent Replay Distributed DQN (R2D2) agent. 
+    
+    Args: 
+        seq_len (int): sequence length of RNN input.
+        n_burn_in (int): burn-in period. (unit: step)
+        zero_padding (bool): parameter that determine whether to use zero padding. 
+        eta (float): priority exponent.
+    """
     def __init__(self,
                  # R2D2
                  seq_len = 80,

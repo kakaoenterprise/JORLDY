@@ -10,6 +10,26 @@ from .base import BaseAgent
 from .utils import OU_Noise
     
 class DDPG(BaseAgent):
+    """Deep deterministic policy gradient (DDPG) agent. 
+    
+    Args: 
+        state_size (int): dimension of state.
+        action_size (int): dimension of action.
+        actor (str): key of actor network class in _network_dict.txt.
+        critic (str): key of critic network class in _network_dict.txt.
+        head (str): key of head in _head_dict.txt.
+        optim_config (dict): dictionary of the optimizer info.
+        gamma (float): discount factor.
+        buffer_size (int): the size of the memory buffer.
+        batch_size (int): the number of samples in the one batch.
+        start_train_step (int): steps to start learning. 
+        tau (float): the soft update coefficient.
+        mu (float): the drift coefficient of the Ornstein-Uhlenbeck process for action exploration.
+        theta (float): reversion of the time constant of the Ornstein-Uhlenbeck process.
+        sigma (float): diffusion coefficient of the Ornstein-Uhlenbeck process. 
+        device (str): device to use. 
+            (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
+    """
     def __init__(self,
                  state_size,
                  action_size,

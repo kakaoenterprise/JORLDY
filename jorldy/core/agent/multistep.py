@@ -8,6 +8,11 @@ from core.buffer import ReplayBuffer
 from .dqn import DQN
 
 class Multistep(DQN):
+    """Multistep DQN agent. 
+    
+    Args: 
+        n_step (int): number of steps in multi-step Q learning.
+    """
     def __init__(self, n_step=5, **kwargs):
         super(Multistep, self).__init__(**kwargs)
         self.n_step = n_step

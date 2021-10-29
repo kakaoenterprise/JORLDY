@@ -6,6 +6,13 @@ import numpy as np
 from .dqn import DQN
 
 class QRDQN(DQN):
+    """Quantile Regression DQN (QR-DQN) agent. 
+    
+    Args: 
+        state_size (int): dimension of state.
+        action_size (int): dimension of action.
+        num_support (int): the number of supports.
+    """
     def __init__(self, state_size, action_size, num_support, **kwargs):
         super(QRDQN, self).__init__(state_size, action_size*num_support, **kwargs)  
 

@@ -10,6 +10,35 @@ from core.buffer import PERBuffer
 from .rainbow import Rainbow
 
 class RainbowIQN(Rainbow):
+    """Rainbow IQN agent. 
+    
+    Args: 
+        state_size (int): dimension of state.
+        action_size (int): dimension of action.
+        network (str): key of network class in _network_dict.txt.
+        head (str): key of head in _head_dict.txt.
+        optim_config (dict): dictionary of the optimizer info. 
+            (key: 'name', value: name of optimizer)
+        gamma (float): discount factor.
+        explore_step (int): the number of steps the epsilon decays.
+        buffer_size (int): the size of the memory buffer.
+        batch_size (int): the number of samples in the one batch.
+        start_train_step (int): steps to start learning. 
+        target_update_period (int): period to update the target network. (unit: step)
+        n_step: number of steps in multi-step Q learning.
+        num_workers: the number of agents in distributed learning
+        alpha (float): prioritization exponent.
+        beta (float): initial value of degree to use importance sampling.
+        learn_period (int): period to train (unit: step)
+        uniform_sample_prob (float): ratio of uniform random sampling.
+        noise_type (str): NoisyNet noise type. One of ['factorized', 'independent']
+            ('factorized': Factorized Gaussian Noise, else: Independent Gaussian Noise)
+        num_sample (int): number of sample points
+        embedding_dim (int): dimension of sample point embedding.
+        sample_min (float): quantile minimum thresholds (tau_min).
+        sample_max (float): quantile maximum thresholds (tau_max).
+        device (str): device to use. (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
+    """
     def __init__(self,
                 state_size,
                 action_size,

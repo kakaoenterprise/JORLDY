@@ -8,6 +8,17 @@ from core.optimizer import Optimizer
 from .dqn import DQN
 
 class Noisy(DQN):
+    """NoisyNet agent. 
+    
+    Args: 
+        state_size (int): dimension of state.
+        action_size (int): dimension of action.
+        network (str): key of network class in _network_dict.txt.
+        head (str): key of head in _head_dict.txt.
+        optim_config (dict): dictionary of the optimizer info (key: 'name', value: name of optimizer).
+        noise_type (str): NoisyNet noise type. One of ['factorized', 'independent']
+            ('factorized': Factorized Gaussian Noise, else: Independent Gaussian Noise)  
+    """
     def __init__(self, 
                  state_size,
                  action_size,
