@@ -5,7 +5,6 @@
 **Join Our Reinforcement Learning framework for Developing Yours (JORLDY)** is an open-source Reinforcement Learning (RL) framework provided by [KakaoEnterpise](https://www.kakaoenterprise.com/). It provides various RL algorithms and environment and they can be easily used using single code. This repository is opened for helping RL researchers and students who study RL.
 
 
-
 ## :fire: Features
 
 - 20+ RL Algorithms and various RL environment are provided
@@ -54,13 +53,11 @@ __:heavy_plus_sign: To use additional environments__
 <img src="./resrc/quickstart.png" alt="quickstart" width=60%/> 
 
 
-
 ## :card_index_dividers: Release 
 
 | Version |   Release Date   |   Source   |   Download   |
 | :-----: | :--------------: | :--------: | :----------: |
 |  0.0.1  | November 03, 2021 | [Source]() | [Download]() |
-
 
 
 ## :mag: How to
@@ -73,7 +70,6 @@ __:heavy_plus_sign: To use additional environments__
 - [How to customize buffer](./jorldy/core/buffer/README.md)
 
 
-
 ## :page_facing_up: Documentation
 
 - [Distributed Architecture](./docs/Distributed_Architecture.md)
@@ -82,7 +78,6 @@ __:heavy_plus_sign: To use additional environments__
 - [Naming Convention](./docs/Naming_convention.md)
 - [Benchmark](https://www.notion.so/rlnote/Benchmark-c7642d152cad4980bc03fe804fe9e88a)
 - [Reference](./docs/Reference.md)
-
 
 
 ## :busts_in_silhouette: Contributors
