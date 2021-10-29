@@ -31,18 +31,17 @@ class MPO(BaseAgent):
         device (str): device to use. 
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
         num_workers: the number of agents in distributed learning.
-        
         critic_loss_type (str): type of critic loss. One of ['1step_TD', 'retrace'].
-        num_sample (int):
-        min_eta (float):
-        min_alpha_mu (float):
-        min_alpha_sigma (float):
-        eps_eta (float):
-        eps_alpha_mu (float):
-        eps_alpha_sigma (float):
-        eta (float):
-        alpha_mu (float):
-        alpha_sigma (float):        
+        num_sample (int): the number of samples. 
+        min_eta (float): minimum value of eta.
+        min_alpha_mu (float): minimum value of alpha_mu.
+        min_alpha_sigma (float): minimum value of alpha_sigma.
+        eps_eta (float): threshold of temperature loss term.
+        eps_alpha_mu (float): threshold of mean part of Gaussian-KL constraint term.
+        eps_alpha_sigma (float): threshold of variance part of Gaussian-KL constraint term.
+        eta (float): Lagrange multipliers of temperature loss term.
+        alpha_mu (float): Lagrange multipliers of mean part of Gaussian-KL constraint term (trust-region loss).
+        alpha_sigma (float): Lagrange multipliers of variance part of Gaussian-KL constraint term.       
     """
     def __init__(self,
                  state_size,
