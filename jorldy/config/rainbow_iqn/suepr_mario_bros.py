@@ -1,7 +1,7 @@
-### Rainbow DQN Atari Config ###
+### Rainbow IQN Atari Config ###
 
 env = {
-    "name": "mario",
+    "name": "super_mario_bros",
     "render": False,
     "gray_img": True,
     "img_width": 84,
@@ -12,8 +12,8 @@ env = {
 }
 
 agent = {
-    "name": "rainbow",
-    "network": "rainbow",
+    "name": "rainbow_iqn",
+    "network": "rainbow_iqn",
     "head": "cnn",
     "gamma": 0.99,
     "explore_step": 1000000,
@@ -30,14 +30,16 @@ agent = {
     "uniform_sample_prob": 1e-3,
     # Noisy 
     "noise_type": 'factorized', # [independent, factorized]
-    # C51
-    "v_min": -10,
-    "v_max": 10,
-    "num_support": 51
+    # IQN
+    "num_sample": 64,
+    "embedding_dim": 64,
+    "sample_min": 0.0,
+    "sample_max": 1.0,
 }
 
 optim = {
     "name": "adam",
+    "eps": 1e-2/agent['batch_size'],
     "lr": 2.5e-4/4,
 }
 

@@ -17,7 +17,7 @@ class _Nes(_Atari):
     def get_frame(self):
         return np.copy(self.env.screen)
 
-class Mario(_Nes):
+class SuperMarioBros(_Nes):
     def __init__(self, **kwargs):
         reward_scale = 15.
-        super(Mario, self).__init__('SuperMarioBros-v0', reward_scale=reward_scale, **kwargs)
+        super(SuperMarioBros, self).__init__('SuperMarioBros-v0', reward_scale=reward_scale, **kwargs)
