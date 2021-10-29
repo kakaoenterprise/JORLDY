@@ -93,3 +93,7 @@ __:heavy_plus_sign: To use additional environments__
 ## :copyright: License
 
 [Apache License 2.0](./LICENSE.md)
+
+## :no_entry_sign: Disclaimer
+
+Installing in JORDY and/or utilizing algorithms or environments not provided KEP may involve a use of third party’s intellectual property. It is advisable that a user obtain licenses or permissions from the right holder(s), if necessary, or take any other necessary measures to avoid infringement or misappropriation of third party’s intellectual property rights.
