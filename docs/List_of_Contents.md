@@ -1,4 +1,4 @@
-# Implementation List
+# List of Contents
 
 ### Algorithms
 
@@ -51,4 +51,4 @@
 - [Gym Atari](https://gym.openai.com/envs/#atari) 
 - [ML-Agents](https://github.com/Unity-Technologies/ml-agents) 
 - [Procgen](https://github.com/openai/procgen)
-- [Mario](https://pypi.org/project/gym-super-mario-bros/)
+- [Super Mario Bros](https://pypi.org/project/gym-super-mario-bros/)

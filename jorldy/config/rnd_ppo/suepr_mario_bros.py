@@ -1,7 +1,7 @@
-### RND PPO Mario Config ###
+### RND PPO Super Mario Bros Config ###
 
 env = {
-    "name": "mario",
+    "name": "super_mario_bros",
     "render": False,
     "gray_img": True,
     "img_width": 84,

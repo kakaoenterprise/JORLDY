@@ -1,7 +1,7 @@
-### IQN Mario Config ###
+### DQN Super Mario Bros Config ###
 
 env = {
-    "name": "mario",
+    "name": "super_mario_bros",
     "render": False,
     "gray_img": True,
     "img_width": 84,
@@ -10,12 +10,9 @@ env = {
 }
 
 agent = {
-    "name": "iqn",
-    "network": "iqn",
+    "name": "dqn",
+    "network": "dqn",
     "head": "cnn",
-    "optimizer": "adam",
-    "opt_eps": 1e-2/32,
-    "learning_rate": 0.00005,
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
@@ -24,11 +21,11 @@ agent = {
     "batch_size": 32,
     "start_train_step": 100000,
     "target_update_period": 10000,
-    
-    "num_sample": 64,
-    "embedding_dim": 64,
-    "sample_min": 0.0,
-    "sample_max": 1.0,
+}
+
+optim = {
+    "name": "adam",
+    "lr": 1e-4,
 }
 
 train = {
@@ -37,8 +34,10 @@ train = {
     "run_step" : 100000000,
     "print_period" : 5000,
     "save_period" : 50000,
-    "eval_iteration": 5,
+    "eval_iteration": 1,
+    "record" : True,
+    "record_period" : 200000,
     # distributed setting
-    "update_period" : 8,
+    "update_period" : 32,
     "num_workers" : 16,
 }

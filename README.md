@@ -56,7 +56,7 @@
 
 - [Distributed Architecture](./docs/Distributed_Architecture.md)
 - [Role of Managers](./jorldy/manager/README.md)
-- [Implementation List](./docs/Implementation_list.md)
+- [List of Contents](./docs/List_of_Contents.md)
 - [Naming Convention](./docs/Naming_convention.md)
 - [Benchmark](https://www.notion.so/rlnote/Benchmark-c7642d152cad4980bc03fe804fe9e88a)
 - [Reference](./docs/Reference.md)
