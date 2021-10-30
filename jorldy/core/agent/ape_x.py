@@ -86,7 +86,7 @@ class ApeX(DQN):
             max_Q = torch.max(q).item()
             next_q = self.network(next_state)
             max_a = torch.argmax(next_q, axis=1)
-            max_one_hot_action = eye[max_a.view(-1).long()]
+            max_one_hot_action = eye[max_a.long()]
 
             next_target_q = self.target_network(next_state)
             target_q = (next_target_q * max_one_hot_action).sum(1, keepdims=True)
