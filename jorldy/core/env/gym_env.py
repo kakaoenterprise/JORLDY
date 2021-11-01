@@ -3,14 +3,21 @@ import numpy as np
 from .base import BaseEnv
 
 class _Gym(BaseEnv):
+    """Gym environment. 
+    
+    Args: 
+        name (str): name of environment in Gym.
+        mode (str): type of state and action space. One of ['discrete', 'continuous'].
+        render (bool): parameter that determine whether to render.
+        custom_action (bool): parameter that determine whether to use custom action.
+    """
     def __init__(self,
                  name,
                  mode,
                  render=False,
                  custom_action=False,
-                 id=0,
+                 **kwagrs,
                 ):
-        self.id = id
         self.env = gym.make(name)
         self.mode = mode
         self.state_size = self.env.observation_space.shape[0]
