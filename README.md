@@ -82,7 +82,7 @@ __:heavy_plus_sign: To use additional environments__
 
 ## :busts_in_silhouette: Contributors
 
-:mailbox: Contact: atech.rl@kakaocorp.com
+:mailbox: Contact: jorldy@kakaoenterprise.com
 
 <img src="./resrc/contributors.png" alt="contributors" width=80%/> 
 
