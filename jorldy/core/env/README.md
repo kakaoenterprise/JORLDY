@@ -2,6 +2,7 @@
 
 ## 1. Inherit BaseEnv class.
 - If you want to implement a new environment without inheriting the provided environments, you must inherit the base environment.
+- Every environment must includes keward arguments when defined. You should use \*\*kwargs in \_\_init\_\_.
 
 reference: [base.py](./base.py), [gym_env.py](./gym_env.py), [atari.py](./atari.py), ...
 
