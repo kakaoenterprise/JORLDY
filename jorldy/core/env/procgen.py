@@ -6,6 +6,18 @@ from .utils import ImgProcessor
 from .base import BaseEnv
 
 class _Procgen(BaseEnv):
+    """Procgen environment. 
+    
+    Args: 
+        name (str): name of environment in Procgen games.
+        render (bool): parameter that determine whether to render.
+        gray_img (bool): parameter that determine whether to use gray image.
+        img_width (int): width of image input.
+        img_height (int): height of image input.
+        stack_frame (int): the number of stacked frame in one single state.
+        no_op (bool): parameter that determine whether or not to operate during the first 30(no_op_max) steps.
+        reward_clip (bool): parameter that determine whether to use reward clipping.
+    """
     def __init__(self,
                  name,
                  render=False,
@@ -13,11 +25,10 @@ class _Procgen(BaseEnv):
                  img_width=64,
                  img_height=64,
                  stack_frame=4,
-                 id=0,
                  no_op=False,
                  reward_clip=False,
+                 **kwagrs,
                  ):
-        self.id = id
         self.render=render
         self.gray_img=gray_img
         self.img_width=img_width

@@ -7,6 +7,21 @@ from .base import BaseEnv
 COMMON_VERSION = 'Deterministic-v4'
 
 class _Atari(BaseEnv):
+    """Atari environment. 
+    
+    Args: 
+        name (str): name of environment in Atari games.
+        render (bool): parameter that determine whether to render.
+        gray_img (bool): parameter that determine whether to use gray image.
+        img_width (int): width of image input.
+        img_height (int): height of image input.
+        stack_frame (int): the number of stacked frame in one single state.
+        life_key (str): key of life query function in emulator.
+        no_op (bool): parameter that determine whether or not to operate during the first 30(no_op_max) steps.
+        reward_clip (bool): parameter that determine whether to use reward clipping.
+        reward_scale (float): reward normalization denominator. 
+        dead_penatly (bool): parameter that determine whether to use penalty when the agent dies.
+    """
     def __init__(self,
                  name,
                  render=False,
@@ -14,14 +29,13 @@ class _Atari(BaseEnv):
                  img_width=84,
                  img_height=84,
                  stack_frame=4,
-                 id=0,
                  life_key='lives',
                  no_op=False,
                  reward_clip=False,
                  reward_scale=None,
                  dead_penalty=False,
+                 **kwagrs,
                  ):
-        self.id = id
         self.render=render
         self.gray_img=gray_img
         self.img_width=img_width

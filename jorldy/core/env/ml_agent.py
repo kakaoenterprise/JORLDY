@@ -14,7 +14,13 @@ def match_build():
                 "Darwin" : "Mac"}[os]
 
 class _MLAgent(BaseEnv):
-    def __init__(self, env_name, train_mode=True, id=None):
+    """MLAgent environment. 
+    
+    Args: 
+        env_name (str): name of environment in ML-Agents.
+        train_mode (bool): parameter that determine whether to use low-resource training rendering mode.
+    """
+    def __init__(self, env_name, train_mode=True, **kwagrs):
         env_path = f"./core/env/mlagents/{env_name}/{match_build()}/{env_name}"
         id = np.random.randint(65534) if id is None else id
                 

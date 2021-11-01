@@ -8,6 +8,11 @@ import numpy as np
 from .atari import _Atari
 
 class _Nes(_Atari):
+    """Nes environment. 
+    
+    Args: 
+        name (str): name of environment in Nes.
+    """
     def __init__(self, name, **kwargs):
         super(_Nes, self).__init__(name=name, life_key='life', **kwargs)
         self.env = JoypadSpace(self.env, RIGHT_ONLY)
