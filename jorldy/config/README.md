@@ -33,7 +33,9 @@ reference: [dqn/cartpole.py](./dqn/cartpole.py), [dqn/atari.py](./dqn/atari.py)
       - save_period: It means the cycle(unit=step) to save the model.
       - eval_iteration: It means how many episodes will be run in total to get the evaluation score.
       - record: It means whether to record the simulation as the evaluation proceeds. If you set it True, simulation is saved as a gif file in save_path. If you set it True and env is recordable, simulation is saved as a gif file in save_path. (Note that this does not work for non-recordable environments.)
-      - record_period: It means the cycle(unit=step) to record.  
+      - record_period: It means the cycle(unit=step) to record.
+      - id: If set, log to logs/\[env\]/__id__ path. (default: __agent.name__)
+      - experiment: If set, log to logs/__experiment__/\[env\]/id. Otherwise, log to logs/\[env\]/id.
       - distributed_batch_size: In distributed script, uses distributed_batch_size instead of agent.batch_size.
       - update_period: It means the cycle(unit=step) in which actors pass transition data to learner.
       - num_workers: Total number of distributed actors which interact with env.

@@ -7,6 +7,26 @@ from .reinforce import REINFORCE
 from core.optimizer import Optimizer
 
 class VMPO(REINFORCE):
+    """ Maximum A Posteriori Policy Optimization (MPO) agent. 
+    
+    Args: 
+        optim_config (dict): dictionary of the optimizer info. 
+            (key: 'name', value: name of optimizer)
+        batch_size (int): the number of samples in the one batch.
+        n_step (int): The number of steps to run for each environment per update.
+        n_epoch (int): Number of epoch when optimizing the surrogate.
+        _lambda (float): Factor for trade-off of bias vs variance for Generalized Advantage Estimator.
+        clip_grad_norm (float): gradient clipping threshold.    
+        min_eta (float): minimum value of eta.
+        min_alpha_mu (float): minimum value of alpha_mu.
+        min_alpha_sigma (float): minimum value of alpha_sigma.
+        eps_eta (float): threshold of temperature loss term.
+        eps_alpha_mu (float): threshold of mean part of Gaussian-KL constraint term.
+        eps_alpha_sigma (float): threshold of variance part of Gaussian-KL constraint term.
+        eta (float): Lagrange multipliers of temperature loss term.
+        alpha_mu (float): Lagrange multipliers of mean part of Gaussian-KL constraint term (trust-region loss).
+        alpha_sigma (float): Lagrange multipliers of variance part of Gaussian-KL constraint term. 
+    """
     def __init__(self,
                  optim_config={'name':'adam'},
                  batch_size=32,

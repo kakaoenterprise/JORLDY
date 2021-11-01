@@ -5,6 +5,14 @@ from .dqn import DQN
 from core.buffer import PERBuffer
 
 class PER(DQN):
+    """Prioritized experience replay (PER) agent. 
+    
+    Args: 
+        alpha (float): priority exponent.
+        beta (float): initial value of degree to use importance sampling.
+        learn_period (int): period to train (unit: step)
+        uniform_sample_prob (float): ratio of uniform random sampling.
+    """
     def __init__(self, alpha, beta, learn_period=16, uniform_sample_prob=1e-3, **kwargs):
         super(PER, self).__init__(**kwargs)
         self.memory = PERBuffer(self.buffer_size, uniform_sample_prob)

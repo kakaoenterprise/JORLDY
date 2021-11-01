@@ -9,6 +9,21 @@ from .ppo import PPO
 from core.network import Network
 
 class ICM_PPO(PPO):
+    """Intrinsic Curiosity Module (ICM) with PPO agent. 
+    
+    Args: 
+        state_size (int): dimension of state.
+        action_size (int): dimension of action.
+        icm_network (str): key of network class in _network_dict.txt.
+        beta (float): weight of the inverse model loss against the forward model loss.
+        lamb (float): weight of the policy gradient loss against the intrinsic reward signal.
+        eta (float): intrinsic reward scaling factor.
+        extrinsic_coeff (float): coefficient of extrinsic reward.        
+        intrinsic_coeff (float): coefficient of intrinsic reward.
+        obs_normalize (bool): parameter that determine whether to normalize observation.
+        ri_normalize (bool): parameter that determine whether to normalize intrinsic reward.
+        batch_norm (bool): parameter that determine whether to use batch normalization.
+    """
     def __init__(self,
                  state_size,
                  action_size,

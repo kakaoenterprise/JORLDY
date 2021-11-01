@@ -8,8 +8,6 @@
 - Exeptional case:
     - CartPole -> Cartpole
         - The exception rule is applied to speed up debugging.
-    - SuperMarioBros -> Mario
-        - The exception rule is applied because the class name is too long.
 
 # Class calling convention
 - If there are consecutive lowercase and uppercase letters, add '_' between them.

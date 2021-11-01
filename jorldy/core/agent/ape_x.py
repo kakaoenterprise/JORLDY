@@ -7,6 +7,20 @@ from core.buffer import PERBuffer
 from .dqn import DQN
 
 class ApeX(DQN):
+    """Ape-X agent. 
+    
+    Args: 
+        epsilon (float): epsilon in epsilon_i greedy policy (each i-th actor) 
+            where epsilon_i=epsilon^(1+(i/(N-1))*alpha).
+        epsilon_alpha (float): alpha in epsilon_i greedy policy
+            where epsilon_i=epsilon^(1+(i/(N-1))*alpha).
+        clip_grad_norm (float): gradient clipping threshold.
+        alpha (float): prioritization exponent.
+        beta (float): initial value of degree to use importance sampling.
+        learn_period (int): period to train (unit: step)
+        uniform_sample_prob (float): ratio of uniform random sampling.
+        n_step: number of steps in multi-step Q learning.
+    """
     def __init__(self,
                  # ApeX
                  epsilon = 0.4,

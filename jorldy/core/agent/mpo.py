@@ -11,6 +11,38 @@ from core.optimizer import Optimizer
 from core.buffer import ReplayBuffer
 
 class MPO(BaseAgent):
+    """ Maximum A Posteriori Policy Optimization (MPO) agent. 
+    
+    Args: 
+        state_size (int): dimension of state.
+        action_size (int): dimension of action.
+        optim_config (dict): dictionary of the optimizer info. 
+            (key: 'name', value: name of optimizer)
+        actor (str): key of actor network class in _network_dict.txt.
+        critic (str): key of critic network class in _network_dict.txt.
+        head (str): key of head in _head_dict.txt.
+        buffer_size (int): the size of the memory buffer.
+        batch_size (int): the number of samples in the one batch.
+        start_train_step (int): steps to start learning. 
+        n_epoch (int): Number of epoch when optimizing the surrogate.
+        n_step (int): The number of steps to run for each environment per update.
+        clip_grad_norm (float): gradient clipping threshold.
+        gamma (float): discount factor.
+        device (str): device to use. 
+            (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
+        num_workers: the number of agents in distributed learning.
+        critic_loss_type (str): type of critic loss. One of ['1step_TD', 'retrace'].
+        num_sample (int): the number of samples. 
+        min_eta (float): minimum value of eta.
+        min_alpha_mu (float): minimum value of alpha_mu.
+        min_alpha_sigma (float): minimum value of alpha_sigma.
+        eps_eta (float): threshold of temperature loss term.
+        eps_alpha_mu (float): threshold of mean part of Gaussian-KL constraint term.
+        eps_alpha_sigma (float): threshold of variance part of Gaussian-KL constraint term.
+        eta (float): Lagrange multipliers of temperature loss term.
+        alpha_mu (float): Lagrange multipliers of mean part of Gaussian-KL constraint term (trust-region loss).
+        alpha_sigma (float): Lagrange multipliers of variance part of Gaussian-KL constraint term.       
+    """
     def __init__(self,
                  state_size,
                  action_size,
