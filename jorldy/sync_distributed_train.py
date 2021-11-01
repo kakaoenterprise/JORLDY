@@ -1,6 +1,6 @@
 import argparse
 
-import torch.multiprocessing as mp
+import multiprocessing as mp
 
 from core import *
 from manager import *
