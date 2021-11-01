@@ -66,7 +66,7 @@ class CNN_LSTM(torch.nn.Module):
         x = x.view(-1, seq_len, self.D_conv_out)
         x, hidden_out = self.lstm(x, hidden_in)
         
-        return x, hidden_in, hidden_out
+        return F.relu(x), hidden_in, hidden_out
     
 class MLP_LSTM(torch.nn.Module):
     def __init__(self, D_in, D_hidden=512):
@@ -84,7 +84,7 @@ class MLP_LSTM(torch.nn.Module):
         x = F.relu(self.l(x))
         x, hidden_out = self.lstm(x, hidden_in)
         
-        return x, hidden_in, hidden_out
+        return F.relu(x), hidden_in, hidden_out
     
 import os, sys, inspect, re
 from collections import OrderedDict
