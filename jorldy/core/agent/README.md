@@ -2,6 +2,7 @@
 
 ## 1. Inherit BaseAgent class.
 - If you want to add a new agent without inheriting the provided agents, you must inherit the base agent.
+- Every agent must includes keward arguments when defined. You should use \*\*kwargs in \_\_init\_\_.
 
 reference: [dqn.py](./dqn.py), [reinforce.py](./reinforce.py), [sac.py](./sac.py), ...
 
