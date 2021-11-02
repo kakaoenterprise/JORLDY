@@ -15,6 +15,7 @@ class Rainbow(DQN):
     Args: 
         state_size (int): dimension of state.
         action_size (int): dimension of action.
+        hidden_size (int): dimension of hidden unit.
         network (str): key of network class in _network_dict.txt.
         head (str): key of head in _head_dict.txt.
         optim_config (dict): dictionary of the optimizer info. 
@@ -42,6 +43,7 @@ class Rainbow(DQN):
     def __init__(self,
                 state_size,
                 action_size,
+                hidden_size=512,
                 network='rainbow',
                 head='mlp',
                 optim_config={'name':'adam'},
@@ -70,8 +72,8 @@ class Rainbow(DQN):
                 ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size        
-        self.network = Network(network, state_size, action_size, num_support, noise_type, head=head).to(self.device)
-        self.target_network = Network(network, state_size, action_size, num_support, noise_type, head=head).to(self.device)
+        self.network = Network(network, state_size, action_size, num_support, noise_type, D_hidden=hidden_size, head=head).to(self.device)
+        self.target_network = Network(network, state_size, action_size, num_support, noise_type, D_hidden=hidden_size, head=head).to(self.device)
         self.target_network.load_state_dict(self.network.state_dict())
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma

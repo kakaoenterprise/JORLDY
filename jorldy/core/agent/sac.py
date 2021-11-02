@@ -15,6 +15,7 @@ class SAC(BaseAgent):
     Args:
         state_size (int): dimension of state.
         action_size (int): dimension of action.
+        hidden_size (int): dimension of hidden unit.
         actor (str): key of actor network class in _network_dict.txt.
         critic (str): key of critic network class in _network_dict.txt.
         head (str): key of head in _head_dict.txt.
@@ -33,6 +34,7 @@ class SAC(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
+                 hidden_size=512,
                  actor = "continuous_policy",
                  critic = "sac_critic",
                  head = 'mlp',
@@ -52,9 +54,9 @@ class SAC(BaseAgent):
         self.action_type = actor.split("_")[0]
         assert self.action_type == "continuous"
         
-        self.actor = Network(actor, state_size, action_size, head=head).to(self.device)
-        self.critic = Network(critic, state_size, action_size, head=head).to(self.device)
-        self.target_critic = Network(critic, state_size, action_size, head=head).to(self.device)
+        self.actor = Network(actor, state_size, action_size, D_hidden=hidden_size, head=head).to(self.device)
+        self.critic = Network(critic, state_size, action_size, D_hidden=hidden_size, head=head).to(self.device)
+        self.target_critic = Network(critic, state_size, action_size, D_hidden=hidden_size, head=head).to(self.device)
         self.target_critic.load_state_dict(self.critic.state_dict())
         self.actor_optimizer = Optimizer(optim_config.actor, self.actor.parameters(), lr=optim_config.actor_lr)
         self.critic_optimizer = Optimizer(optim_config.critic, self.critic.parameters(), lr=optim_config.critic_lr)

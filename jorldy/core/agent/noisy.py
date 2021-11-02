@@ -13,6 +13,7 @@ class Noisy(DQN):
     Args: 
         state_size (int): dimension of state.
         action_size (int): dimension of action.
+        hidden_size (int): dimension of hidden unit.
         network (str): key of network class in _network_dict.txt.
         head (str): key of head in _head_dict.txt.
         optim_config (dict): dictionary of the optimizer info (key: 'name', value: name of optimizer).
@@ -22,16 +23,17 @@ class Noisy(DQN):
     def __init__(self, 
                  state_size,
                  action_size,
+                 hidden_size=512,
                  network='noisy',
                  head='mlp',
                  optim_config={'name':'adam'},
                  # Noisy
                  noise_type='factorized', 
                  **kwargs):
-        super(Noisy, self).__init__(state_size, action_size, network=network, head=head, **kwargs)
+        super(Noisy, self).__init__(state_size, action_size, hidden_size=hidden_size, network=network, head=head, **kwargs)
     
-        self.network = Network(network, state_size, action_size, noise_type, head=head).to(self.device)
-        self.target_network = Network(network, state_size, action_size, noise_type, head=head).to(self.device)
+        self.network = Network(network, state_size, action_size, noise_type, D_hidden=hidden_size, head=head).to(self.device)
+        self.target_network = Network(network, state_size, action_size, noise_type, D_hidden=hidden_size, head=head).to(self.device)
         self.target_network.load_state_dict(self.network.state_dict())
 
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())

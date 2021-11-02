@@ -15,6 +15,7 @@ class RainbowIQN(Rainbow):
     Args: 
         state_size (int): dimension of state.
         action_size (int): dimension of action.
+        hidden_size (int): dimension of hidden unit.
         network (str): key of network class in _network_dict.txt.
         head (str): key of head in _head_dict.txt.
         optim_config (dict): dictionary of the optimizer info. 
@@ -42,6 +43,7 @@ class RainbowIQN(Rainbow):
     def __init__(self,
                 state_size,
                 action_size,
+                hidden_size=512,
                 network='rainbow_iqn',
                 head='mlp',
                 optim_config={'name':'adam'},
@@ -71,8 +73,8 @@ class RainbowIQN(Rainbow):
                 ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_size = action_size        
-        self.network = Network(network, state_size, action_size, embedding_dim, num_sample, noise_type, head=head).to(self.device)
-        self.target_network = Network(network, state_size, action_size, embedding_dim, num_sample, noise_type, head=head).to(self.device)
+        self.network = Network(network, state_size, action_size, embedding_dim, num_sample, noise_type, D_hidden=hidden_size, head=head).to(self.device)
+        self.target_network = Network(network, state_size, action_size, embedding_dim, num_sample, noise_type, D_hidden=hidden_size, head=head).to(self.device)
         self.target_network.load_state_dict(self.network.state_dict())
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma
@@ -157,7 +159,7 @@ class RainbowIQN(Rainbow):
             theta_target = torch.unsqueeze(theta_target, 2)
         
         error_loss = theta_target - theta_pred 
-        huber_loss = F.smooth_l1_loss(theta_target, theta_pred, reduction='none')
+        huber_loss = F.smooth_l1_loss(*torch.broadcast_tensors(theta_pred, theta_target), reduction='none')
         
         # Get Loss
         loss = torch.where(error_loss < 0.0, 1-tau, tau) * huber_loss
