@@ -171,9 +171,13 @@ class R2D2(ApeX):
                 _transition['done'] = np.concatenate((zero_done, _transition['done']), axis=1)
                 zero_q = np.zeros((1 , lack_dims, *transition['q'].shape[1:]))
                 _transition['q'] = np.concatenate((zero_q, _transition['q']), axis=1)
-              
-                _transition['next_hidden_h'] = self.tmp_buffer[self.n_step - lack_dims]['hidden_h']
-                _transition['next_hidden_c'] = self.tmp_buffer[self.n_step - lack_dims]['hidden_c']
+                
+                if lack_dims > self.n_step:
+                    _transition['next_hidden_h'] = self.tmp_buffer[0]['hidden_h']
+                    _transition['next_hidden_c'] = self.tmp_buffer[0]['hidden_c']
+                else:
+                    _transition['next_hidden_h'] = self.tmp_buffer[self.n_step - lack_dims]['hidden_h']
+                    _transition['next_hidden_c'] = self.tmp_buffer[self.n_step - lack_dims]['hidden_c']
 
             target_q = self.inv_val_rescale(_transition['q'][:, self.n_step:])
             for i in reversed(range(self.n_step)):
@@ -189,9 +193,9 @@ class R2D2(ApeX):
             self.store_start = False
             self.store_period_stamp = 0
             if self.tmp_buffer[-self.n_step-1]['done']:
+                self.store_start = True
                 self.tmp_buffer = deque(islice(self.tmp_buffer, len(self.tmp_buffer)-self.n_step, None),
                                         maxlen = self.tmp_buffer.maxlen)
-                self.store_start = True
 
         self.store_period_stamp += 1
         if transition['done']:

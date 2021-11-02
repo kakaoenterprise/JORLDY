@@ -23,14 +23,14 @@ agent = {
     "beta": 0.6,
     "uniform_sample_prob": 1e-3,
     # R2D2
-    "seq_len": 8,
-    "n_burn_in": 4,
-    "zero_padding": True,
+    "seq_len": 5,
+    "n_burn_in": 2,
+    "zero_padding": False,
 }
 
 optim = {
     "name": "adam",
-    # "eps": 1e-4,
+    "eps": 1e-3,
     "lr": 1e-4,
 }
 
