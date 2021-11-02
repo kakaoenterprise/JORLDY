@@ -73,7 +73,7 @@ class R2D2(ApeX):
             transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
 
         state = transitions['state'][:,:self.seq_len]
-        action = transitions['action']
+        action = transitions['action'][:,:self.seq_len]
         prev_action_onehot = transitions['prev_action_onehot'][:,:self.seq_len]
         reward = transitions['reward']
         next_state = transitions['state'][:,self.n_step:]
@@ -87,7 +87,7 @@ class R2D2(ApeX):
         next_hidden = (next_hidden_h, next_hidden_c)
         
         eye = torch.eye(self.action_size).to(self.device)
-        one_hot_action = eye[action.long()]
+        one_hot_action = eye[action.view(-1,self.seq_len).long()]
         q_pred = self.get_q(state, prev_action_onehot, hidden, self.network)
         q = (q_pred * one_hot_action).sum(-1, keepdims=True)
         with torch.no_grad():
@@ -142,14 +142,15 @@ class R2D2(ApeX):
         if (self.store_start or self.store_period_stamp == self.store_period) and\
            ((self.zero_padding and len(self.tmp_buffer) >= self.n_step + 1) or
             (not self.zero_padding and len(self.tmp_buffer) == self.tmp_buffer.maxlen)):
-            _transition['action'] = self.tmp_buffer[-self.n_step-1]['action']
+            # _transition['action'] = self.tmp_buffer[-self.n_step-1]['action']
             _transition['hidden_h'] = self.tmp_buffer[0]['hidden_h']
             _transition['hidden_c'] = self.tmp_buffer[0]['hidden_c']
             _transition['next_hidden_h'] = self.tmp_buffer[self.n_step]['hidden_h']
             _transition['next_hidden_c'] = self.tmp_buffer[self.n_step]['hidden_c']
             
             for key in self.tmp_buffer[0].keys():
-                if key not in ['action', 'hidden_h', 'hidden_c', 'next_state']:
+                # if key not in ['action', 'hidden_h', 'hidden_c', 'next_state']:
+                if key not in ['hidden_h', 'hidden_c', 'next_state']:
                     if key in ['q', 'state', 'prev_action_onehot']:
                         _transition[key] = np.stack([t[key] for t in self.tmp_buffer], axis=1)
                     else:
@@ -162,6 +163,8 @@ class R2D2(ApeX):
                 _transition['state'] = np.concatenate((zero_state, _transition['state']), axis=1)
                 zero_prev_action_onehot = np.zeros((1 , lack_dims, *transition['prev_action_onehot'].shape[1:]))
                 _transition['prev_action_onehot'] = np.concatenate((zero_prev_action_onehot, _transition['prev_action_onehot']), axis=1)
+                zero_action = np.zeros((1 , lack_dims, *transition['action'].shape[1:]))
+                _transition['action'] = np.concatenate((zero_action, _transition['action']), axis=1)
                 zero_reward = np.zeros((1 , lack_dims, *transition['reward'].shape[1:]))
                 _transition['reward'] = np.concatenate((zero_reward, _transition['reward']), axis=1)
                 zero_done = np.zeros((1 , lack_dims, *transition['done'].shape[1:]))
