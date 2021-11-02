@@ -25,7 +25,7 @@ agent = {
     # R2D2
     "seq_len": 5,
     "n_burn_in": 2,
-    "zero_padding": False,
+    "zero_padding": True,
 }
 
 optim = {
@@ -44,5 +44,5 @@ train = {
     # distributed setting
     "distributed_batch_size" : 512,
     "update_period" : 16,
-    "num_workers" : 32,
+    "num_workers" : 16,
 }

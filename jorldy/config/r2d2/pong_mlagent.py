@@ -22,13 +22,13 @@ agent = {
     "beta": 0.6,
     "uniform_sample_prob": 1e-3,
     # R2D2
-    "seq_len": 10,
+    "seq_len": 7,
     "n_burn_in": 4,
 }
 
 optim = {
     "name": "adam",
-    "eps": 1e-4,
+    "eps": 1e-3,
     "lr": 1e-4,
 }
 
@@ -42,5 +42,5 @@ train = {
     # distributed setting
     "distributed_batch_size" : 512,
     "update_period" : 16,
-    "num_workers" : 16,
+    "num_workers" : 8,
 }

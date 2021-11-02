@@ -29,9 +29,9 @@ agent = {
     "beta": 0.6,
     "uniform_sample_prob": 1e-3,
     # R2D2
-    "seq_len": 15,
-    "n_burn_in": 7,
-    "zero_padding": False,
+    "seq_len": 7,
+    "n_burn_in": 4,
+    "zero_padding": True,
 }
 
 optim = {
