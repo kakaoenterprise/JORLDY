@@ -3,6 +3,6 @@ tensorboard==2.5.0
 ray==1.7.0
 opencv-python==4.5.2.52
 pygifsicle==1.0.4
-gym==0.18.3
+gym==0.21.0
 mlagents-envs==0.26.0
 procgen==0.10.4

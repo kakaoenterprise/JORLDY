@@ -34,11 +34,11 @@ __:whale: To use docker__
 
  # mac, linux
  $ docker build -t jorldy -f ./docker/Dockerfile .
- $ docker run -it --rm --name jorldy -v `pwd`/jorldy:/jorldy jorldy /bin/bash
+ $ docker run -it --rm --name jorldy -v `pwd`:/JORLDY jorldy /bin/bash
 
  # windows
  > docker build -t jorldy -f .\docker\Dockerfile .
- > docker run -it --rm --name jorldy -v %cd%\jorldy:/jorldy jorldy /bin/bash
+ > docker run -it --rm --name jorldy -v %cd%:/JORLDY jorldy /bin/bash
 ```
 
 __:heavy_plus_sign: To use additional environments__
