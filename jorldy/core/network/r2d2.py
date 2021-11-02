@@ -10,7 +10,7 @@ class R2D2(BaseNetwork):
         
         self.lstm = torch.nn.LSTM(input_size=D_head_out+D_out, hidden_size=D_hidden, batch_first=True)
         
-        self.l = torch.nn.Linear(D_head_out, D_hidden)
+        self.l = torch.nn.Linear(D_hidden, D_hidden)
         
         self.l1_a = torch.nn.Linear(D_hidden, D_hidden)
         self.l1_v = torch.nn.Linear(D_hidden, D_hidden)

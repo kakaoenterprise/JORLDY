@@ -207,9 +207,9 @@ class R2D2(ApeX):
         
         return torch.cat((burn_in_q, q), axis=1)
     
-    def val_rescale(self, val, eps=1e-6):
+    def val_rescale(self, val, eps=1e-3):
         return (val/(abs(val)+1e-10)) * ((abs(val)+1)**(1/2)-1) + (eps * val)
     
-    def inv_val_rescale(self, val, eps=1e-6):
+    def inv_val_rescale(self, val, eps=1e-3):
         # Reference: Proposition A.2 in paper "Observe and Look Further: Achieving Consistent Performance on Atari"
         return (val/(abs(val)+1e-10)) * ((((1+4*eps*(abs(val)+1+eps))**(1/2)-1)/(2*eps))**2-1)
