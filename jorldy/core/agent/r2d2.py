@@ -25,7 +25,7 @@ class R2D2(ApeX):
                  **kwargs
                  ):
         super(R2D2, self).__init__(**kwargs)
-        
+        assert 0 < n_burn_in < seq_len
         # R2D2
         self.seq_len = seq_len
         self.n_burn_in = n_burn_in
