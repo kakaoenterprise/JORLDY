@@ -15,7 +15,7 @@ env = {
 agent = {
     "name": "r2d2",
     "network": "r2d2",
-    "head": "cnn_lstm",
+    "head": "cnn",
     "gamma": 0.99,
     "buffer_size": 2000000,
     "batch_size": 32,
@@ -23,20 +23,20 @@ agent = {
     "start_train_step": 100000,
     "target_update_period": 10000,
     # MultiStep
-    "n_step": 3,
+    "n_step": 5,
     # PER
-    "alpha": 0.5,
-    "beta": 0.4,
+    "alpha": 0.9,
+    "beta": 0.6,
     "uniform_sample_prob": 1e-3,
     # R2D2
-    "seq_len": 4,
-    "n_burn_in": 1,
-    "zero_padding": False,
+    "seq_len": 7,
+    "n_burn_in": 4,
+    "zero_padding": True,
 }
 
 optim = {
     "name": "adam",
-    # "eps": 1e-4,
+    "eps": 1e-3,
     "lr": 1e-4,
 }
 
@@ -51,6 +51,6 @@ train = {
     "record_period" : 300000,
     # distributed setting
     "distributed_batch_size" : 512,
-    "update_period" : 100,
-    "num_workers" : 32,
+    "update_period" : 16,
+    "num_workers" : 8,
 }
