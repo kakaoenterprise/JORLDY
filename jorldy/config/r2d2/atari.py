@@ -15,7 +15,7 @@ env = {
 agent = {
     "name": "r2d2",
     "network": "r2d2",
-    "head": "cnn_lstm",
+    "head": "cnn",
     "gamma": 0.99,
     "buffer_size": 2000000,
     "batch_size": 32,

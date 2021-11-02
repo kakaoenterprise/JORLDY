@@ -1,6 +1,7 @@
 from collections import deque
 from itertools import islice
 import torch
+import torch.nn.functional as F
 torch.backends.cudnn.benchmark = True
 import numpy as np
 
@@ -18,7 +19,7 @@ class R2D2(ApeX):
     def __init__(self,
                  # R2D2
                  seq_len = 80,
-                 n_burn_in = 20,
+                 n_burn_in = 40,
                  zero_padding = True,
                  eta = 0.9,
                  **kwargs
@@ -32,6 +33,7 @@ class R2D2(ApeX):
         self.eta = eta
         
         self.hidden = None
+        self.prev_action = None
         self.tmp_buffer = deque(maxlen=self.n_step + seq_len)
         self.store_period = seq_len//2
         self.store_period_stamp = 0
@@ -42,8 +44,14 @@ class R2D2(ApeX):
         self.network.train(training)
         epsilon = self.epsilon if training else self.epsilon_eval
         
-        state = np.expand_dims(state, axis=1)
-        q, hidden_in, hidden_out = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device), hidden_in=self.hidden)
+        if self.prev_action is None:
+            prev_action_onehot = torch.zeros((state.shape[0], 1, self.action_size), device=self.device)
+        else:
+            prev_action_onehot = F.one_hot(torch.tensor(self.prev_action, dtype=torch.long, device=self.device), self.action_size)
+        
+        state = torch.as_tensor(np.expand_dims(state, axis=1), dtype=torch.float32, device=self.device)
+        q, hidden_in, hidden_out = self.network(state, prev_action_onehot, hidden_in=self.hidden)
+        
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
@@ -52,10 +60,12 @@ class R2D2(ApeX):
 
         hidden_h = hidden_in[0].cpu().numpy()
         hidden_c = hidden_in[1].cpu().numpy()
-
+        prev_action_onehot = prev_action_onehot.cpu().numpy()[:, -1]
+        
         self.hidden = hidden_out
-
-        return {'action': action, 'q': q, 'hidden_h': hidden_h, 'hidden_c': hidden_c}
+        self.prev_action = action
+        
+        return {'action': action, 'prev_action_onehot': prev_action_onehot, 'q': q, 'hidden_h': hidden_h, 'hidden_c': hidden_c}
     
     def learn(self):
         transitions, weights, indices, sampled_p, mean_p = self.memory.sample(self.beta, self.batch_size)
@@ -64,8 +74,10 @@ class R2D2(ApeX):
 
         state = transitions['state'][:,:self.seq_len]
         action = transitions['action']
+        prev_action_onehot = transitions['prev_action_onehot'][:,:self.seq_len]
         reward = transitions['reward']
         next_state = transitions['state'][:,self.n_step:]
+        next_prev_action_onehot = transitions['prev_action_onehot'][:,self.n_step:]
         done = transitions['done']
         hidden_h = transitions['hidden_h'].transpose(0,1).contiguous()
         hidden_c = transitions['hidden_c'].transpose(0,1).contiguous()
@@ -76,15 +88,15 @@ class R2D2(ApeX):
         
         eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action.long()]
-        q_pred = self.get_q(state, hidden, self.network)
+        q_pred = self.get_q(state, prev_action_onehot, hidden, self.network)
         q = (q_pred * one_hot_action).sum(-1, keepdims=True)
         with torch.no_grad():
             max_Q = torch.max(q).item()
-            next_q = self.get_q(next_state, next_hidden, self.target_network)
+            next_q = self.get_q(next_state, next_prev_action_onehot, next_hidden, self.network)
             max_a = torch.argmax(next_q, axis=-1)
             max_one_hot_action = eye[max_a.long()]
                 
-            next_target_q = self.get_q(next_state, next_hidden, self.target_network)
+            next_target_q = self.get_q(next_state, next_prev_action_onehot, next_hidden, self.target_network)
             target_q = (next_target_q * max_one_hot_action).sum(-1, keepdims=True)
             target_q = self.inv_val_rescale(target_q)
             
@@ -138,10 +150,9 @@ class R2D2(ApeX):
             
             for key in self.tmp_buffer[0].keys():
                 if key not in ['action', 'hidden_h', 'hidden_c', 'next_state']:
-                    if key in ['q', 'state']:
+                    if key in ['q', 'state', 'prev_action_onehot']:
                         _transition[key] = np.stack([t[key] for t in self.tmp_buffer], axis=1)
                     else:
-                        # _transition[key] = np.stack([t[key] for t in self.tmp_buffer][-self.n_step-1:-1], axis=1) # if remove zero padding
                         _transition[key] = np.stack([t[key] for t in self.tmp_buffer][:-1], axis=1)
             
             #state sequence zero padding
@@ -149,6 +160,8 @@ class R2D2(ApeX):
                 lack_dims = self.tmp_buffer.maxlen - len(self.tmp_buffer)
                 zero_state = np.zeros((1 , lack_dims, *transition['state'].shape[1:]))
                 _transition['state'] = np.concatenate((zero_state, _transition['state']), axis=1)
+                zero_prev_action_onehot = np.zeros((1 , lack_dims, *transition['prev_action_onehot'].shape[1:]))
+                _transition['prev_action_onehot'] = np.concatenate((zero_prev_action_onehot, _transition['prev_action_onehot']), axis=1)
                 zero_reward = np.zeros((1 , lack_dims, *transition['reward'].shape[1:]))
                 _transition['reward'] = np.concatenate((zero_reward, _transition['reward']), axis=1)
                 zero_done = np.zeros((1 , lack_dims, *transition['done'].shape[1:]))
@@ -180,13 +193,14 @@ class R2D2(ApeX):
         self.store_period_stamp += 1
         if transition['done']:
             self.hidden = None
+            self.prev_action = None
         
         return _transition
     
-    def get_q(self, state, hidden_in, network):
+    def get_q(self, state, prev_action_onehot, hidden_in, network):
         with torch.no_grad(): 
-            burn_in_q, hidden_in, hidden_out = network(state[:,:self.n_burn_in], hidden_in)
-        q, hidden_in, hidden_out = network(state[:,self.n_burn_in:], hidden_out)
+            burn_in_q, hidden_in, hidden_out = network(state[:,:self.n_burn_in], prev_action_onehot[:,:self.n_burn_in], hidden_in)
+        q, hidden_in, hidden_out = network(state[:,self.n_burn_in:], prev_action_onehot[:,self.n_burn_in:], hidden_out)
         
         return torch.cat((burn_in_q, q), axis=1)
     

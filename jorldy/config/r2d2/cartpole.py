@@ -9,7 +9,7 @@ env = {
 agent = {
     "name": "r2d2",
     "network": "r2d2",
-    "head": "mlp_lstm",
+    "head": "mlp",
     "gamma": 0.95,
     "buffer_size": 50000,
     "batch_size": 64,
