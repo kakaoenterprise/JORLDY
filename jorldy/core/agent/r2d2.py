@@ -44,11 +44,10 @@ class R2D2(ApeX):
         
         state = np.expand_dims(state, axis=1)
         q, hidden_in, hidden_out = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device), hidden_in=self.hidden)
-        
         if np.random.random() < epsilon:
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            action = torch.argmax(q, -1, keepdim=True).cpu().numpy()[:, -1]
+            action = torch.argmax(q, -1).cpu().numpy()
         q = np.take(q.cpu().numpy()[:, -1], action)
 
         hidden_h = hidden_in[0].cpu().numpy()
@@ -65,27 +64,24 @@ class R2D2(ApeX):
 
         state = transitions['state'][:,:self.seq_len]
         action = transitions['action']
-        reward = transitions['reward'][:,-self.n_step:]
+        reward = transitions['reward']
         next_state = transitions['state'][:,self.n_step:]
-        done = transitions['done'][:,-self.n_step:]
+        done = transitions['done']
         hidden_h = transitions['hidden_h'].transpose(0,1).contiguous()
         hidden_c = transitions['hidden_c'].transpose(0,1).contiguous()
         next_hidden_h = transitions['next_hidden_h'].transpose(0,1).contiguous()
         next_hidden_c = transitions['next_hidden_c'].transpose(0,1).contiguous()
-        
         hidden = (hidden_h, hidden_c)
-        next_hidden = (hidden_h, hidden_c)
+        next_hidden = (next_hidden_h, next_hidden_c)
         
         eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action.long()]
         q_pred = self.get_q(state, hidden, self.network)
         q = (q_pred * one_hot_action).sum(-1, keepdims=True)
-
         with torch.no_grad():
             max_Q = torch.max(q).item()
             next_q = self.get_q(next_state, next_hidden, self.target_network)
             max_a = torch.argmax(next_q, axis=-1)
-            max_eye = torch.eye(self.action_size).to(self.device)
             max_one_hot_action = eye[max_a.long()]
                 
             next_target_q = self.get_q(next_state, next_hidden, self.target_network)
@@ -93,7 +89,7 @@ class R2D2(ApeX):
             target_q = self.inv_val_rescale(target_q)
             
             for i in reversed(range(self.n_step)):
-                target_q = reward[:, i:i+1] + (1 - done[:, i:i+1]) * self.gamma * target_q
+                target_q = reward[:, i:i+self.n_step+1] + (1 - done[:, i:i+self.n_step+1]) * self.gamma * target_q
             
             target_q = self.val_rescale(target_q)
 
@@ -122,6 +118,7 @@ class R2D2(ApeX):
             "max_Q": max_Q,
             "sampled_p": sampled_p,
             "mean_p": mean_p,
+            "num_learn": self.num_learn,
         }
 
         return result
@@ -158,11 +155,14 @@ class R2D2(ApeX):
                 _transition['done'] = np.concatenate((zero_done, _transition['done']), axis=1)
                 zero_q = np.zeros((1 , lack_dims, *transition['q'].shape[1:]))
                 _transition['q'] = np.concatenate((zero_q, _transition['q']), axis=1)
-            
+              
+                _transition['next_hidden_h'] = self.tmp_buffer[self.n_step - lack_dims]['hidden_h']
+                _transition['next_hidden_c'] = self.tmp_buffer[self.n_step - lack_dims]['hidden_c']
+
             target_q = self.inv_val_rescale(_transition['q'][:, self.n_step:])
             for i in reversed(range(self.n_step)):
-                target_q = self.tmp_buffer[-self.n_step-1+i]['reward'] \
-                            + (1 - self.tmp_buffer[-self.n_step-1+i]['done']) * self.gamma * target_q
+                target_q = _transition['reward'][:, i:i+self.n_step+1] \
+                            + (1 - _transition['done'][:, i:i+self.n_step+1]) * self.gamma * target_q
                 
             target_q = self.val_rescale(target_q)
             td_error = abs(target_q - _transition['q'][:, :self.seq_len])
@@ -185,9 +185,10 @@ class R2D2(ApeX):
     
     def get_q(self, state, hidden_in, network):
         with torch.no_grad(): 
-            q, hidden_in, hidden_out = network(state[:,:self.n_burn_in], hidden_in)
+            burn_in_q, hidden_in, hidden_out = network(state[:,:self.n_burn_in], hidden_in)
         q, hidden_in, hidden_out = network(state[:,self.n_burn_in:], hidden_out)
-        return q
+        
+        return torch.cat((burn_in_q, q), axis=1)
     
     def val_rescale(self, val, eps=1e-6):
         return (val/(abs(val)+1e-10)) * ((abs(val)+1)**(1/2)-1) + (eps * val)
