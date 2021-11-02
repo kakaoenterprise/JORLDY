@@ -71,8 +71,8 @@ class QRDQN(DQN):
             theta_target = reward + (1-done) * self.gamma * torch.squeeze(max_a_onehot @ logits_target, 1)
             theta_target = torch.unsqueeze(theta_target, 2)
         
-        error_loss = theta_target - theta_pred 
-        huber_loss = F.smooth_l1_loss(theta_target, theta_pred, reduction='none')
+        error_loss = theta_target - theta_pred
+        huber_loss = F.smooth_l1_loss(*torch.broadcast_tensors(theta_pred, theta_target), reduction='none')
 
         # Get Loss
         loss = torch.where(error_loss < 0.0, self.inv_tau, self.tau) * huber_loss
