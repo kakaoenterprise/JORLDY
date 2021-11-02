@@ -24,6 +24,12 @@ Currently, JORLDY is pre-release version. It only supports Linux OS, but you can
  $ git clone https://github.com/kakaoenterprise/JORLDY.git  
  $ cd JORLDY
  $ pip install -r requirements.txt
+
+ # linux
+ $ apt-get update 
+ $ apt-get -y install libgl1-mesa-glx # for opencv
+ $ apt-get -y install libglib2.0-0    # for opencv
+ $ apt-get -y install gifsicle        # for gif optimize
 ```
 
 __:whale: To use docker__
