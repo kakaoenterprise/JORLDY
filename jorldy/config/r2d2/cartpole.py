@@ -23,8 +23,8 @@ agent = {
     "beta": 0.6,
     "uniform_sample_prob": 1e-3,
     # R2D2
-    "seq_len": 4,
-    "n_burn_in": 1,
+    "seq_len": 8,
+    "n_burn_in": 4,
     "zero_padding": True,
 }
 

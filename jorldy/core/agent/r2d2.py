@@ -101,7 +101,7 @@ class R2D2(ApeX):
             target_q = self.inv_val_rescale(target_q)
             
             for i in reversed(range(self.n_step)):
-                target_q = reward[:, i:i+self.n_step+1] + (1 - done[:, i:i+self.n_step+1]) * self.gamma * target_q
+                target_q = reward[:, i:i+self.seq_len] + (1 - done[:, i:i+self.seq_len]) * self.gamma * target_q
             
             target_q = self.val_rescale(target_q)
 
@@ -174,8 +174,8 @@ class R2D2(ApeX):
 
             target_q = self.inv_val_rescale(_transition['q'][:, self.n_step:])
             for i in reversed(range(self.n_step)):
-                target_q = _transition['reward'][:, i:i+self.n_step+1] \
-                            + (1 - _transition['done'][:, i:i+self.n_step+1]) * self.gamma * target_q
+                target_q = _transition['reward'][:, i:i+self.seq_len] \
+                            + (1 - _transition['done'][:, i:i+self.seq_len]) * self.gamma * target_q
                 
             target_q = self.val_rescale(target_q)
             td_error = abs(target_q - _transition['q'][:, :self.seq_len])
