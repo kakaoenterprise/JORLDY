@@ -14,20 +14,20 @@ class CNN(torch.nn.Module):
                 
         self.D_head_out = 64*dim3[0]*dim3[1]
         
-    def forward(self, x, sequence=False):
+    def forward(self, x):
         x = (x-(255.0/2))/(255.0/2)
         
-        if sequence:
+        if len(x.shape) == 5: #sequence
             seq_len = x.size(1)
             x = x.reshape(-1, *x.shape[2:])
-            
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = F.relu(self.conv3(x))
-        
-        if sequence:
+            x = F.relu(self.conv1(x))
+            x = F.relu(self.conv2(x))
+            x = F.relu(self.conv3(x))
             x = x.view(x.size(0), seq_len, -1)
         else:
+            x = F.relu(self.conv1(x))
+            x = F.relu(self.conv2(x))
+            x = F.relu(self.conv3(x))
             x = x.view(x.size(0), -1)
         return x
 
