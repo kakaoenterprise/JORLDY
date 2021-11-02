@@ -16,6 +16,7 @@ class MPO(BaseAgent):
     Args: 
         state_size (int): dimension of state.
         action_size (int): dimension of action.
+        hidden_size (int): dimension of hidden unit.
         optim_config (dict): dictionary of the optimizer info. 
             (key: 'name', value: name of optimizer)
         actor (str): key of actor network class in _network_dict.txt.
@@ -46,6 +47,7 @@ class MPO(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
+                 hidden_size=512,
                  optim_config={'name': 'adam'},
                  actor="discrete_policy",
                  critic="dqn",
@@ -79,14 +81,14 @@ class MPO(BaseAgent):
         assert self.action_type in ["continuous", "discrete"]
         self.action_size = action_size
 
-        self.actor = Network(actor, state_size, action_size, head=head).to(self.device)
-        self.target_actor = Network(actor, state_size, action_size, head=head).to(self.device)
+        self.actor = Network(actor, state_size, action_size, D_hidden=hidden_size, head=head).to(self.device)
+        self.target_actor = Network(actor, state_size, action_size, D_hidden=hidden_size, head=head).to(self.device)
         self.target_actor.load_state_dict(self.actor.state_dict())
 
         assert critic_loss_type in ['1step_TD', 'retrace']
         self.critic_loss_type = critic_loss_type
-        self.critic = Network(critic, state_size, action_size, head=head).to(self.device)
-        self.target_critic = Network(critic, state_size, action_size, head=head).to(self.device)
+        self.critic = Network(critic, state_size, action_size, D_hidden=hidden_size, head=head).to(self.device)
+        self.target_critic = Network(critic, state_size, action_size, D_hidden=hidden_size, head=head).to(self.device)
         self.target_critic.load_state_dict(self.critic.state_dict())
         
         self.batch_size = batch_size

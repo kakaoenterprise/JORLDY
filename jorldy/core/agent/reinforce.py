@@ -15,6 +15,7 @@ class REINFORCE(BaseAgent):
     Args: 
         state_size (int): dimension of state.
         action_size (int): dimension of action.
+        hidden_size (int): dimension of hidden unit.
         network (str): key of network class in _network_dict.txt.
         head (str): key of head in _head_dict.txt.
         optim_config (dict): dictionary of the optimizer info.
@@ -26,6 +27,7 @@ class REINFORCE(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
+                 hidden_size=512,
                  network="discrete_policy",
                  head='mlp',
                  optim_config={'name':'adam'},
@@ -38,7 +40,7 @@ class REINFORCE(BaseAgent):
         self.action_type = network.split("_")[0]
         assert self.action_type in ["continuous", "discrete"]
         
-        self.network = Network(network, state_size, action_size, head=head).to(self.device)
+        self.network = Network(network, state_size, action_size, D_hidden=hidden_size, head=head).to(self.device)
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
 
         self.gamma = gamma

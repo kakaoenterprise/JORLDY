@@ -14,6 +14,7 @@ class ICM_PPO(PPO):
     Args: 
         state_size (int): dimension of state.
         action_size (int): dimension of action.
+        hidden_size (int): dimension of hidden unit.
         icm_network (str): key of network class in _network_dict.txt.
         beta (float): weight of the inverse model loss against the forward model loss.
         lamb (float): weight of the policy gradient loss against the intrinsic reward signal.
@@ -27,6 +28,7 @@ class ICM_PPO(PPO):
     def __init__(self,
                  state_size,
                  action_size,
+                 hidden_size=512,
                  # Parameters for Curiosity-driven Exploration
                  icm_network= "icm",
                  beta = 0.2,
@@ -41,12 +43,13 @@ class ICM_PPO(PPO):
                  ):
         super(ICM_PPO, self).__init__(state_size=state_size,
                                       action_size=action_size,
+                                      hidden_size=hidden_size,
                                       **kwargs)
         self.obs_normalize = obs_normalize
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
         
-        self.icm = Network(icm_network, state_size, action_size, self.num_workers, self.gamma, eta, self.action_type, ri_normalize, obs_normalize, batch_norm).to(self.device)
+        self.icm = Network(icm_network, state_size, action_size, self.num_workers, self.gamma, eta, self.action_type, ri_normalize, obs_normalize, batch_norm, D_hidden=hidden_size).to(self.device)
         self.optimizer.add_param_group({'params':self.icm.parameters()})
         
         self.beta = beta
