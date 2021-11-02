@@ -5,7 +5,8 @@ from .rnd import *
 
 class ICM(torch.nn.Module):
     def __init__(self, D_in, D_out, num_workers, gamma, eta, action_type, 
-                 ri_normalize=True, obs_normalize=True, batch_norm=True):
+                 ri_normalize=True, obs_normalize=True, batch_norm=True,
+                 D_hidden=256):
         super(ICM, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
@@ -22,30 +23,30 @@ class ICM(torch.nn.Module):
         
         feature_size = 256
         
-        self.fc1 = torch.nn.Linear(self.D_in, 256)
-        self.fc2 = torch.nn.Linear(256, feature_size)
+        self.fc1 = torch.nn.Linear(self.D_in, D_hidden)
+        self.fc2 = torch.nn.Linear(D_hidden, feature_size)
         
-        self.inverse_fc1 = torch.nn.Linear(2*feature_size, 256)
-        self.inverse_fc2 = torch.nn.Linear(256, self.D_out)
+        self.inverse_fc1 = torch.nn.Linear(2*feature_size, D_hidden)
+        self.inverse_fc2 = torch.nn.Linear(D_hidden, self.D_out)
         
         self.forward_loss = torch.nn.MSELoss()
         
         if self.action_type == 'discrete':
-            self.forward_fc1 = torch.nn.Linear(feature_size+1, 256)
-            self.forward_fc2 = torch.nn.Linear(256+1, feature_size)
+            self.forward_fc1 = torch.nn.Linear(feature_size+1, D_hidden)
+            self.forward_fc2 = torch.nn.Linear(D_hidden+1, feature_size)
         
             self.inverse_loss = torch.nn.CrossEntropyLoss()
         else:
-            self.forward_fc1 = torch.nn.Linear(feature_size+self.D_out, 256)
-            self.forward_fc2 = torch.nn.Linear(256+self.D_out, feature_size)
+            self.forward_fc1 = torch.nn.Linear(feature_size+self.D_out, D_hidden)
+            self.forward_fc2 = torch.nn.Linear(D_hidden+self.D_out, feature_size)
         
             self.inverse_loss = torch.nn.MSELoss()
             
         if self.batch_norm:
-            self.bn1 = torch.nn.BatchNorm1d(256)
+            self.bn1 = torch.nn.BatchNorm1d(D_hidden)
             self.bn2 = torch.nn.BatchNorm1d(feature_size)
             
-            self.bn1_next = torch.nn.BatchNorm1d(256)
+            self.bn1_next = torch.nn.BatchNorm1d(D_hidden)
      
     def update_rms_obs(self, v):
         self.rms_obs.update(v)
@@ -101,7 +102,8 @@ class ICM(torch.nn.Module):
         
 class ICM_CNN(torch.nn.Module):
     def __init__(self, D_in, D_out, num_workers, gamma, eta, action_type,
-                 ri_normalize=True, obs_normalize=True, batch_norm=True):
+                 ri_normalize=True, obs_normalize=True, batch_norm=True,
+                 D_hidden=256):
         super(ICM_CNN, self).__init__()
         self.D_in = D_in
         self.D_out = D_out
@@ -128,19 +130,19 @@ class ICM_CNN(torch.nn.Module):
         
         feature_size = 32*dim4[0]*dim4[1]
         
-        self.inverse_fc1 = torch.nn.Linear(2*feature_size, 256)
-        self.inverse_fc2 = torch.nn.Linear(256, self.D_out)
+        self.inverse_fc1 = torch.nn.Linear(2*feature_size, D_hidden)
+        self.inverse_fc2 = torch.nn.Linear(D_hidden, self.D_out)
         
         self.forward_loss = torch.nn.MSELoss()
         
         if self.action_type == 'discrete':
-            self.forward_fc1 = torch.nn.Linear(feature_size+1, 256)
-            self.forward_fc2 = torch.nn.Linear(256+1, feature_size)
+            self.forward_fc1 = torch.nn.Linear(feature_size+1, D_hidden)
+            self.forward_fc2 = torch.nn.Linear(D_hidden+1, feature_size)
         
             self.inverse_loss = torch.nn.CrossEntropyLoss()
         else:
-            self.forward_fc1 = torch.nn.Linear(feature_size+self.D_out, 256)
-            self.forward_fc2 = torch.nn.Linear(256+self.D_out, feature_size)
+            self.forward_fc1 = torch.nn.Linear(feature_size+self.D_out, D_hidden)
+            self.forward_fc2 = torch.nn.Linear(D_hidden+self.D_out, feature_size)
         
             self.inverse_loss = torch.nn.MSELoss()   
             

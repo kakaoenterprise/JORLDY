@@ -15,6 +15,7 @@ class DDPG(BaseAgent):
     Args: 
         state_size (int): dimension of state.
         action_size (int): dimension of action.
+        hidden_size (int): dimension of hidden unit.
         actor (str): key of actor network class in _network_dict.txt.
         critic (str): key of critic network class in _network_dict.txt.
         head (str): key of head in _head_dict.txt.
@@ -33,6 +34,7 @@ class DDPG(BaseAgent):
     def __init__(self,
                  state_size,
                  action_size,
+                 hidden_size=512,
                  actor= "ddpg_actor",
                  critic= "ddpg_critic",
                  head = 'mlp',
@@ -52,11 +54,11 @@ class DDPG(BaseAgent):
                  ):
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
-        self.actor = Network(actor, state_size, action_size, head=head).to(self.device)
-        self.critic = Network(critic, state_size, action_size, head=head).to(self.device)
-        self.target_actor = Network(actor, state_size, action_size, head=head).to(self.device)
+        self.actor = Network(actor, state_size, action_size, D_hidden=hidden_size, head=head).to(self.device)
+        self.critic = Network(critic, state_size, action_size, D_hidden=hidden_size, head=head).to(self.device)
+        self.target_actor = Network(actor, state_size, action_size, D_hidden=hidden_size, head=head).to(self.device)
         self.target_actor.load_state_dict(self.actor.state_dict())
-        self.target_critic = Network(critic, state_size, action_size, head=head).to(self.device)
+        self.target_critic = Network(critic, state_size, action_size, D_hidden=hidden_size, head=head).to(self.device)
         self.target_critic.load_state_dict(self.critic.state_dict())
         
         self.actor_optimizer = Optimizer(optim_config.actor, self.actor.parameters(), lr=optim_config.actor_lr)

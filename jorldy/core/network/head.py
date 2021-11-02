@@ -16,10 +16,19 @@ class CNN(torch.nn.Module):
         
     def forward(self, x):
         x = (x-(255.0/2))/(255.0/2)
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = F.relu(self.conv3(x))
-        x = x.view(x.size(0), -1)
+        
+        if len(x.shape) == 5: #sequence
+            seq_len = x.size(1)
+            x = x.reshape(-1, *x.shape[2:])
+            x = F.relu(self.conv1(x))
+            x = F.relu(self.conv2(x))
+            x = F.relu(self.conv3(x))
+            x = x.view(x.size(0), seq_len, -1)
+        else:
+            x = F.relu(self.conv1(x))
+            x = F.relu(self.conv2(x))
+            x = F.relu(self.conv3(x))
+            x = x.view(x.size(0), -1)
         return x
 
 class MLP(torch.nn.Module):
@@ -66,7 +75,7 @@ class CNN_LSTM(torch.nn.Module):
         x = x.view(-1, seq_len, self.D_conv_out)
         x, hidden_out = self.lstm(x, hidden_in)
         
-        return F.relu(x), hidden_in, hidden_out
+        return x, hidden_in, hidden_out
     
 class MLP_LSTM(torch.nn.Module):
     def __init__(self, D_in, D_hidden=512):
@@ -84,7 +93,7 @@ class MLP_LSTM(torch.nn.Module):
         x = F.relu(self.l(x))
         x, hidden_out = self.lstm(x, hidden_in)
         
-        return F.relu(x), hidden_in, hidden_out
+        return x, hidden_in, hidden_out
     
 import os, sys, inspect, re
 from collections import OrderedDict

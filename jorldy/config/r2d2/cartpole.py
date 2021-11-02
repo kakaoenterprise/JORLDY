@@ -9,7 +9,7 @@ env = {
 agent = {
     "name": "r2d2",
     "network": "r2d2",
-    "head": "mlp_lstm",
+    "head": "mlp",
     "gamma": 0.95,
     "buffer_size": 50000,
     "batch_size": 64,
@@ -23,14 +23,14 @@ agent = {
     "beta": 0.6,
     "uniform_sample_prob": 1e-3,
     # R2D2
-    "seq_len": 4,
-    "n_burn_in": 1,
+    "seq_len": 5,
+    "n_burn_in": 2,
     "zero_padding": True,
 }
 
 optim = {
     "name": "adam",
-    # "eps": 1e-4,
+    "eps": 1e-3,
     "lr": 1e-4,
 }
 
@@ -44,5 +44,5 @@ train = {
     # distributed setting
     "distributed_batch_size" : 512,
     "update_period" : 16,
-    "num_workers" : 32,
+    "num_workers" : 16,
 }

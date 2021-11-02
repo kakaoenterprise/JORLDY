@@ -14,6 +14,7 @@ class RND_PPO(PPO):
     Args: 
         state_size (int): dimension of state.
         action_size (int): dimension of action.
+        hidden_size (int): dimension of hidden unit.
         rnd_network (str): key of network class in _network_dict.txt.
         gamma_i (float): discount factor of intrinsic reward.
         extrinsic_coeff (float): coefficient of extrinsic reward.        
@@ -25,6 +26,7 @@ class RND_PPO(PPO):
     def __init__(self,
                  state_size,
                  action_size,
+                 hidden_size=512,
                  # Parameters for Random Network Distillation
                  rnd_network="rnd_cnn",
                  gamma_i=0.99,
@@ -37,6 +39,7 @@ class RND_PPO(PPO):
                  ):
         super(RND_PPO, self).__init__(state_size=state_size,
                                       action_size=action_size,
+                                      hidden_size=hidden_size,
                                       **kwargs)
         
         self.rnd_network = rnd_network
@@ -50,7 +53,7 @@ class RND_PPO(PPO):
         self.batch_norm = batch_norm
         
         self.rnd = Network(rnd_network, state_size, action_size, self.num_workers,
-                           gamma_i, ri_normalize, obs_normalize, batch_norm).to(self.device)
+                           gamma_i, ri_normalize, obs_normalize, batch_norm, D_hidden=hidden_size).to(self.device)
         
         self.optimizer.add_param_group({'params':self.rnd.parameters()})
         

@@ -97,7 +97,7 @@ class IQN(DQN):
             theta_target = torch.unsqueeze(theta_target, 2)
         
         error_loss = theta_target - theta_pred 
-        huber_loss = F.smooth_l1_loss(theta_target, theta_pred, reduction='none')
+        huber_loss = F.smooth_l1_loss(*torch.broadcast_tensors(theta_pred, theta_target), reduction='none')
         
         # Get Loss
         loss = torch.where(error_loss < 0.0, 1-tau, tau) * huber_loss
