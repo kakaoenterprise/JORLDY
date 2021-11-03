@@ -15,7 +15,7 @@ Hello Wo**RL**d!!:hand:  **Join Our Reinforcement Learning framework for Develop
 
 ## :exclamation:Notification
 
-Currently, JORLDY is pre-release version. It only supports Linux OS, but you can use JORLDY with **Docker** on Windows and Mac. Running on a local environment in Windows and Mac will be supported soon. 
+Currently, JORLDY is pre-release version. It only supports Linux OS, but you can use JORLDY with **Docker** on Windows and Mac (In WSL, there is an issue with the algorithm using the target network.). Running on a local environment in Windows and Mac will be supported soon. 
 
 
 ## :arrow_down: Installation
