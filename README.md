@@ -76,9 +76,9 @@ $ python sync_distributed_train.py --config config.ppo.cartpole --train.num_work
 
 ## :card_index_dividers: Release 
 
-| Version |   Release Date   |   Source   |   Release Page  |
+| Version |   Release Date   |   Source   |   Release Note  |
 | :-----: | :--------------: | :--------: | :----------: |
-|  0.0.1  | November 03, 2021 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.0.1) | [Release Page](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.0.1) |
+|  0.0.1  | November 03, 2021 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.0.1) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.0.1) |
 
 
 ## :mag: How to
