@@ -1,5 +1,13 @@
 # How to use
 
+## Script description
+- single_train.py: train with single agent.
+- sync_distributed_train.py: train with sychronous distributed setting.
+- async_distributed_train.py: train with asychronous distributed setting.
+- eval.py: evaluate with trained agent.
+- (single, sync_distributed)_train_nomp.py: this scripts don't use multiprocessing library. In detail, the manage process is included in the main process. So it can be a bit slow.
+if you want to know the specific process of each script, please refer to [Distributed Architecture](./Distributed_Architecture.md)
+
 ## How to Check Implemented List 
 - In order to use the various agents(algorithms), environments, and networks provided by JORLDY, you need to know the name that calls the algorithm. JORLDY lists the names of the provided agent, env and network in **_agent_dict.txt**,  **_env_dict.txt** and  **_network_dict.txt**, respectively. 
 - **_class_dict.txt** file shows *(key, class)*. You can call the desired element by writing this key to the config file.

@@ -15,8 +15,9 @@ Hello Wo**RL**d!!:hand:  **Join Our Reinforcement Learning framework for Develop
 
 ## :exclamation:Notification
 
-Currently, JORLDY is pre-release version. It only supports Linux OS, but you can use JORLDY with **Docker** on Windows and Mac (In WSL, there is an issue with the algorithm using the target network.). Running on a local environment in Windows and Mac will be supported soon. 
+Currently, JORLDY is pre-release version. It only supports Linux, but you can use JORLDY with **Docker** on Windows and Mac. However, you can use only (single, sync_distributed)_train_nomp.py and eval.py on a local environment in Windows and Mac. In WSL, there is an issue with the algorithm using the target network in the script using multiprocessing library. We will address these issues as soon as possible.
 
+**\* (single, sync_distributed)_train_nomp.py: these scripts don't use multiprocessing library. In detail, the manage process is included in the main process. So it can be a bit slow.**
 
 ## :arrow_down: Installation
 
@@ -58,7 +59,7 @@ __:heavy_plus_sign: To use additional environments__
  $ pip install gym-super-mario-bros
 ```
 
-## :rocket: QuickStart
+## :rocket: Getting started
 
 ```
 $ cd jorldy
@@ -72,9 +73,6 @@ $ python single_train.py --config config.dqn.cartpole --agent.batch_size 64
 $ python sync_distributed_train.py --config config.ppo.cartpole --train.num_worker 8 
 
 ```
-
-
-
 
 ## :card_index_dividers: Release 
 
