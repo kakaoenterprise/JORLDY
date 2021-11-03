@@ -62,7 +62,7 @@ __:heavy_plus_sign: To use additional environments__
 ## :rocket: Getting started
 
 ```
-$ cd jorldy
+$ cd JORLDY
 
 # Examples: python [script name] --config [config path]
 $ python single_train.py --config config.dqn.cartpole
