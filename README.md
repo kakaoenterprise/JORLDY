@@ -2,7 +2,7 @@
 
 [![license badge](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 
-Hello Wo**RL**d!!:hand:  **Join Our Reinforcement Learning framework for Developing Yours (JORLDY)** is an open-source Reinforcement Learning (RL) framework provided by [KakaoEnterpise](https://www.kakaoenterprise.com/). It is named after Jordy, one of the [Kakao Niniz](https://www.kakaocorp.com/page/service/service/Niniz) character. It provides various RL algorithms and environment and they can be easily used using single code. This repository is opened for helping RL researchers and students who study RL.
+Hello Wo**RL**d!!:hand:  **Join Our Reinforcement Learning framework for Developing Yours (JORLDY)** is an open-source Reinforcement Learning (RL) framework provided by [KakaoEnterprise](https://www.kakaoenterprise.com/). It is named after Jordy, one of the [Kakao Niniz](https://www.kakaocorp.com/page/service/service/Niniz) character. It provides various RL algorithms and environment and they can be easily used using single code. This repository is opened for helping RL researchers and students who study RL.
 
 
 ## :fire: Features
