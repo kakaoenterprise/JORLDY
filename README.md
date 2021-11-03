@@ -97,7 +97,7 @@ $ python sync_distributed_train.py --config config.ppo.cartpole --train.num_work
 - [Role of Managers](./jorldy/manager/README.md)
 - [List of Contents](./docs/List_of_Contents.md)
 - [Naming Convention](./docs/Naming_convention.md)
-- [Benchmark](https://www.notion.so/rlnote/Benchmark-c7642d152cad4980bc03fe804fe9e88a)
+- [Benchmark](https://kepnex.notion.site/Benchmark-e20f16b4d4f84b83b490edef13226658)
 - [Reference](./docs/Reference.md)
 
 
