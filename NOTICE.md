@@ -1,6 +1,6 @@
 오픈소스 라이선스
 
-# OSS Notice | RL\_Algorithms #
+# OSS Notice | JORLDY #
 
 This application is Copyright © Kakao Enterprise. All rights reserved.
 
