@@ -22,55 +22,55 @@ Currently, JORLDY is pre-release version. It only supports Linux, but you can us
 ## :arrow_down: Installation
 
 ```
- $ git clone https://github.com/kakaoenterprise/JORLDY.git  
- $ cd JORLDY
- $ pip install -r requirements.txt
+git clone https://github.com/kakaoenterprise/JORLDY.git  
+cd JORLDY
+pip install -r requirements.txt
 
- # linux
- $ apt-get update 
- $ apt-get -y install libgl1-mesa-glx # for opencv
- $ apt-get -y install libglib2.0-0    # for opencv
- $ apt-get -y install gifsicle        # for gif optimize
+# linux
+apt-get update 
+apt-get -y install libgl1-mesa-glx # for opencv
+apt-get -y install libglib2.0-0    # for opencv
+apt-get -y install gifsicle        # for gif optimize
 ```
 
 __:whale: To use docker__
 
 (customize if necessary)
 ```
- $ cd JORLDY
+cd JORLDY
 
- # mac, linux
- $ docker build -t jorldy -f ./docker/Dockerfile .
- $ docker run -it --rm --name jorldy -v `pwd`:/JORLDY jorldy /bin/bash
+# mac, linux
+docker build -t jorldy -f ./docker/Dockerfile .
+docker run -it --rm --name jorldy -v `pwd`:/JORLDY jorldy /bin/bash
 
- # windows
- > docker build -t jorldy -f .\docker\Dockerfile .
- > docker run -it --rm --name jorldy -v %cd%:/JORLDY jorldy /bin/bash
+# windows
+docker build -t jorldy -f .\docker\Dockerfile .
+docker run -it --rm --name jorldy -v %cd%:/JORLDY jorldy /bin/bash
 ```
 
 __:heavy_plus_sign: To use additional environments__
 
 (atari and super-mario-bros need to be installed manually due to licensing issues)
 ```
- # To use atari
- $ pip install --upgrade gym[atari,accept-rom-license]
+# To use atari
+pip install --upgrade gym[atari,accept-rom-license]
  
- # To use super-mario-bros
- $ pip install gym-super-mario-bros
+# To use super-mario-bros
+pip install gym-super-mario-bros
 ```
 
 ## :rocket: Getting started
 
 ```
-$ cd jorldy
+cd jorldy
 
 # Examples: python [script name] --config [config path]
-$ python single_train.py --config config.dqn.cartpole
-$ Python single_train.py --config config.rainbow.atari --env.name assault
+python single_train.py --config config.dqn.cartpole
+python single_train.py --config config.rainbow.atari --env.name assault
 
 # Examples: Python [script name] --config [config path] --[optional parameter key] [parameter value]
-$ python single_train.py --config config.dqn.cartpole --agent.batch_size 64
-$ python sync_distributed_train.py --config config.ppo.cartpole --train.num_worker 8 
+python single_train.py --config config.dqn.cartpole --agent.batch_size 64
+python sync_distributed_train.py --config config.ppo.cartpole --train.num_worker 8 
 
 ```
 
