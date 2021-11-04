@@ -1,9 +1,9 @@
 *.DS_Store
 UnitySDK.log
-**/logs/
-**/.vscode/
-**/_dev/
-**/__MACOSX/
+logs/
+.vscode/
+_dev/
+__MACOSX/
 core.*
 nohup.out
 
@@ -118,9 +118,9 @@ celerybeat.pid
 # Environments
 .env
 .venv
-env/
+# env/
 venv/
-ENV/
+# ENV/
 env.bak/
 venv.bak/
 
