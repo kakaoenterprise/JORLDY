@@ -62,7 +62,7 @@ pip install gym-super-mario-bros
 ## :rocket: Getting started
 
 ```
-cd JORLDY
+cd jorldy
 
 # Examples: python [script name] --config [config path]
 python single_train.py --config config.dqn.cartpole
