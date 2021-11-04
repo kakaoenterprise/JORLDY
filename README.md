@@ -66,7 +66,7 @@ cd jorldy
 
 # Examples: python [script name] --config [config path]
 python single_train.py --config config.dqn.cartpole
-Python single_train.py --config config.rainbow.atari --env.name assault
+python single_train.py --config config.rainbow.atari --env.name assault
 
 # Examples: Python [script name] --config [config path] --[optional parameter key] [parameter value]
 python single_train.py --config config.dqn.cartpole --agent.batch_size 64
