@@ -9,3 +9,7 @@ UnitySDK.log
 **/__MACOSX/
 core.*
 nohup.out
+
+# Python virtual environment
+venv/
+.mypy_cache/
