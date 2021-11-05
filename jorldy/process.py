@@ -13,9 +13,9 @@ def interact_process(DistributedManager, distributed_manager_config,
             delta_t = len(transitions) / num_workers
             step += delta_t
             trans_queue.put((int(step), transitions))
-            if sync_queue.qsize() > 0:
+            if sync_queue.full():
                 distributed_manager.sync(sync_queue.get())
-            while trans_queue.qsize() == 10:
+            while trans_queue.full():
                 time.sleep(0.1)
     except Exception as e:
         traceback.print_exc()
@@ -39,7 +39,7 @@ def manage_process(Agent, agent_config,
     try:
         while step < run_step:
             wait = True
-            while wait or result_queue.qsize() > 0:
+            while wait or not result_queue.empty():
                 _step, result = result_queue.get()
                 metric_manager.append(result)
                 wait = False
