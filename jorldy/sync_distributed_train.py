@@ -43,7 +43,7 @@ if __name__ == "__main__":
     
     manage.start()
     try:
-        distributed_manager = DistributedManager(Env, config.env, Agent, agent_config, config.train.num_workers, 'sync')
+        distributed_manager = DistributedManager(Env, config.env, Agent, {'device':'cpu', **agent_config}, config.train.num_workers, 'sync')
     
         agent = Agent(**agent_config)
         if config.train.load_path:
