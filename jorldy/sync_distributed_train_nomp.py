@@ -36,8 +36,7 @@ if __name__ == "__main__":
     log_manager = LogManager(config.env.name, log_id, config.train.experiment)
     config_manager.dump(log_manager.path)
 
-    agent_config['device'] = "cpu"
-    distributed_manager = DistributedManager(Env, config.env, Agent, agent_config, config.train.num_workers, 'sync')
+    distributed_manager = DistributedManager(Env, config.env, Agent, {'device':'cpu', **agent_config}, config.train.num_workers, 'sync')
     
     step, print_stamp, save_stamp = 0, 0, 0
     while step < config.train.run_step:

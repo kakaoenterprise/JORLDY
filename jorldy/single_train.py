@@ -31,22 +31,19 @@ if __name__ == "__main__":
     eval_manager_config = (Env(**config.env), config.train.eval_iteration, config.train.record, record_period)
     log_id = config.train.id if config.train.id else config.agent.name
     log_manager_config = (config.env.name, log_id, config.train.experiment)
-    agent_config['device'] = "cpu"
     manage = mp.Process(target=manage_process,
-                        args=(Agent, agent_config,
+                        args=(Agent, {'device':'cpu', **agent_config},
                               result_queue, manage_sync_queue, path_queue,
                               config.train.run_step, config.train.print_period, 
                               MetricManager, EvalManager, eval_manager_config,
                               LogManager, log_manager_config, config_manager))
     manage.start()
     try:
-        save_path = path_queue.get()
-
         agent = Agent(**agent_config)
-    
         if config.train.load_path:
             agent.load(config.train.load_path)
 
+        save_path = path_queue.get()
         state = env.reset()
         for step in range(1, config.train.run_step+1):
             action_dict = agent.act(state, config.train.training)            
