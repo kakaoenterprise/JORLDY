@@ -60,6 +60,12 @@ class CustomDict(dict):
     def __init__(self, init_dict={}):
         self.update(init_dict)
         
+    def __getstate__(self):
+        return self.__dict__
+    
+    def __setstate__(self, d):
+        self.__dict__.update(d)
+
 def type_cast(var):
     try:
         return int(var)
