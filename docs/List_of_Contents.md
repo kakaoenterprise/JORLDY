@@ -32,7 +32,7 @@
 **Distributed**
 
 - [APE-X](https://arxiv.org/pdf/1803.00933.pdf)
-- [R2D2](https://openreview.net/pdf?id=r1lyTjAqYX)
+- [R2D2](https://openreview.net/pdf?id=r1lyTjAqYX)(🚧 implementing…)
 
 **Policy Optimization, Actor-Critic**
 
