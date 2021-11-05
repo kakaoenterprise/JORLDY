@@ -22,10 +22,6 @@ if __name__ == "__main__":
                     'action_size': env.action_size,
                     'optim_config': config.optim}
     agent_config.update(config.agent)
-    agent = Agent(**agent_config)
-    
-    if config.train.load_path:
-        agent.load(config.train.load_path)
 
     result_queue = mp.Queue()
     manage_sync_queue = mp.Queue(1)
@@ -45,6 +41,12 @@ if __name__ == "__main__":
     manage.start()
     try:
         save_path = path_queue.get()
+
+        agent = Agent(**agent_config)
+    
+        if config.train.load_path:
+            agent.load(config.train.load_path)
+
         state = env.reset()
         for step in range(1, config.train.run_step+1):
             action_dict = agent.act(state, config.train.training)            
