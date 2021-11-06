@@ -5,7 +5,6 @@
 - sync_distributed_train.py: train with sychronous distributed setting.
 - async_distributed_train.py: train with asychronous distributed setting.
 - eval.py: evaluate with trained agent.
-- (single, sync_distributed)_train_nomp.py: this scripts don't use multiprocessing library. In detail, the manage process is included in the main process. So it can be a bit slow.
 if you want to know the specific process of each script, please refer to [Distributed Architecture](./Distributed_Architecture.md)
 
 ## How to Check Implemented List 
