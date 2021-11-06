@@ -1,6 +1,6 @@
 torch==1.8.1
 tensorboard==2.5.0
-ray==1.7.0
+ray==1.8.0
 opencv-python==4.5.2.52
 pygifsicle==1.0.4
 gym==0.21.0

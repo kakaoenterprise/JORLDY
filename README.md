@@ -13,15 +13,11 @@ Hello Wo**RL**d!!:hand:  **Join Our Reinforcement Learning framework for Develop
 - Distributed RL algorithms are provided using [ray](https://github.com/ray-project/ray)
 - Benchmark of the algorithms is conducted in many RL environment
 
-## :exclamation:Notification
+## :heavy_check_mark: Tested
 
-Currently, JORLDY is pre-release version. It supports Linux only, but all the scripts can be run on Windows and Mac in the following ways.
-- Windows: Docker or WSL
-- Mac: Docker 
-
-However, you can use only (single, sync_distributed)_train_nomp.py and eval.py on a local environment in Windows and Mac. We will address these issues as soon as possible.
-
-**\* (single, sync_distributed)_train_nomp.py: these scripts don't use multiprocessing library. In detail, the manage process is included in the main process. So it can be a bit slow.**
+| Python |   Windows   |   Mac   |   Linux  |
+| :----: | :---------: | :-----: | :------: |
+|  3.8  | :heavy_check_mark: | :heavy_check_mark: | WSL, Ubuntu 18.04 |
 
 ## :arrow_down: Installation
 

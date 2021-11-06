@@ -26,7 +26,7 @@ if __name__ == "__main__":
     if config.train.distributed_batch_size:
         agent_config["batch_size"] = config.train.distributed_batch_size
 
-    trans_queue = mp.Queue()
+    trans_queue = mp.Queue(10)
     interact_sync_queue = mp.Queue(1)
     result_queue = mp.Queue()
     manage_sync_queue = mp.Queue(1)
@@ -58,7 +58,7 @@ if __name__ == "__main__":
         step, _step, print_stamp, save_stamp = 0, 0, 0, 0
         while step < config.train.run_step:
             transitions = []
-            while (_step == 0 or trans_queue.qsize() > 0) and\
+            while (_step == 0 or not trans_queue.empty()) and\
                   (_step - step < config.train.update_period):
                 _step, _transitions = trans_queue.get()
                 transitions += _transitions
