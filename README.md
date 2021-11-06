@@ -70,7 +70,7 @@ python single_train.py --config config.rainbow.atari --env.name assault
 
 # Examples: python [script name] --config [config path] --[optional parameter key] [parameter value]
 python single_train.py --config config.dqn.cartpole --agent.batch_size 64
-python sync_distributed_train.py --config config.ppo.cartpole --train.num_worker 8 
+python sync_distributed_train.py --config config.ppo.cartpole --train.num_workers 8 
 
 ```
 
