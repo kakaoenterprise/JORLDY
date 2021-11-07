@@ -27,7 +27,7 @@ class _Procgen(BaseEnv):
                  stack_frame=4,
                  no_op=False,
                  reward_clip=False,
-                 **kwagrs,
+                 **kwargs,
                  ):
         self.render=render
         self.gray_img=gray_img

@@ -34,7 +34,7 @@ class _Atari(BaseEnv):
                  reward_clip=False,
                  reward_scale=None,
                  dead_penalty=False,
-                 **kwagrs,
+                 **kwargs,
                  ):
         self.render=render
         self.gray_img=gray_img
