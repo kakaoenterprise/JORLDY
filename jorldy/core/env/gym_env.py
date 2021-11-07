@@ -16,7 +16,7 @@ class _Gym(BaseEnv):
                  mode,
                  render=False,
                  custom_action=False,
-                 **kwagrs,
+                 **kwargs,
                 ):
         self.env = gym.make(name)
         self.mode = mode
