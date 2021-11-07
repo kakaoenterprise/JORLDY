@@ -5,6 +5,7 @@
 - sync_distributed_train.py: train with sychronous distributed setting.
 - async_distributed_train.py: train with asychronous distributed setting.
 - eval.py: evaluate with trained agent.
+
 if you want to know the specific process of each script, please refer to [Distributed Architecture](./Distributed_Architecture.md)
 
 ## How to Check Implemented List 
