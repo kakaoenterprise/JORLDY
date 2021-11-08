@@ -14,7 +14,7 @@ if you want to know the specific process of each script, please refer to [Distri
 - **Note**: If you implement a new environment, agent, or network according to the our documentation and run **main.py**, **_class_dict.txt** will be updated automatically.
 
 ### Agents
-- A list of implemented agents can be found in [_agent_dict.txt](../jorldy/jorldy/core/agent/_agent_dict.txt).
+- A list of implemented agents can be found in [_agent_dict.txt](../jorldy/core/agent/_agent_dict.txt).
 
 - Example: You can check the key of the Ape-X agent in [_agent_dict.txt](../jorldy/core/agent/_agent_dict.txt): *('ape_x', <class 'core.agent.ape_x.ApeX'>)*. If you want to use the Ape-X agent, write agent.name as *ape_x* in config file.
 
