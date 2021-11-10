@@ -46,7 +46,7 @@ class _MLAgent(BaseEnv):
         self.score = 0
         self.env.reset()
         dec, term = self.env.get_steps(self.behavior_name)
-        state = dec.obs[0]
+        state = self.state_config(dec.obs)
 
         return state
 
@@ -64,13 +64,36 @@ class _MLAgent(BaseEnv):
         dec, term = self.env.get_steps(self.behavior_name)
         done = len(term.agent_id) > 0
         reward = term.reward if done else dec.reward
-        next_state = term.obs[0] if done else dec.obs[0]
+        next_state = self.state_config(term.obs) if done else self.state_config(dec.obs)
         
         self.score += reward[0] 
 
         reward, done = map(lambda x: np.expand_dims(x,0), [reward, [done]])
         
         return (next_state, reward, done)
+
+    def state_config(self, obs):
+        vec_state = None
+        img_state = None 
+
+        for obs_i in obs:
+            if len(obs_i.shape) == 2:
+                if vec_state is None: 
+                    vec_state = obs_i 
+                else:
+                    vec_state = np.concatenate((vec_state, obs_i), axis=-1)
+            else:
+                if img_state is None:
+                    img_state = obs_i 
+                else:
+                    img_state = np.concatenate((img_state, obs_i), axis=-1)
+
+        if vec_state is None:
+            return img_state
+        elif img_state is None:
+            return vec_state
+        else:
+            return [vec_state, img_state]
 
     def close(self):
         self.env.close()
@@ -90,7 +113,15 @@ class PongMLAgent(_MLAgent):
         
         self.state_size = 8*1
         self.action_size = 3
-        
+
+class DroneMLAgent(_MLAgent):
+    def __init__(self, **kwargs):
+        env_name = "DroneDelivery"
+        super(DroneMLAgent, self).__init__(env_name, **kwargs)
+
+        self.state_size = [[15,36,64], 95]
+        self.action_size = 3
+
 class WormMLAgent(_MLAgent):
     def __init__(self, **kwargs):
         env_name = "Worm"
