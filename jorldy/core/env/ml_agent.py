@@ -69,7 +69,7 @@ class _MLAgent(BaseEnv):
         self.score += reward[0] 
 
         reward, done = map(lambda x: np.expand_dims(x,0), [reward, [done]])
-        
+
         return (next_state, reward, done)
 
     def state_config(self, obs):
@@ -88,12 +88,14 @@ class _MLAgent(BaseEnv):
                 else:
                     img_state = np.concatenate((img_state, obs_i), axis=-1)
 
-        if vec_state is None:
-            return img_state
-        elif img_state is None:
-            return vec_state
+        if img_state is not None:
+            img_state = np.transpose(img_state, (0,3,1,2))
+            if vec_state is None:
+                return img_state 
+            else:
+                return [img_state, vec_state]
         else:
-            return [vec_state, img_state]
+            return vec_state
 
     def close(self):
         self.env.close()

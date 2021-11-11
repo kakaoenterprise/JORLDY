@@ -50,26 +50,35 @@ class PPO(REINFORCE):
     def act(self, state, training=True):
         self.network.train(training)
         
+        if isinstance(state, list) and len(state)>1:
+            state = list(map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), state))
+        else: 
+            state = torch.as_tensor(state, dtype=torch.float32, device=self.device)
+
         if self.action_type == "continuous":
-            mu, std, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+            mu, std, _ = self.network(state)
             z = torch.normal(mu, std) if training else mu
             action = torch.tanh(z)
         else:
-            pi, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+            pi, _ = self.network(state)
             action = torch.multinomial(pi, 1) if training else torch.argmax(pi, dim=-1, keepdim=True)
         return {'action': action.cpu().numpy()}
 
     def learn(self):
         transitions = self.memory.sample()
         for key in transitions.keys():
-            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+            if isinstance(transitions[key], list) and len(transitions[key]) > 1:
+                transition_list = list(map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions[key]))
+                transitions[key] = transition_list
+            else:
+                transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
 
         state = transitions['state']
         action = transitions['action']
         reward = transitions['reward']
         next_state = transitions['next_state']
         done = transitions['done']
-        
+
         # set prob_a_old and advantage
         with torch.no_grad():            
             if self.action_type == "continuous":

@@ -15,8 +15,16 @@ class RolloutBuffer(BaseBuffer):
     def sample(self):
         transitions = {}
         for key in self.buffer[0].keys():
-            transitions[key] = np.stack([b[key][0] for b in self.buffer], axis=0)
-            
+            if len(self.buffer[0][key]) > 1:
+                # Multi input
+                b_list = []
+                for i in range(len(self.buffer[0][key])):
+                    temp_transition = np.stack([b[key][i][0] for b in self.buffer], axis=0)
+                    b_list.append(temp_transition)
+                transitions[key] = b_list 
+            else:
+                transitions[key] = np.stack([b[key][0] for b in self.buffer], axis=0)
+
         self.buffer.clear()
         return transitions
     

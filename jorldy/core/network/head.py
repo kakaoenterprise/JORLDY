@@ -69,7 +69,7 @@ class Multi(torch.nn.Module):
     def forward(self, x):
         x_img = (x[0]-(255.0/2))/(255.0/2)
         x_vec = x[1]
-        
+
         if len(x_img.shape) == 5: #sequence
             batch_len, seq_len = x_img.size(0), x_img.size(1)
             
@@ -88,9 +88,7 @@ class Multi(torch.nn.Module):
         x_vec = F.relu(self.l2(x_vec))
         
         x_multi = torch.cat((x_img, x_vec), -1) 
-        
-        print(x_multi.shape)
-        
+                
         return x_multi
     
 class CNN_LSTM(torch.nn.Module):

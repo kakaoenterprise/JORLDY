@@ -8,7 +8,11 @@ class BaseBuffer(ABC):
         print("########################################")
         print("You should check dimension of transition")
         for key, val in transition.items():
-            print(f"{key}: {val.shape}")
+            if len(val) > 1:
+                for i in range(len(val)):
+                    print(f"{key}{i}: {val[i].shape}")
+            else:
+                print(f"{key}: {val.shape}")
         print("########################################")
         self.first_store = False
 
