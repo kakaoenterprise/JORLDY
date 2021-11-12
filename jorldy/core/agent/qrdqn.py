@@ -31,7 +31,7 @@ class QRDQN(DQN):
         epsilon = self.epsilon if training else self.epsilon_eval
             
         if np.random.random() < epsilon:
-            action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
+            action = np.random.randint(0, self.action_size, size=(1, 1))
         else:
             logits = self.network(self.as_tensor(state))
             _, q_action = self.logits2Q(logits)

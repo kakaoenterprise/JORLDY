@@ -115,7 +115,7 @@ class RainbowIQN(Rainbow):
         sample_max = 1 if training else self.sample_max
         
         if training and self.memory.size < max(self.batch_size, self.start_train_step):
-            action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
+            action = np.random.randint(0, self.action_size, size=(1, 1))
         else:
             logits, _ = self.network(self.as_tensor(state), training, sample_min, sample_max)
             _, q_action = self.logits2Q(logits)

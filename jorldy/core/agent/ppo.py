@@ -62,7 +62,7 @@ class PPO(REINFORCE):
     def learn(self):
         transitions = self.memory.sample()
         for key in transitions.keys():
-            trnasitions[key] = self.as_tensor(transitions[key])
+            transitions[key] = self.as_tensor(transitions[key])
 
         state = transitions['state']
         action = transitions['action']

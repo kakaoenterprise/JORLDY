@@ -61,7 +61,7 @@ class ApeX(DQN):
             
         q = self.network(self.as_tensor(state))
         if np.random.random() < epsilon:
-            action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
+            action = np.random.randint(0, self.action_size, size=(1, 1))
         else:
             action = torch.argmax(q, -1, keepdim=True).cpu().numpy()
         q = np.take(q.cpu().numpy(), action)

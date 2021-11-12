@@ -57,6 +57,7 @@ class BaseAgent(ABC):
             x = list(map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), x))
         else: 
             x = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+        return x
 
     def sync_in(self, weights):
         self.network.load_state_dict(weights)

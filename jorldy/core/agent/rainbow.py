@@ -115,7 +115,7 @@ class Rainbow(DQN):
         self.network.train(training)
         
         if training and self.memory.size < max(self.batch_size, self.start_train_step):
-            action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
+            action = np.random.randint(0, self.action_size, size=(1, 1))
         else:
             logits = self.network(self.as_tensor(state), training)
             _, q_action = self.logits2Q(logits)

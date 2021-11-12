@@ -69,7 +69,7 @@ class Multi(torch.nn.Module):
     def forward(self, x):
         x_img = (x[0]-(255.0/2))/(255.0/2)
         x_vec = x[1]
-
+        
         if len(x_img.shape) == 5: #sequence
             batch_len, seq_len = x_img.size(0), x_img.size(1)
             
@@ -77,12 +77,12 @@ class Multi(torch.nn.Module):
             x_img = F.relu(self.conv1(x_img))
             x_img = F.relu(self.conv2(x_img))
             x_img = F.relu(self.conv3(x_img))
-            x_img = x_img.view(batch_len, seq_len, -1)
+            x_img = x_img.reshape(batch_len, seq_len, -1)
         else:
             x_img = F.relu(self.conv1(x_img))
             x_img = F.relu(self.conv2(x_img))
             x_img = F.relu(self.conv3(x_img))
-            x_img = x_img.view(x_img.size(0), -1)
+            x_img = x_img.reshape(x_img.size(0), -1)
         
         x_vec = F.relu(self.l1(x_vec))
         x_vec = F.relu(self.l2(x_vec))

@@ -118,7 +118,7 @@ class PongMLAgent(_MLAgent):
 
 class DroneMLAgent(_MLAgent):
     def __init__(self, **kwargs):
-        env_name = "DroneDelivery"
+        env_name = "drone"
         super(DroneMLAgent, self).__init__(env_name, **kwargs)
 
         self.state_size = [[15,36,64], 95]

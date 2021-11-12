@@ -1,4 +1,5 @@
 from abc import *
+import numpy as np
 
 class BaseBuffer(ABC):
     def __init__(self):

@@ -73,7 +73,7 @@ class REINFORCE(BaseAgent):
         if self.use_standardization:
             ret = (ret - ret.mean())/(ret.std() + 1e-7)
             
-        state, action, ret = map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), [state, action, ret])
+        state, action, ret = map(lambda x: self.as_tensor(x), [state, action, ret])
         
         if self.action_type == "continuous":
             mu, std = self.network(state)
