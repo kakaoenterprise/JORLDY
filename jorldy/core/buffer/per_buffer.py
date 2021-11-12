@@ -86,9 +86,7 @@ class PERBuffer(ReplayBuffer):
         weights /= np.max(weights)
         batch = [self.buffer[idx] for idx in indices - self.first_leaf_index]
         
-        transitions = {}
-        for key in batch[0].keys():
-            transitions[key] = np.stack([b[key][0] for b in batch], axis=0)
+        transitions = self.stack_transition(batch)
             
         sampled_p = np.mean(priorities) 
         mean_p = self.sum_tree[0]/self.buffer_counter

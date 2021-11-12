@@ -76,7 +76,7 @@ class DDPG(BaseAgent):
     @torch.no_grad()
     def act(self, state, training=True):
         self.actor.train(training)
-        mu = self.actor(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+        mu = self.actor(self.as_tensor(state))
         mu = mu.cpu().numpy()
         action = mu + self.OU.sample() if training else mu
         return {'action': action}
@@ -84,7 +84,7 @@ class DDPG(BaseAgent):
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
         for key in transitions.keys():
-            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+            transitions[key] = self.as_tensor(transitions[key])
 
         state = transitions['state']
         action = transitions['action']

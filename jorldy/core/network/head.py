@@ -47,8 +47,11 @@ class Multi(torch.nn.Module):
     def __init__(self, D_in, D_hidden=512):
         super(Multi, self).__init__()
         
-        self.conv1 = torch.nn.Conv2d(in_channels=D_in[0], out_channels=32, kernel_size=8, stride=4)
-        dim1 = ((D_in[1] - 8)//4 + 1, (D_in[2] - 8)//4 + 1)
+        D_in_img = D_in[0]
+        D_in_vec = D_in[1]
+
+        self.conv1 = torch.nn.Conv2d(in_channels=D_in_img[0], out_channels=32, kernel_size=8, stride=4)
+        dim1 = ((D_in_img[1] - 8)//4 + 1, (D_in_img[2] - 8)//4 + 1)
         self.conv2 = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
         dim2 = ((dim1[0] - 4)//2 + 1, (dim1[1] - 4)//2 + 1)
         self.conv3 = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
@@ -56,16 +59,17 @@ class Multi(torch.nn.Module):
                 
         self.D_conv_out = 64*dim3[0]*dim3[1]
         
-        self.l1 = torch.nn.Linear(D_in, D_hidden)
+        self.l1 = torch.nn.Linear(D_in_vec, D_hidden)
         self.l2 = torch.nn.Linear(D_hidden, D_hidden)
         
         self.D_mlp_out = D_hidden
+
         self.D_head_out = self.D_conv_out + self.D_mlp_out
         
     def forward(self, x):
         x_img = (x[0]-(255.0/2))/(255.0/2)
         x_vec = x[1]
-        
+
         if len(x_img.shape) == 5: #sequence
             batch_len, seq_len = x_img.size(0), x_img.size(1)
             
@@ -84,7 +88,7 @@ class Multi(torch.nn.Module):
         x_vec = F.relu(self.l2(x_vec))
         
         x_multi = torch.cat((x_img, x_vec), -1) 
-        
+                
         return x_multi
     
 class CNN_LSTM(torch.nn.Module):

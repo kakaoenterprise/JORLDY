@@ -13,10 +13,8 @@ class RolloutBuffer(BaseBuffer):
         self.buffer += transitions 
         
     def sample(self):
-        transitions = {}
-        for key in self.buffer[0].keys():
-            transitions[key] = np.stack([b[key][0] for b in self.buffer], axis=0)
-            
+        transitions = self.stack_transition(self.buffer)
+
         self.buffer.clear()
         return transitions
     

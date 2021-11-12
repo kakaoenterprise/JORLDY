@@ -127,7 +127,7 @@ class MPO(BaseAgent):
     def act(self, state, training=True):
         self.actor.train(training)
         if self.action_type == "continuous":
-            mu, std = self.actor(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+            mu, std = self.actor(self.as_tensor(state))
             m = Normal(mu, std)
             z = m.sample() if training else mu
             action = torch.tanh(z)
@@ -136,7 +136,7 @@ class MPO(BaseAgent):
             prob = prob.exp().cpu().numpy()
                 
         else:
-            pi = self.actor(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+            pi = self.actor(self.as_tensor(state))
             action = torch.multinomial(pi, 1) if training else torch.argmax(pi, dim=-1, keepdim=True)
             action = action.cpu().numpy()
             prob = np.take(pi.cpu().numpy(), action)
@@ -150,7 +150,7 @@ class MPO(BaseAgent):
         for key in transitions.keys():
             # reshape: (batch_size, len_tr, item_dim)
             #        -> (batch_size * len_tr, item_dim)
-            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device).view(-1, *transitions[key].shape[2:])
+            transitions[key] = self.as_tensor(transitions[key]).view(-1, *transitions[key].shape[2:])
             
         state = transitions['state']
         action = transitions['action']

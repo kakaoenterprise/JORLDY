@@ -1,4 +1,5 @@
 from abc import *
+import torch
 
 class BaseAgent(ABC):
     @abstractmethod
@@ -50,7 +51,13 @@ class BaseAgent(ABC):
         Load model from path.
         """
         pass
-    
+
+    def as_tensor(self, x):
+        if isinstance(x, list):
+            x = list(map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), x))
+        else: 
+            x = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+
     def sync_in(self, weights):
         self.network.load_state_dict(weights)
     

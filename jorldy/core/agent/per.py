@@ -25,7 +25,7 @@ class PER(DQN):
     def learn(self):        
         transitions, weights, indices, sampled_p, mean_p = self.memory.sample(self.beta, self.batch_size)
         for key in transitions.keys():
-            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+            transitions[key] = self.as_tensor(transitions[key])
 
         state = transitions['state']
         action = transitions['action']

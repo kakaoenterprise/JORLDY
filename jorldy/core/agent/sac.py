@@ -81,7 +81,8 @@ class SAC(BaseAgent):
     @torch.no_grad()
     def act(self, state, training=True):
         self.actor.train(training)
-        mu, std = self.actor(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+
+        mu, std = self.actor(self.as_tensor(state))
         z = torch.normal(mu, std) if training else mu
         action = torch.tanh(z)
         action = action.cpu().numpy()
@@ -100,7 +101,7 @@ class SAC(BaseAgent):
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
         for key in transitions.keys():
-            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+            transitions[key] = self.as_tensor(transitions[key])
 
         state = transitions['state']
         action = transitions['action']
