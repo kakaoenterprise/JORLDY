@@ -10,6 +10,7 @@ file_list = os.listdir(working_path)
 module_list = [file.replace(".py", "") for file in file_list 
                if file.endswith(".py") and file.replace(".py","") not in ["__init__", "base", "utils"]]
 env_dict = {}
+error_dict = {}
 naming_rule = lambda x: re.sub('([a-z])([A-Z])', r'\1_\2', x).lower()
 all_modules_available = True
 for module_name in module_list:
@@ -18,6 +19,7 @@ for module_name in module_list:
         module = __import__(module_path, fromlist=[None])
     except Exception:
         all_modules_available = False
+        error_dict[module_name] = traceback.format_exc()
         continue
     else:
         for class_name, _class in inspect.getmembers(module, inspect.isclass):
@@ -42,5 +44,12 @@ class Env:
         name = name.lower()
         if not name in env_dict.keys():
             print(f"### can use only follows {[opt for opt in env_dict.keys()]}")
+            print("============================================================================")
+            print("If you try to use the following modules, please refer to the error contents.")
+            print(f"Unavailable moduels {list(error_dict)}")
+            print("============================================================================")
+            for module, error in error_dict.items():
+                print(f"module: {module}")
+                print(f"error: {error}")
             raise Exception
         return env_dict[name](*args, **kwargs)
