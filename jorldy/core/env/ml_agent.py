@@ -22,7 +22,7 @@ class _MLAgent(BaseEnv):
     """
     def __init__(self, env_name, train_mode=True, id=None, **kwagrs):
         env_path = f"./core/env/mlagents/{env_name}/{match_build()}/{env_name}"
-        id = np.random.randint(65534) if id is None else id
+        id = np.random.randint(65534 - UnityEnvironment.BASE_ENVIRONMENT_PORT) if id is None else id
                 
         engine_configuration_channel = EngineConfigurationChannel()
         self.env = UnityEnvironment(file_name=env_path,
