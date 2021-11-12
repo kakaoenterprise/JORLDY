@@ -52,11 +52,11 @@ class REINFORCE(BaseAgent):
         self.network.train(training)
         
         if self.action_type == "continuous":
-            mu, std = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+            mu, std = self.network(self.as_tensor(state))
             z = torch.normal(mu, std) if training else mu
             action = torch.tanh(z)
         else:
-            pi = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+            pi = self.network(self.as_tensor(state))
             action = torch.multinomial(pi, 1) if training else torch.argmax(pi, dim=-1, keepdim=True)
         return {'action': action.cpu().numpy()}
     

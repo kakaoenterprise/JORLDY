@@ -66,11 +66,11 @@ class RND_PPO(PPO):
     def act(self, state, training=True):
         self.network.train(training)
         if self.action_type == "continuous":
-            mu, std, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+            mu, std, _ = self.network(self.as_tensor(state))
             z = torch.normal(mu, std) if training else mu
             action = torch.tanh(z)
         else:
-            pi, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+            pi, _ = self.network(self.as_tensor(state))
             action = torch.multinomial(pi, 1) if training else torch.argmax(pi, dim=-1, keepdim=True)
 
         return {'action': action.cpu().numpy()}
@@ -78,7 +78,7 @@ class RND_PPO(PPO):
     def learn(self):
         transitions = self.memory.sample()
         for key in transitions.keys():
-            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+            transitions[key] = self.as_tensor(transitions[key])
 
         state = transitions['state']
         action = transitions['action']
@@ -139,7 +139,7 @@ class RND_PPO(PPO):
                 idx = idxs[offset : offset + self.batch_size]
                 
                 _state, _action, _ret, _next_state, _adv, _prob_old =\
-                    map(lambda x: x[idx], [state, action, ret, next_state, adv, prob_old])
+                    map(lambda x: [_x[idx] for _x in x] if isinstance(x, list) else x[idx], [state, action, ret, next_state, adv, prob_old])
                 _ret_i, _adv_i = map(lambda x: x[idx], [ret_i, adv_i])
                                 
                 _r_i = self.rnd.forward(_next_state) * self.intrinsic_coeff

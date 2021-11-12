@@ -117,7 +117,7 @@ class RainbowIQN(Rainbow):
         if training and self.memory.size < max(self.batch_size, self.start_train_step):
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            logits, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device), training, sample_min, sample_max)
+            logits, _ = self.network(self.as_tensor(state), training, sample_min, sample_max)
             _, q_action = self.logits2Q(logits)
             action = torch.argmax(q_action, -1, keepdim=True).cpu().numpy()
         return {'action': action}
@@ -125,7 +125,7 @@ class RainbowIQN(Rainbow):
     def learn(self):
         transitions, weights, indices, sampled_p, mean_p = self.memory.sample(self.beta, self.batch_size)
         for key in transitions.keys():
-            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+            transitions[key] = self.as_tensor(transitions[key])
 
         state = transitions['state']
         action = transitions['action']

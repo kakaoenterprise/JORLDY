@@ -61,7 +61,7 @@ class ICM_PPO(PPO):
     def learn(self):
         transitions = self.memory.sample()
         for key in transitions.keys():
-            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+            transitions[key] = self.as_tensor(transitions[key])
 
         state = transitions['state']
         action = transitions['action']

@@ -45,13 +45,13 @@ class Noisy(DQN):
         if training and self.memory.size < max(self.batch_size, self.start_train_step):
             action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
         else:
-            action = torch.argmax(self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device), training), -1, keepdim=True).cpu().numpy()
+            action = torch.argmax(self.network(self.as_tensor(state), training), -1, keepdim=True).cpu().numpy()
         return {'action': action}
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
         for key in transitions.keys():
-            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+            transitions[key] = self.as_tensor(transitions[key])
 
         state = transitions['state']
         action = transitions['action']

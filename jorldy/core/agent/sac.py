@@ -82,12 +82,7 @@ class SAC(BaseAgent):
     def act(self, state, training=True):
         self.actor.train(training)
 
-        if isinstance(state, list) and len(state)>1:
-            state = list(map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), state))
-        else: 
-            state = torch.as_tensor(state, dtype=torch.float32, device=self.device)
-
-        mu, std = self.actor(state)
+        mu, std = self.actor(self.as_tensor(state))
         z = torch.normal(mu, std) if training else mu
         action = torch.tanh(z)
         action = action.cpu().numpy()
@@ -106,11 +101,7 @@ class SAC(BaseAgent):
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
         for key in transitions.keys():
-            if isinstance(transitions[key], list) and len(transitions[key]) > 1:
-                transition_list = list(map(lambda x: torch.as_tensor(x, dtype=torch.float32, device=self.device), transitions[key]))
-                transitions[key] = transition_list
-            else:
-                transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+            transitions[key] = self.as_tensor(transitions[key])
 
         state = transitions['state']
         action = transitions['action']
