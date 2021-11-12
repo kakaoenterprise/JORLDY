@@ -41,7 +41,7 @@ class RND_PPO(PPO):
                                       action_size=action_size,
                                       hidden_size=hidden_size,
                                       **kwargs)
-        
+
         self.rnd_network = rnd_network
         
         self.gamma_i = gamma_i
@@ -72,7 +72,6 @@ class RND_PPO(PPO):
         else:
             pi, _ = self.network(self.as_tensor(state))
             action = torch.multinomial(pi, 1) if training else torch.argmax(pi, dim=-1, keepdim=True)
-
         return {'action': action.cpu().numpy()}
     
     def learn(self):
