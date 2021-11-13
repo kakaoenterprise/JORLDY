@@ -5,7 +5,7 @@ class EvalManager:
         self.env = Env(**env_config)
         self.iteration = iteration if iteration else 10
         assert iteration > 0
-        self.record = record and env.recordable()
+        self.record = record and self.env.recordable()
         self.record_period = record_period
         self.record_stamp = 0
         self.time_t = 0
