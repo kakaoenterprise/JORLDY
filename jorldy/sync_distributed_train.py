@@ -22,6 +22,8 @@ if __name__ == "__main__":
                     'action_size': env.action_size,
                     'optim_config': config.optim,
                     'num_workers': config.train.num_workers}
+    env.close()
+    
     agent_config.update(config.agent)
     if config.train.distributed_batch_size:
         agent_config["batch_size"] = config.train.distributed_batch_size
@@ -31,7 +33,7 @@ if __name__ == "__main__":
     path_queue = mp.Queue(1)
     
     record_period = config.train.record_period if config.train.record_period else config.train.run_step//10
-    eval_manager_config = (Env(**config.env), config.train.eval_iteration, config.train.record, record_period)
+    eval_manager_config = (Env, config.env, config.train.eval_iteration, config.train.record, record_period)
     log_id = config.train.id if config.train.id else config.agent.name
     log_manager_config = (config.env.name, log_id, config.train.experiment)
     manage = mp.Process(target=manage_process,

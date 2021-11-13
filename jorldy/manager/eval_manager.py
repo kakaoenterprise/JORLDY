@@ -1,11 +1,11 @@
 import numpy as np 
 
 class EvalManager:
-    def __init__(self, env, iteration=10, record=None, record_period=None):
-        self.env = env
+    def __init__(self, Env, env_config, iteration=10, record=None, record_period=None):
+        self.env = Env(**env_config)
         self.iteration = iteration if iteration else 10
         assert iteration > 0
-        self.record = record and env.recordable()
+        self.record = record and self.env.recordable()
         self.record_period = record_period
         self.record_stamp = 0
         self.time_t = 0
