@@ -46,7 +46,7 @@ class _MLAgent(BaseEnv):
         self.score = 0
         self.env.reset()
         dec, term = self.env.get_steps(self.behavior_name)
-        state = dec.obs[0]
+        state = self.state_processing(dec.obs)
 
         return state
 
@@ -64,13 +64,16 @@ class _MLAgent(BaseEnv):
         dec, term = self.env.get_steps(self.behavior_name)
         done = len(term.agent_id) > 0
         reward = term.reward if done else dec.reward
-        next_state = term.obs[0] if done else dec.obs[0]
+        next_state = self.state_processing(term.obs) if done else self.state_processing(dec.obs)
         
         self.score += reward[0] 
 
         reward, done = map(lambda x: np.expand_dims(x,0), [reward, [done]])
-        
+
         return (next_state, reward, done)
+    
+    def state_processing(self, obs):
+        return obs[0]
 
     def close(self):
         self.env.close()
@@ -90,7 +93,32 @@ class PongMLAgent(_MLAgent):
         
         self.state_size = 8*1
         self.action_size = 3
+
+class DroneMLAgent(_MLAgent):
+    def __init__(self, **kwargs):
+        env_name = "drone"
+        super(DroneMLAgent, self).__init__(env_name, **kwargs)
+
+        self.state_size = [[15,36,64], 95]
+        self.action_size = 3
         
+    def state_processing(self, obs):
+        vis_obs = []
+
+        for _obs in obs:
+            if len(_obs.shape) == 2: # vector observation
+                vec_obs = _obs
+            else: # visual observation
+                vis_obs.append(_obs)
+        
+        # vis obs processing
+        vis_obs = np.concatenate(vis_obs, axis=-1)
+        vis_obs = np.transpose(vis_obs, (0,3,1,2))
+        vis_obs = (vis_obs * 255).astype(np.uint8)
+        
+        return [vis_obs, vec_obs]
+
+
 class WormMLAgent(_MLAgent):
     def __init__(self, **kwargs):
         env_name = "Worm"

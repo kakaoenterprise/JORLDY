@@ -1,6 +1,23 @@
 # How to use
 
+#### Contents
+
+- [Script Description](#Script-description)
+
+- [How to Check Implemented List](#How-to-Check-Implemented-List)
+  - [Agents](#Agents)
+  - [Environments](#Environments)
+  - [Networks](#Networks)
+- [Run Command Example](#Run-Command-Example)
+- [Inference](#Inference)
+  - [Saved Files](#Saved-Files)
+  - [How to add data in Tensorboard](#How-to-add-data-in-Tensorboard)
+  - [How to load trained model](#How-to-load-trained-model)
+- [Additional Features](#Additional-Features)
+  - [How to use multi-modal structure](#How-to-use-multi-modal-structure)
+
 ## Script description
+
 - single_train.py: train with single agent.
 - sync_distributed_train.py: train with sychronous distributed setting.
 - async_distributed_train.py: train with asychronous distributed setting.
@@ -87,6 +104,8 @@ agent = {
 
 - Executable script list: **single_train.py**, **sync_distributed_train.py**, **async_distributed_train.py**.
 
+
+
 ## Inference 
 
 ### Saved Files 
@@ -133,3 +152,32 @@ train = {
 }
 ```
 
+
+
+## Additional Features
+
+### How to use multi-modal structure
+
+- JORLDY supports multi-modal structured networks which uses both images and vector input data. 
+
+**To run the agents with multi-modal input**
+
+- The state size has to be set as list consist of image and vector shape :arrow_right: state_size = [image shape, vector shape]
+
+  - e.g. if image has shape [4,84,84] and length of vector is 10 the state size should be [[4,84,84], 10]
+
+- Also, the state has to be set as list consist of image and vector data :arrow_right: state = [image data, vector data]
+
+- In the config files, "head" in agent part should be set as "multi" as follows
+
+  ```python
+  agent = {
+      "name": "ppo",
+      "network": "continuous_policy_value",
+      "head": "multi",
+      "gamma": 0.99,
+      ...
+  }
+  ```
+
+- It's done! You can train the agent, which uses both images and vector data as an input. :sunglasses:

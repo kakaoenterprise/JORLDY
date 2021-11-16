@@ -18,7 +18,7 @@ agent = {
     "ent_coef": 0.1,
     "clip_grad_norm": 1.0,
     # Parameters for Curiosity-driven Exploration
-    "icm_network": "icm",
+    "icm_network": "icm_mlp", # icm_mlp, icm_cnn, icm_multi
     "beta": 0.2,
     "lamb": 1.0,
     "eta": 0.1,

@@ -1,4 +1,5 @@
 from abc import *
+import numpy as np
 
 class BaseBuffer(ABC):
     def __init__(self):
@@ -8,7 +9,11 @@ class BaseBuffer(ABC):
         print("########################################")
         print("You should check dimension of transition")
         for key, val in transition.items():
-            print(f"{key}: {val.shape}")
+            if len(val) > 1:
+                for i in range(len(val)):
+                    print(f"{key}{i}: {val[i].shape}")
+            else:
+                print(f"{key}: {val.shape}")
         print("########################################")
         self.first_store = False
 
@@ -33,3 +38,18 @@ class BaseBuffer(ABC):
         transitions = [{}]
         return transitions
         
+    def stack_transition(self, batch):
+        transitions = {}
+
+        for key in batch[0].keys():
+            if len(batch[0][key]) > 1:
+                # Multimodal
+                b_list = []
+                for i in range(len(batch[0][key])):
+                    tmp_transition = np.stack([b[key][i][0] for b in batch], axis=0)
+                    b_list.append(tmp_transition)
+                transitions[key] = b_list 
+            else:
+                transitions[key] = np.stack([b[key][0] for b in batch], axis=0)
+        
+        return transitions

@@ -59,9 +59,10 @@ class ApeX(DQN):
         self.network.train(training)
         epsilon = self.epsilon if training else self.epsilon_eval
             
-        q = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device))
+        q = self.network(self.as_tensor(state))
         if np.random.random() < epsilon:
-            action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
+            batch_size=state[0].shape[0] if isinstance(state, list) else state.shape[0]
+            action = np.random.randint(0, self.action_size, size=(batch_size, 1))
         else:
             action = torch.argmax(q, -1, keepdim=True).cpu().numpy()
         q = np.take(q.cpu().numpy(), action)
@@ -70,7 +71,7 @@ class ApeX(DQN):
     def learn(self):
         transitions, weights, indices, sampled_p, mean_p = self.memory.sample(self.beta, self.batch_size)
         for key in transitions.keys():
-            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+            transitions[key] = self.as_tensor(transitions[key])
 
         state = transitions['state']
         action = transitions['action']

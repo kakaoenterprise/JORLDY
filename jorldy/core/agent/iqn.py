@@ -55,9 +55,10 @@ class IQN(DQN):
         sample_max = 1 if training else self.sample_max
 
         if np.random.random() < epsilon:
-            action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
+            batch_size=state[0].shape[0] if isinstance(state, list) else state.shape[0]
+            action = np.random.randint(0, self.action_size, size=(batch_size, 1))
         else:
-            logits, _ = self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device), sample_min, sample_max)
+            logits, _ = self.network(self.as_tensor(state), sample_min, sample_max)
             _, q_action = self.logits2Q(logits)
             action = torch.argmax(q_action, -1, keepdim=True).cpu().numpy()
         return {'action': action}
@@ -65,7 +66,7 @@ class IQN(DQN):
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
         for key in transitions.keys():
-            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+            transitions[key] = self.as_tensor(transitions[key])
 
         state = transitions['state']
         action = transitions['action']

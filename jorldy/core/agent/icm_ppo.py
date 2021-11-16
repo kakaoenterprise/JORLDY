@@ -61,7 +61,7 @@ class ICM_PPO(PPO):
     def learn(self):
         transitions = self.memory.sample()
         for key in transitions.keys():
-            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+            transitions[key] = self.as_tensor(transitions[key])
 
         state = transitions['state']
         action = transitions['action']
@@ -106,7 +106,7 @@ class ICM_PPO(PPO):
                 idx = idxs[offset : offset + self.batch_size]
                 
                 _state, _action, _ret, _next_state, _adv, _prob_old =\
-                    map(lambda x: x[idx], [state, action, ret, next_state, adv, prob_old])
+                    map(lambda x: [_x[idx] for _x in x] if isinstance(x, list) else x[idx], [state, action, ret, next_state, adv, prob_old])
 
                 if self.action_type == "continuous":
                     mu, std, value = self.network(_state)

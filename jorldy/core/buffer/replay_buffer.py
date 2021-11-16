@@ -26,10 +26,8 @@ class ReplayBuffer(BaseBuffer):
         batch_idx = np.random.randint(self.buffer_counter, size=batch_size)
         batch = self.buffer[batch_idx]
         
-        transitions = {}
-        for key in batch[0].keys():
-            transitions[key] = np.stack([b[key][0] for b in batch], axis=0)
-            
+        transitions = self.stack_transition(batch)
+
         return transitions
     
     @property

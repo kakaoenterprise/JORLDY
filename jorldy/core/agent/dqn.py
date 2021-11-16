@@ -83,15 +83,16 @@ class DQN(BaseAgent):
         epsilon = self.epsilon if training else self.epsilon_eval
             
         if np.random.random() < epsilon:
-            action = np.random.randint(0, self.action_size, size=(state.shape[0], 1))
+            batch_size=state[0].shape[0] if isinstance(state, list) else state.shape[0]
+            action = np.random.randint(0, self.action_size, size=(batch_size, 1))
         else:
-            action = torch.argmax(self.network(torch.as_tensor(state, dtype=torch.float32, device=self.device)), -1, keepdim=True).cpu().numpy()
+            action = torch.argmax(self.network(self.as_tensor(state)), -1, keepdim=True).cpu().numpy()
         return {'action': action}
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
         for key in transitions.keys():
-            transitions[key] = torch.as_tensor(transitions[key], dtype=torch.float32, device=self.device)
+            transitions[key] = self.as_tensor(transitions[key])
 
         state = transitions['state']
         action = transitions['action']
