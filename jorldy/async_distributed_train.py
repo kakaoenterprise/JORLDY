@@ -30,6 +30,7 @@ if __name__ == "__main__":
     if config.train.distributed_batch_size:
         agent_config["batch_size"] = config.train.distributed_batch_size
 
+
     trans_queue = mp.Queue(10)
     interact_sync_queue = mp.Queue(1)
     result_queue = mp.Queue()
