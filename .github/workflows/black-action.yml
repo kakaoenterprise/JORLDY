@@ -1,5 +1,9 @@
 name: black-action
-on: [push, pull_request]
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 jobs:
   linter_name:
     name: runner / black formatter
