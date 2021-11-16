@@ -1,15 +1,15 @@
 ### PPO Pendulum Config ###
 
 env = {
-    "name":"pendulum",
-    "render":False,
+    "name": "pendulum",
+    "render": False,
 }
 
 agent = {
     "name": "ppo",
     "network": "continuous_policy_value",
     "gamma": 0.99,
-    "batch_size":32,
+    "batch_size": 32,
     "n_step": 128,
     "n_epoch": 3,
     "_lambda": 0.95,
@@ -25,14 +25,14 @@ optim = {
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 100000,
-    "print_period" : 1000,
-    "save_period" : 10000,
+    "training": True,
+    "load_path": None,
+    "run_step": 100000,
+    "print_period": 1000,
+    "save_period": 10000,
     "eval_iteration": 10,
     # distributed setting
-    "distributed_batch_size" : 256,
-    "update_period" : agent["n_step"],
-    "num_workers" : 8,
+    "distributed_batch_size": 256,
+    "update_period": agent["n_step"],
+    "num_workers": 8,
 }

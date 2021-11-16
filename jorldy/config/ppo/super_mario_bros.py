@@ -7,17 +7,17 @@ env = {
     "img_width": 84,
     "img_height": 84,
     "stack_frame": 4,
-#     "no_op": True,
+    #     "no_op": True,
     "reward_clip": True,
     "dead_penalty": False,
 }
 
 agent = {
-    "name":"ppo",
-    "network":"discrete_policy_value",
+    "name": "ppo",
+    "network": "discrete_policy_value",
     "head": "cnn",
-    "gamma":0.99,
-    "batch_size":32,
+    "gamma": 0.99,
+    "batch_size": 32,
     "n_step": 128,
     "n_epoch": 3,
     "_lambda": 0.95,
@@ -28,21 +28,21 @@ agent = {
     "use_standardization": False,
 }
 
-optim ={
+optim = {
     "name": "adam",
     "lr": 2.5e-4,
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 30000000,
-    "print_period" : 10000,
-    "save_period" : 100000,
+    "training": True,
+    "load_path": None,
+    "run_step": 30000000,
+    "print_period": 10000,
+    "save_period": 100000,
     "eval_iteration": 1,
-    "record" : True,
-    "record_period" : 250000,
+    "record": True,
+    "record_period": 250000,
     # distributed setting
-    "update_period" : agent["n_step"],
-    "num_workers" : 8,
+    "update_period": agent["n_step"],
+    "num_workers": 8,
 }

@@ -1,8 +1,8 @@
 ### PER MountainCar Config ###
 
 env = {
-    "name":"mountain_car",
-    "render":False,
+    "name": "mountain_car",
+    "render": False,
 }
 
 agent = {
@@ -24,17 +24,17 @@ agent = {
 
 optim = {
     "name": "adam",
-    "lr": 2.5e-4/4,
+    "lr": 2.5e-4 / 4,
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 100000,
-    "print_period" : 1000,
-    "save_period" : 10000,
+    "training": True,
+    "load_path": None,
+    "run_step": 100000,
+    "print_period": 1000,
+    "save_period": 10000,
     "eval_iteration": 5,
     # distributed setting
-    "update_period" : agent["learn_period"],
-    "num_workers" : 8,
+    "update_period": agent["learn_period"],
+    "num_workers": 8,
 }

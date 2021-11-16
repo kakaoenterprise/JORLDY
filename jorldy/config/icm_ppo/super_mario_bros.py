@@ -13,11 +13,11 @@ env = {
 }
 
 agent = {
-    "name":"icm_ppo",
-    "network":"discrete_policy_value",
+    "name": "icm_ppo",
+    "network": "discrete_policy_value",
     "head": "cnn",
-    "gamma":0.99,
-    "batch_size":16,
+    "gamma": 0.99,
+    "batch_size": 16,
     "n_step": 128,
     "n_epoch": 4,
     "_lambda": 0.95,
@@ -27,7 +27,7 @@ agent = {
     "clip_grad_norm": 1.0,
     "use_standardization": False,
     # Parameters for Curiosity-driven Exploration
-    "icm_network": "icm_cnn", # icm_mlp, icm_cnn, icm_multi
+    "icm_network": "icm_cnn",  # icm_mlp, icm_cnn, icm_multi
     "beta": 0.2,
     "lamb": 1.0,
     "eta": 0.1,
@@ -39,21 +39,21 @@ agent = {
 }
 
 optim = {
-    "name":"adam",
+    "name": "adam",
     "lr": 2.5e-4,
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 30000000,
-    "print_period" : 10000,
-    "save_period" : 500000,
+    "training": True,
+    "load_path": None,
+    "run_step": 30000000,
+    "print_period": 10000,
+    "save_period": 500000,
     "eval_iteration": 1,
     "record": True,
     "record_period": 500000,
     # distributed setting
     "distributed_batch_size": 1024,
-    "update_period" : agent["n_step"],
-    "num_workers" : 64,
+    "update_period": agent["n_step"],
+    "num_workers": 64,
 }

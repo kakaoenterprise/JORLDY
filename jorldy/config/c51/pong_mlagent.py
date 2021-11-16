@@ -1,9 +1,6 @@
 ### C51 Pong_ML-Agents Config ###
 
-env = {
-    "name": "pong_mlagent",
-    "train_mode": True
-}
+env = {"name": "pong_mlagent", "train_mode": True}
 
 agent = {
     "name": "c51",
@@ -18,23 +15,23 @@ agent = {
     "target_update_period": 1000,
     "v_min": -1,
     "v_max": 10,
-    "num_support": 51
+    "num_support": 51,
 }
 
 optim = {
     "name": "adam",
-    "eps": 1e-2/agent['batch_size'],
+    "eps": 1e-2 / agent["batch_size"],
     "lr": 2.5e-4,
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 200000,
-    "print_period" : 5000,
-    "save_period" : 50000,
+    "training": True,
+    "load_path": None,
+    "run_step": 200000,
+    "print_period": 5000,
+    "save_period": 50000,
     "eval_iteration": 10,
     # distributed setting
-    "update_period" : 8,
-    "num_workers" : 16,
+    "update_period": 8,
+    "num_workers": 16,
 }

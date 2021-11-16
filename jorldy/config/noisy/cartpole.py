@@ -1,9 +1,9 @@
 ### Noisy DQN CartPole Config ###
 
 env = {
-    "name":"cartpole",
-    "mode":"discrete",
-    "render":False,
+    "name": "cartpole",
+    "mode": "discrete",
+    "render": False,
 }
 
 agent = {
@@ -15,8 +15,8 @@ agent = {
     "batch_size": 32,
     "start_train_step": 10000,
     "target_update_period": 200,
-    #noisy 
-    "noise_type": 'independent' # [independent, factorized]
+    # noisy
+    "noise_type": "independent",  # [independent, factorized]
 }
 
 optim = {
@@ -25,13 +25,13 @@ optim = {
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 100000,
-    "print_period" : 1000,
-    "save_period" : 10000,
+    "training": True,
+    "load_path": None,
+    "run_step": 100000,
+    "print_period": 1000,
+    "save_period": 10000,
     "eval_iteration": 5,
     # distributed setting
-    "update_period" : 32,
-    "num_workers" : 8,
+    "update_period": 32,
+    "num_workers": 8,
 }

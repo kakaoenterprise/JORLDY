@@ -1,9 +1,6 @@
 ### PER Pong_ML-Agents Config ###
 
-env = {
-    "name": "pong_mlagent",
-    "train_mode": True
-}
+env = {"name": "pong_mlagent", "train_mode": True}
 
 agent = {
     "name": "per",
@@ -19,23 +16,22 @@ agent = {
     "alpha": 0.6,
     "beta": 0.4,
     "uniform_sample_prob": 1e-3,
-    "learn_period" : 16,
+    "learn_period": 16,
 }
 
 optim = {
     "name": "adam",
-    "lr": 2.5e-4/4,
+    "lr": 2.5e-4 / 4,
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 200000,
-    "print_period" : 2000,
-    "save_period" : 50000,
+    "training": True,
+    "load_path": None,
+    "run_step": 200000,
+    "print_period": 2000,
+    "save_period": 50000,
     "eval_iteration": 10,
     # distributed setting
-    "update_period" : agent["learn_period"],
-    "num_workers" : 16,
+    "update_period": agent["learn_period"],
+    "num_workers": 16,
 }
-

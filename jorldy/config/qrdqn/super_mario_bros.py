@@ -21,25 +21,25 @@ agent = {
     "batch_size": 32,
     "start_train_step": 100000,
     "target_update_period": 10000,
-    "num_support": 200
+    "num_support": 200,
 }
 
 optim = {
     "name": "adam",
-    "eps": 1e-2/agent['batch_size'],
+    "eps": 1e-2 / agent["batch_size"],
     "lr": 5e-5,
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 30000000,
-    "print_period" : 10000,
-    "save_period" : 100000,
+    "training": True,
+    "load_path": None,
+    "run_step": 30000000,
+    "print_period": 10000,
+    "save_period": 100000,
     "eval_iteration": 5,
-    "record" : True,
-    "record_period" : 300000,
+    "record": True,
+    "record_period": 300000,
     # distributed setting
-    "update_period" : 32,
-    "num_workers" : 16,
+    "update_period": 32,
+    "num_workers": 16,
 }
