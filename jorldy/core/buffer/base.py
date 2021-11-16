@@ -46,8 +46,8 @@ class BaseBuffer(ABC):
                 # Multimodal
                 b_list = []
                 for i in range(len(batch[0][key])):
-                    temp_transition = np.stack([b[key][i][0] for b in batch], axis=0)
-                    b_list.append(temp_transition)
+                    tmp_transition = np.stack([b[key][i][0] for b in batch], axis=0)
+                    b_list.append(tmp_transition)
                 transitions[key] = b_list 
             else:
                 transitions[key] = np.stack([b[key][0] for b in batch], axis=0)
