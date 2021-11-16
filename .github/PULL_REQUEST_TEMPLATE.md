@@ -4,7 +4,7 @@
 
 Please check if you consider the following items. 
 
-- [ ] My code follows the style guidelines of this project
+- [ ] My code follows the style guidelines of this project [contributing](https://github.com/kakaoenterprise/JORLDY/blob/master/CONTRIBUTING.md)
 - [ ] My code follows the [naming convention](https://github.com/kakaoenterprise/JORLDY/blob/master/docs/Naming_convention.md) of documentation
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] My changes generate no new warnings or errors 
