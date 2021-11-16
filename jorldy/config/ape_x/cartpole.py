@@ -1,9 +1,9 @@
 ### Ape-X CartPole Config ###
 
 env = {
-    "name":"cartpole",
-    "mode":"discrete",
-    "render":False,
+    "name": "cartpole",
+    "mode": "discrete",
+    "render": False,
 }
 
 agent = {
@@ -26,19 +26,19 @@ agent = {
 optim = {
     "name": "rmsprop",
     "eps": 1.5e-7,
-    "lr": 2.5e-4/4,
+    "lr": 2.5e-4 / 4,
     "centered": True,
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 100000,
-    "print_period" : 1000,
-    "save_period" : 10000,
+    "training": True,
+    "load_path": None,
+    "run_step": 100000,
+    "print_period": 1000,
+    "save_period": 10000,
     "eval_iteration": 10,
     # distributed setting
-    "distributed_batch_size" : 512,
-    "update_period" : 16,
-    "num_workers" : 32,
+    "distributed_batch_size": 512,
+    "update_period": 16,
+    "num_workers": 32,
 }

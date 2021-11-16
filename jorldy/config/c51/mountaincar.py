@@ -1,8 +1,8 @@
 ### C51 MountainCar Config ###
 
 env = {
-    "name":"mountain_car",
-    "render":False,
+    "name": "mountain_car",
+    "render": False,
 }
 
 agent = {
@@ -18,23 +18,23 @@ agent = {
     "target_update_period": 200,
     "v_min": -1,
     "v_max": 10,
-    "num_support": 51
+    "num_support": 51,
 }
 
 optim = {
     "name": "adam",
-    "eps": 1e-2/agent['batch_size'],
+    "eps": 1e-2 / agent["batch_size"],
     "lr": 2.5e-4,
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 100000,
-    "print_period" : 1000,
-    "save_period" : 10000,
+    "training": True,
+    "load_path": None,
+    "run_step": 100000,
+    "print_period": 1000,
+    "save_period": 10000,
     "eval_iteration": 5,
     # distributed setting
-    "update_period" : 32,
-    "num_workers" : 8,
+    "update_period": 32,
+    "num_workers": 8,
 }

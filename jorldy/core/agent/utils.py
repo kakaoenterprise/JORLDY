@@ -1,14 +1,14 @@
 import numpy as np
 
-# OU noise class 
+# OU noise class
 class OU_Noise:
     def __init__(self, action_size, mu, theta, sigma):
         self.action_size = action_size
-        
+
         self.mu = mu
         self.theta = theta
         self.sigma = sigma
-        
+
         self.reset()
 
     def reset(self):

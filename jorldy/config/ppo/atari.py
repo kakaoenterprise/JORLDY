@@ -13,11 +13,11 @@ env = {
 }
 
 agent = {
-    "name":"ppo",
-    "network":"discrete_policy_value",
+    "name": "ppo",
+    "network": "discrete_policy_value",
     "head": "cnn",
-    "gamma":0.99,
-    "batch_size":32,
+    "gamma": 0.99,
+    "batch_size": 32,
     "n_step": 128,
     "n_epoch": 3,
     "_lambda": 0.95,
@@ -33,16 +33,16 @@ optim = {
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 30000000,
-    "print_period" : 10000,
-    "save_period" : 100000,
+    "training": True,
+    "load_path": None,
+    "run_step": 30000000,
+    "print_period": 10000,
+    "save_period": 100000,
     "eval_iteration": 5,
-    "record" : True,
-    "record_period" : 300000,
+    "record": True,
+    "record_period": 300000,
     # distributed setting
-    "distributed_batch_size" : 256,
-    "update_period" : agent["n_step"],
-    "num_workers" : 8,
+    "distributed_batch_size": 256,
+    "update_period": agent["n_step"],
+    "num_workers": 8,
 }

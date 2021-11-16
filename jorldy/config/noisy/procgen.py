@@ -19,8 +19,8 @@ agent = {
     "batch_size": 32,
     "start_train_step": 100000,
     "target_update_period": 10000,
-    #noisy 
-    "noise_type": 'factorized' # [independent, factorized]
+    # noisy
+    "noise_type": "factorized",  # [independent, factorized]
 }
 
 optim = {
@@ -29,15 +29,15 @@ optim = {
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 30000000,
-    "print_period" : 10000,
-    "save_period" : 100000,
+    "training": True,
+    "load_path": None,
+    "run_step": 30000000,
+    "print_period": 10000,
+    "save_period": 100000,
     "eval_iteration": 5,
-    "record" : True,
-    "record_period" : 300000,
+    "record": True,
+    "record_period": 300000,
     # distributed setting
-    "update_period" : 32,
-    "num_workers" : 16,
+    "update_period": 32,
+    "num_workers": 16,
 }

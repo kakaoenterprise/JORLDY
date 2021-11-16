@@ -1,9 +1,9 @@
 ### Rainbow IQN CartPole Config ###
 
 env = {
-    "name":"cartpole",
-    "mode":"discrete",
-    "render":False,
+    "name": "cartpole",
+    "mode": "discrete",
+    "render": False,
 }
 
 agent = {
@@ -15,7 +15,6 @@ agent = {
     "batch_size": 64,
     "start_train_step": 2000,
     "target_update_period": 1000,
-    
     # MultiStep
     "n_step": 3,
     # PER
@@ -23,8 +22,8 @@ agent = {
     "beta": 0.4,
     "learn_period": 4,
     "uniform_sample_prob": 1e-3,
-    # Noisy 
-    "noise_type": 'factorized', # [independent, factorized]
+    # Noisy
+    "noise_type": "factorized",  # [independent, factorized]
     # IQN
     "num_sample": 64,
     "embedding_dim": 64,
@@ -34,18 +33,18 @@ agent = {
 
 optim = {
     "name": "adam",
-    "eps": 1e-2/agent['batch_size'],
-    "lr": 2.5e-4/4,
+    "eps": 1e-2 / agent["batch_size"],
+    "lr": 2.5e-4 / 4,
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 100000,
-    "print_period" : 1000,
-    "save_period" : 10000,
+    "training": True,
+    "load_path": None,
+    "run_step": 100000,
+    "print_period": 1000,
+    "save_period": 10000,
     "eval_iteration": 10,
     # distributed setting
-    "update_period" : 8,
-    "num_workers" : 8,
+    "update_period": 8,
+    "num_workers": 8,
 }

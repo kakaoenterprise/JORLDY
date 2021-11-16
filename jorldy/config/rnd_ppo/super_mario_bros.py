@@ -13,11 +13,11 @@ env = {
 }
 
 agent = {
-    "name":"rnd_ppo",
-    "network":"discrete_policy_separate_value",
+    "name": "rnd_ppo",
+    "network": "discrete_policy_separate_value",
     "head": "cnn",
-    "gamma":0.99,
-    "batch_size":8,
+    "gamma": 0.99,
+    "batch_size": 8,
     "n_step": 128,
     "n_epoch": 4,
     "_lambda": 0.95,
@@ -27,7 +27,7 @@ agent = {
     "clip_grad_norm": 1.0,
     "use_standardization": False,
     # Parameters for Random Network Distillation
-    "rnd_network": "rnd_cnn", # rnd_mlp, rnd_cnn, rnd_multi
+    "rnd_network": "rnd_cnn",  # rnd_mlp, rnd_cnn, rnd_multi
     "gamma_i": 0.99,
     "extrinsic_coeff": 1.0,
     "intrinsic_coeff": 1.0,
@@ -37,21 +37,21 @@ agent = {
 }
 
 optim = {
-    "name":"adam",
+    "name": "adam",
     "lr": 0.0001,
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 30000000,
-    "print_period" : 10000,
-    "save_period" : 100000,
+    "training": True,
+    "load_path": None,
+    "run_step": 30000000,
+    "print_period": 10000,
+    "save_period": 100000,
     "eval_iteration": 1,
-    "record" : True,
-    "record_period" : 250000,
+    "record": True,
+    "record_period": 250000,
     # distributed setting
-    "distributed_batch_size" : 256,
-    "update_period" : agent["n_step"],
-    "num_workers" : 64,
+    "distributed_batch_size": 256,
+    "update_period": agent["n_step"],
+    "num_workers": 64,
 }

@@ -1,28 +1,28 @@
 ### REINFORCE CartPole Config ###
 
 env = {
-    "name":"cartpole",
+    "name": "cartpole",
     "mode": "discrete",
-    "render":False,
+    "render": False,
 }
 
 agent = {
-    "name":"reinforce",
-    "network":"discrete_policy",
-    "gamma":0.99,
+    "name": "reinforce",
+    "network": "discrete_policy",
+    "gamma": 0.99,
 }
 
 optim = {
-    "name":"adam",
+    "name": "adam",
     "lr": 1e-4,
 }
 
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 100000,
-    "print_period" : 1000,
-    "save_period" : 10000,
+    "training": True,
+    "load_path": None,
+    "run_step": 100000,
+    "print_period": 1000,
+    "save_period": 10000,
     "eval_iteration": 10,
 }
