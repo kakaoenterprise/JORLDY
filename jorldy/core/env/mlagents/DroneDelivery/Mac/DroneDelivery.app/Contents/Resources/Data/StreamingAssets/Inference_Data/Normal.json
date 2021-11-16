@@ -1,0 +1,55 @@
+{
+	"InferenceInfos" :	
+	[
+		{
+			"ID" : 0,
+			"houseNums":[0, 3, 5],
+			"randomSeed": 1245
+		},
+		{
+			"ID" : 1,
+			"houseNums":[2, 1, 5],
+			"randomSeed": 788
+		},
+		{
+			"ID" : 2,
+			"houseNums":[1, 5, 9],
+			"randomSeed": 1874
+		},
+		{
+			"ID" : 3,
+			"houseNums":[5, 7, 3],
+			"randomSeed": 788154
+		},
+		{
+			"ID" : 4,
+			"houseNums":[8, 0, 9],
+			"randomSeed": 548788
+		},
+		{
+			"ID" : 5,
+			"houseNums":[7, 3, 6],
+			"randomSeed": 548
+		},
+		{
+			"ID" : 6,
+			"houseNums":[7, 2, 9],
+			"randomSeed": 58
+		},
+		{
+			"ID" : 7,
+			"houseNums":[2, 8, 9],
+			"randomSeed": 78
+		},
+		{
+			"ID" : 8,
+			"houseNums":[2, 6, 4],
+			"randomSeed": 2458
+		},
+		{
+			"ID" : 9,
+			"houseNums":[1, 9, 2],
+			"randomSeed": 12588
+		},
+	]
+}
