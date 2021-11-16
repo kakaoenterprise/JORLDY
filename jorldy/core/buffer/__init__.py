@@ -2,8 +2,11 @@ import os, inspect
 
 working_path = os.path.dirname(os.path.realpath(__file__))
 file_list = os.listdir(working_path)
-module_list = [file.replace(".py", "") for file in file_list 
-               if file.endswith(".py") and file.replace(".py","") not in ["__init__", "base"]]
+module_list = [
+    file.replace(".py", "")
+    for file in file_list
+    if file.endswith(".py") and file.replace(".py", "") not in ["__init__", "base"]
+]
 
 for module_name in module_list:
     module_path = f"{__name__}.{module_name}"
@@ -11,4 +14,3 @@ for module_name in module_list:
     for class_name, _class in inspect.getmembers(module, inspect.isclass):
         if module_path in str(_class) and "Buffer" in class_name:
             exec(f"from {module_path} import {class_name}")
-            

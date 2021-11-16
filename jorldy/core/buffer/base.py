@@ -1,6 +1,7 @@
 from abc import *
 import numpy as np
 
+
 class BaseBuffer(ABC):
     def __init__(self):
         self.first_store = True
@@ -21,7 +22,7 @@ class BaseBuffer(ABC):
     def store(self, transitions):
         """
         Store transitions into buffer.
-        
+
         Parameter Type
         - transitions: List[Dict]
         """
@@ -30,14 +31,14 @@ class BaseBuffer(ABC):
     def sample(self, batch_size):
         """
         Sample transition data from buffer as much as the batch size.
-            
+
         Parameter Type
-        - batch_size:  int 
+        - batch_size:  int
         - transitions: List[Dict]
         """
         transitions = [{}]
         return transitions
-        
+
     def stack_transition(self, batch):
         transitions = {}
 
@@ -48,8 +49,8 @@ class BaseBuffer(ABC):
                 for i in range(len(batch[0][key])):
                     tmp_transition = np.stack([b[key][i][0] for b in batch], axis=0)
                     b_list.append(tmp_transition)
-                transitions[key] = b_list 
+                transitions[key] = b_list
             else:
                 transitions[key] = np.stack([b[key][0] for b in batch], axis=0)
-        
+
         return transitions

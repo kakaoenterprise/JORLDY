@@ -1,9 +1,6 @@
 ### Rainbow DQN Pong_ML-Agents Config ###
 
-env = {
-    "name": "pong_mlagent",
-    "train_mode": True
-}
+env = {"name": "pong_mlagent", "train_mode": True}
 
 agent = {
     "name": "rainbow",
@@ -21,27 +18,27 @@ agent = {
     "beta": 0.4,
     "learn_period": 4,
     "uniform_sample_prob": 1e-3,
-    # Noisy 
-    "noise_type": 'factorized', # [independent, factorized]
+    # Noisy
+    "noise_type": "factorized",  # [independent, factorized]
     # C51
     "v_min": -10,
     "v_max": 10,
-    "num_support": 51
+    "num_support": 51,
 }
 
 optim = {
     "name": "adam",
-    "lr": 2.5e-4/4,
+    "lr": 2.5e-4 / 4,
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 200000,
-    "print_period" : 5000,
-    "save_period" : 50000,
+    "training": True,
+    "load_path": None,
+    "run_step": 200000,
+    "print_period": 5000,
+    "save_period": 50000,
     "eval_iteration": 10,
     # distributed setting
-    "update_period" : 8,
-    "num_workers" : 16,
+    "update_period": 8,
+    "num_workers": 16,
 }

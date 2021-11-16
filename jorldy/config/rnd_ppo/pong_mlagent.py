@@ -1,15 +1,12 @@
 ### RND PPO Pong_ML-Agents Config ###
 
-env = {
-    "name": "pong_mlagent",
-    "train_mode": True
-}
+env = {"name": "pong_mlagent", "train_mode": True}
 
 agent = {
-    "name":"rnd_ppo",
-    "network":"discrete_policy_separate_value",
-    "gamma":0.99,
-    "batch_size":64,
+    "name": "rnd_ppo",
+    "network": "discrete_policy_separate_value",
+    "gamma": 0.99,
+    "batch_size": 64,
     "n_step": 128,
     "n_epoch": 3,
     "_lambda": 0.95,
@@ -18,7 +15,7 @@ agent = {
     "ent_coef": 0.0,
     "clip_grad_norm": 1.0,
     # Parameters for Random Network Distillation
-    "rnd_network": "rnd_mlp", # rnd_mlp, rnd_cnn, rnd_multi
+    "rnd_network": "rnd_mlp",  # rnd_mlp, rnd_cnn, rnd_multi
     "gamma_i": 0.99,
     "extrinsic_coeff": 1.0,
     "intrinsic_coeff": 1.0,
@@ -28,19 +25,19 @@ agent = {
 }
 
 optim = {
-    "name":"adam",
+    "name": "adam",
     "lr": 0.0001,
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 200000,
-    "print_period" : 5000,
-    "save_period" : 50000,
+    "training": True,
+    "load_path": None,
+    "run_step": 200000,
+    "print_period": 5000,
+    "save_period": 50000,
     "eval_iteration": 10,
     # distributed setting
-    "distributed_batch_size" : 512,
-    "update_period" : agent["n_step"],
-    "num_workers" : 8,
+    "distributed_batch_size": 512,
+    "update_period": agent["n_step"],
+    "num_workers": 8,
 }

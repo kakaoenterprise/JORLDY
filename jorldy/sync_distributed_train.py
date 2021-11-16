@@ -11,19 +11,21 @@ default_config_path = "config.dqn.cartpole"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str, help='config.dqn.cartpole')
+    parser.add_argument("--config", type=str, help="config.dqn.cartpole")
     args, unknown = parser.parse_known_args()
     config_path = args.config if args.config else default_config_path
     config_manager = ConfigManager(config_path, unknown)
     config = config_manager.config
-    
+
     env = Env(**config.env)
-    agent_config = {'state_size': env.state_size,
-                    'action_size': env.action_size,
-                    'optim_config': config.optim,
-                    'num_workers': config.train.num_workers}
+    agent_config = {
+        "state_size": env.state_size,
+        "action_size": env.action_size,
+        "optim_config": config.optim,
+        "num_workers": config.train.num_workers,
+    }
     env.close()
-    
+
     agent_config.update(config.agent)
     if config.train.distributed_batch_size:
         agent_config["batch_size"] = config.train.distributed_batch_size
@@ -31,22 +33,51 @@ if __name__ == "__main__":
     result_queue = mp.Queue()
     manage_sync_queue = mp.Queue(1)
     path_queue = mp.Queue(1)
-    
-    record_period = config.train.record_period if config.train.record_period else config.train.run_step//10
-    eval_manager_config = (Env, config.env, config.train.eval_iteration, config.train.record, record_period)
+
+    record_period = (
+        config.train.record_period
+        if config.train.record_period
+        else config.train.run_step // 10
+    )
+    eval_manager_config = (
+        Env,
+        config.env,
+        config.train.eval_iteration,
+        config.train.record,
+        record_period,
+    )
     log_id = config.train.id if config.train.id else config.agent.name
     log_manager_config = (config.env.name, log_id, config.train.experiment)
-    manage = mp.Process(target=manage_process,
-                        args=(Agent, {'device':'cpu', **agent_config},
-                              result_queue, manage_sync_queue, path_queue,
-                              config.train.run_step, config.train.print_period,
-                              MetricManager, EvalManager, eval_manager_config,
-                              LogManager, log_manager_config, config_manager))
-    
+    manage = mp.Process(
+        target=manage_process,
+        args=(
+            Agent,
+            {"device": "cpu", **agent_config},
+            result_queue,
+            manage_sync_queue,
+            path_queue,
+            config.train.run_step,
+            config.train.print_period,
+            MetricManager,
+            EvalManager,
+            eval_manager_config,
+            LogManager,
+            log_manager_config,
+            config_manager,
+        ),
+    )
+
     manage.start()
     try:
-        distributed_manager = DistributedManager(Env, config.env, Agent, {'device':'cpu', **agent_config}, config.train.num_workers, 'sync')
-    
+        distributed_manager = DistributedManager(
+            Env,
+            config.env,
+            Agent,
+            {"device": "cpu", **agent_config},
+            config.train.num_workers,
+            "sync",
+        )
+
         agent = Agent(**agent_config)
         if config.train.load_path:
             agent.load(config.train.load_path)
@@ -61,9 +92,14 @@ if __name__ == "__main__":
             result = agent.process(transitions, step)
             distributed_manager.sync(agent.sync_out())
             result_queue.put((step, result))
-            if print_stamp >= config.train.print_period or step >= config.train.run_step:
-                try: manage_sync_queue.get_nowait()
-                except: pass
+            if (
+                print_stamp >= config.train.print_period
+                or step >= config.train.run_step
+            ):
+                try:
+                    manage_sync_queue.get_nowait()
+                except:
+                    pass
                 manage_sync_queue.put(agent.sync_out())
                 print_stamp = 0
             if save_stamp >= config.train.save_period or step >= config.train.run_step:

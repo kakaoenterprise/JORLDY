@@ -1,9 +1,6 @@
 ### Double DQN Pong MLAgent Config ###
 
-env = {
-    "name": "pong_mlagent",
-    "train_mode": True
-}
+env = {"name": "pong_mlagent", "train_mode": True}
 
 agent = {
     "name": "double",
@@ -24,13 +21,13 @@ optim = {
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 200000,
-    "print_period" : 2000,
-    "save_period" : 50000,
+    "training": True,
+    "load_path": None,
+    "run_step": 200000,
+    "print_period": 2000,
+    "save_period": 50000,
     "eval_iteration": 10,
     # distributed setting
-    "update_period" : 8,
-    "num_workers" : 16,
+    "update_period": 8,
+    "num_workers": 16,
 }
