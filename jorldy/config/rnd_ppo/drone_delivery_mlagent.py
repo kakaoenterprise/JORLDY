@@ -3,8 +3,9 @@
 env = {"name": "drone_delivery_mlagent", "train_mode": True}
 
 agent = {
-    "name": "icm_ppo",
-    "network": "discrete_policy_value",
+    "name": "rnd_ppo",
+    "network": "continuous_policy_separate_value",
+    "head": "multi",
     "gamma": 0.99,
     "batch_size": 32,
     "n_step": 128,
