@@ -1,4 +1,4 @@
-### ICM PPO Drone Config ###
+### ICM PPO Drone Delivery Config ###
 
 env = {"name": "drone_delivery_mlagent", "train_mode": True}
 

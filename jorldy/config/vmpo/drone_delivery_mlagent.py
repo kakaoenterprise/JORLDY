@@ -1,4 +1,4 @@
-### V-MPO Drone Config ###
+### V-MPO Drone Delivery Config ###
 
 env = {"name": "drone_delivery_mlagent", "train_mode": True}
 
