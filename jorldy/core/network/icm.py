@@ -106,12 +106,11 @@ class ICM_MLP(torch.nn.Module):
         # Inverse Model
         x_inverse = torch.cat((s, s_next), axis=1)
         x_inverse = F.relu(self.inverse_fc1(x_inverse))
+        x_inverse = self.inverse_fc2(x_inverse)
 
         if self.action_type == "discrete":
-            x_inverse = F.softmax(self.inverse_fc2(x_inverse), dim=1)
             l_i = self.inverse_loss(x_inverse, a.view(-1).long())
         else:
-            x_inverse = self.inverse_fc2(x_inverse)
             l_i = self.inverse_loss(x_inverse, a)
 
         return r_i, l_f, l_i
@@ -249,12 +248,11 @@ class ICM_CNN(torch.nn.Module):
         # Inverse Model
         x_inverse = torch.cat((s, s_next), axis=1)
         x_inverse = F.relu(self.inverse_fc1(x_inverse))
+        x_inverse = self.inverse_fc2(x_inverse)
 
         if self.action_type == "discrete":
-            x_inverse = F.softmax(self.inverse_fc2(x_inverse), dim=1)
             l_i = self.inverse_loss(x_inverse, a.view(-1).long())
         else:
-            x_inverse = self.inverse_fc2(x_inverse)
             l_i = self.inverse_loss(x_inverse, a)
 
         return r_i, l_f, l_i
@@ -437,12 +435,11 @@ class ICM_Multi(torch.nn.Module):
         # Inverse Model
         x_inverse = torch.cat((s, s_next), axis=1)
         x_inverse = F.relu(self.inverse_fc1(x_inverse))
+        x_inverse = self.inverse_fc2(x_inverse)
 
         if self.action_type == "discrete":
-            x_inverse = F.softmax(self.inverse_fc2(x_inverse), dim=1)
             l_i = self.inverse_loss(x_inverse, a.view(-1).long())
         else:
-            x_inverse = self.inverse_fc2(x_inverse)
             l_i = self.inverse_loss(x_inverse, a)
 
         return r_i, l_f, l_i
