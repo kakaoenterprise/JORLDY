@@ -1,6 +1,6 @@
 ### RND PPO Drone Config ###
 
-env = {"name": "drone_mlagent", "train_mode": True}
+env = {"name": "drone_delivery_mlagent", "train_mode": True}
 
 agent = {
     "name": "icm_ppo",

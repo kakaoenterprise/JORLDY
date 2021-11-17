@@ -1,2 +1,1 @@
 *.resS filter=lfs diff=lfs merge=lfs -text
-jorldy/core/env/mlagents/DroneDelivery/Linux/DroneDelivery_Data/sharedassets0.assets.resS filter=lfs diff=lfs merge=lfs -text
