@@ -109,10 +109,10 @@ class PongMLAgent(_MLAgent):
         self.action_size = 3
 
 
-class DroneMLAgent(_MLAgent):
+class DroneDeliveryMLAgent(_MLAgent):
     def __init__(self, **kwargs):
-        env_name = "drone"
-        super(DroneMLAgent, self).__init__(env_name, **kwargs)
+        env_name = "DroneDelivery"
+        super(DroneDeliveryMLAgent, self).__init__(env_name, **kwargs)
 
         self.state_size = [[15, 36, 64], 95]
         self.action_size = 3
