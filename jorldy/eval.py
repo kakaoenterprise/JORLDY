@@ -28,11 +28,11 @@ if __name__ == "__main__":
         action_dict = agent.act(state, training=False)
         next_state, reward, done = env.step(action_dict["action"])
         transition = {
-                    "state": state,
-                    "next_state": next_state,
-                    "reward": reward,
-                    "done": done,
-                }
+            "state": state,
+            "next_state": next_state,
+            "reward": reward,
+            "done": done,
+        }
         transition.update(action_dict)
         agent.interact_callback(transition)
         score += reward
