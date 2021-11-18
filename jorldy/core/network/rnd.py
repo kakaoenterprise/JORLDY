@@ -356,7 +356,7 @@ class RND_Multi(torch.nn.Module):
             self.fc1_t_mlp,
             self.fc2_t_mlp,
         ) = mlp_head_weight(self.D_in_vec, D_hidden, feature_size_mlp)
-        
+
         self.bn1_p_mlp, self.bn2_p_mlp, self.bn1_t_mlp, self.bn2_t_mlp = mlp_batch_norm(
             D_hidden, feature_size_mlp
         )
