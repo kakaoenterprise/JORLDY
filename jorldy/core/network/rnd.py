@@ -356,8 +356,9 @@ class RND_Multi(torch.nn.Module):
             self.fc1_t_mlp,
             self.fc2_t_mlp,
         ) = mlp_head_weight(self.D_in_vec, D_hidden, feature_size_mlp)
+        
         self.bn1_p_mlp, self.bn2_p_mlp, self.bn1_t_mlp, self.bn2_t_mlp = mlp_batch_norm(
-            D_hidden, feature_size
+            D_hidden, feature_size_mlp
         )
 
         feature_size = feature_size_img + feature_size_mlp
@@ -388,7 +389,7 @@ class RND_Multi(torch.nn.Module):
             )
 
         p_conv, t_conv = conv_head(
-            s_next,
+            s_next_img,
             self.batch_norm,
             self.conv1_p,
             self.conv2_p,
@@ -405,7 +406,7 @@ class RND_Multi(torch.nn.Module):
         )
 
         p_mlp, t_mlp = mlp_head(
-            s_next,
+            s_next_vec,
             self.batch_norm,
             self.fc1_p_mlp,
             self.fc2_p_mlp,

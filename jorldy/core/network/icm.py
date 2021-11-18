@@ -454,8 +454,8 @@ class ICM_Multi(torch.nn.Module):
             )
 
         s_vec, s_next_vec = mlp_head(
-            s,
-            s_next,
+            s_vec,
+            s_next_vec,
             self.batch_norm,
             self.fc1,
             self.fc2,
@@ -464,8 +464,8 @@ class ICM_Multi(torch.nn.Module):
             self.bn1_next_mlp,
         )
         s_img, s_next_img = conv_head(
-            s,
-            s_next,
+            s_img,
+            s_next_img,
             self.batch_norm,
             self.conv1,
             self.conv2,
