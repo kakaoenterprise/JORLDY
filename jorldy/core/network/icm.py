@@ -4,6 +4,169 @@ import torch.nn.functional as F
 from .rnd import *
 
 
+def mlp_head_weight(D_in, D_hidden, feature_size):
+    fc1 = torch.nn.Linear(D_in, D_hidden)
+    fc2 = torch.nn.Linear(D_hidden, feature_size)
+
+    return fc1, fc2
+
+
+def mlp_batch_norm(D_hidden, feature_size):
+    bn1 = torch.nn.BatchNorm1d(D_hidden)
+    bn2 = torch.nn.BatchNorm1d(feature_size)
+
+    bn1_next = torch.nn.BatchNorm1d(D_hidden)
+
+    return bn1, bn2, bn1_next
+
+
+def mlp_head(s, s_next, batch_norm, fc1, fc2, bn1, bn2, bn1_next):
+    if batch_norm:
+        s = F.elu(bn1(fc1(s)))
+        s = F.elu(bn2(fc2(s)))
+
+        s_next = F.elu(bn1_next(fc1(s_next)))
+    else:
+        s = F.elu(fc1(s))
+        s = F.elu(fc2(s))
+
+        s_next = F.elu(fc1(s_next))
+
+    s_next = F.elu(fc2(s_next))
+
+    return s, s_next
+
+
+def conv_head_weight(D_in):
+    conv1 = torch.nn.Conv2d(
+        in_channels=D_in[0], out_channels=32, kernel_size=3, stride=2
+    )
+    conv2 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
+    conv3 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
+    conv4 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
+
+    dim1 = ((D_in[1] - 3) // 2 + 1, (D_in[2] - 3) // 2 + 1)
+    dim2 = ((dim1[0] - 3) // 2 + 1, (dim1[1] - 3) // 2 + 1)
+    dim3 = ((dim2[0] - 3) // 2 + 1, (dim2[1] - 3) // 2 + 1)
+    dim4 = ((dim3[0] - 3) // 2 + 1, (dim3[1] - 3) // 2 + 1)
+
+    feature_size = 32 * dim4[0] * dim4[1]
+
+    return conv1, conv2, conv3, conv4, feature_size
+
+
+def conv_batch_norm():
+    bn1 = torch.nn.BatchNorm2d(32)
+    bn2 = torch.nn.BatchNorm2d(32)
+    bn3 = torch.nn.BatchNorm2d(32)
+    bn4 = torch.nn.BatchNorm2d(32)
+
+    bn1_next = torch.nn.BatchNorm2d(32)
+    bn2_next = torch.nn.BatchNorm2d(32)
+    bn3_next = torch.nn.BatchNorm2d(32)
+
+    return bn1, bn2, bn3, bn4, bn1_next, bn2_next, bn3_next
+
+
+def conv_head(
+    s,
+    s_next,
+    batch_norm,
+    conv1,
+    conv2,
+    conv3,
+    conv4,
+    bn1,
+    bn2,
+    bn3,
+    bn4,
+    bn1_next,
+    bn2_next,
+    bn3_next,
+):
+    if batch_norm:
+        s = F.elu(bn1(conv1(s)))
+        s = F.elu(bn2(conv2(s)))
+        s = F.elu(bn3(conv3(s)))
+        s = F.elu(bn4(conv4(s)))
+
+        s_next = F.elu(bn1_next(conv1(s_next)))
+        s_next = F.elu(bn2_next(conv2(s_next)))
+        s_next = F.elu(bn3_next(conv3(s_next)))
+
+    else:
+        s = F.elu(conv1(s))
+        s = F.elu(conv2(s))
+        s = F.elu(conv3(s))
+        s = F.elu(conv4(s))
+
+        s_next = F.elu(conv1(s_next))
+        s_next = F.elu(conv2(s_next))
+        s_next = F.elu(conv3(s_next))
+
+    s_next = F.elu(conv4(s_next))
+    s = s.view(s.size(0), -1)
+    s_next = s_next.view(s_next.size(0), -1)
+
+    return s, s_next
+
+
+def forward_weight(feature_size, D_hidden, D_out, action_type):
+    if action_type == "discrete":
+        forward_fc1 = torch.nn.Linear(feature_size + 1, D_hidden)
+        forward_fc2 = torch.nn.Linear(D_hidden + 1, feature_size)
+    else:
+        forward_fc1 = torch.nn.Linear(feature_size + D_out, D_hidden)
+        forward_fc2 = torch.nn.Linear(D_hidden + D_out, feature_size)
+
+    forward_loss = torch.nn.MSELoss()
+
+    return forward_fc1, forward_fc2, forward_loss
+
+
+def inverse_weight(feature_size, D_hidden, D_out, action_type):
+    inverse_fc1 = torch.nn.Linear(2 * feature_size, D_hidden)
+    inverse_fc2 = torch.nn.Linear(D_hidden, D_out)
+
+    inverse_loss = (
+        torch.nn.CrossEntropyLoss() if action_type == "discrete" else torch.nn.MSELoss()
+    )
+
+    return inverse_fc1, inverse_fc2, inverse_loss
+
+
+def forward_model(s, a, s_next, forward_loss, forward_fc1, forward_fc2):
+    x_forward = torch.cat((s, a), axis=1)
+    x_forward = F.relu(forward_fc1(x_forward))
+    x_forward = torch.cat((x_forward, a), axis=1)
+    x_forward = forward_fc2(x_forward)
+
+    l_f = forward_loss(x_forward, s_next.detach())
+
+    return x_forward, l_f
+
+
+def inverse_model(s, a, s_next, action_type, inverse_loss, inverse_fc1, inverse_fc2):
+    x_inverse = torch.cat((s, s_next), axis=1)
+    x_inverse = F.relu(inverse_fc1(x_inverse))
+    x_inverse = inverse_fc2(x_inverse)
+
+    if action_type == "discrete":
+        l_i = inverse_loss(x_inverse, a.view(-1).long())
+    else:
+        l_i = inverse_loss(x_inverse, a)
+
+    return l_i
+
+
+def ri_update(r_i, num_workers, rff, update_rms_ri):
+    ri_T = r_i.view(num_workers, -1).T  # (n_batch, n_workers)
+    rewems = torch.stack(
+        [rff.update(rit.detach()) for rit in ri_T]
+    ).ravel()  # (n_batch, n_workers) -> (n_batch * n_workers)
+    update_rms_ri(rewems)
+
+
 class ICM_MLP(torch.nn.Module):
     def __init__(
         self,
@@ -34,30 +197,15 @@ class ICM_MLP(torch.nn.Module):
 
         feature_size = 256
 
-        self.fc1 = torch.nn.Linear(self.D_in, D_hidden)
-        self.fc2 = torch.nn.Linear(D_hidden, feature_size)
+        self.fc1, self.fc2 = mlp_head_weight(D_in, D_hidden, feature_size)
+        self.forward_fc1, self.forward_fc2, self.forward_loss = forward_weight(
+            feature_size, D_hidden, D_out, action_type
+        )
+        self.inverse_fc1, self.inverse_fc2, self.inverse_loss = inverse_weight(
+            feature_size, D_hidden, D_out, action_type
+        )
 
-        self.inverse_fc1 = torch.nn.Linear(2 * feature_size, D_hidden)
-        self.inverse_fc2 = torch.nn.Linear(D_hidden, self.D_out)
-
-        self.forward_loss = torch.nn.MSELoss()
-
-        if self.action_type == "discrete":
-            self.forward_fc1 = torch.nn.Linear(feature_size + 1, D_hidden)
-            self.forward_fc2 = torch.nn.Linear(D_hidden + 1, feature_size)
-
-            self.inverse_loss = torch.nn.CrossEntropyLoss()
-        else:
-            self.forward_fc1 = torch.nn.Linear(feature_size + self.D_out, D_hidden)
-            self.forward_fc2 = torch.nn.Linear(D_hidden + self.D_out, feature_size)
-
-            self.inverse_loss = torch.nn.MSELoss()
-
-        if self.batch_norm:
-            self.bn1 = torch.nn.BatchNorm1d(D_hidden)
-            self.bn2 = torch.nn.BatchNorm1d(feature_size)
-
-            self.bn1_next = torch.nn.BatchNorm1d(D_hidden)
+        self.bn1, self.bn2, self.bn1_next = mlp_batch_norm(D_hidden, feature_size)
 
     def update_rms_obs(self, v):
         self.rms_obs.update(v)
@@ -68,50 +216,43 @@ class ICM_MLP(torch.nn.Module):
     def forward(self, s, a, s_next, update_ri=False):
         if self.obs_normalize:
             s = normalize_obs(s, self.rms_obs.mean, self.rms_obs.var)
-        if self.obs_normalize:
             s_next = normalize_obs(s_next, self.rms_obs.mean, self.rms_obs.var)
 
-        if self.batch_norm:
-            s = F.elu(self.bn1(self.fc1(s)))
-            s = F.elu(self.bn2(self.fc2(s)))
-
-            s_next = F.elu(self.bn1_next(self.fc1(s_next)))
-        else:
-            s = F.elu(self.fc1(s))
-            s = F.elu(self.fc2(s))
-
-            s_next = F.elu(self.fc1(s_next))
-
-        s_next = F.elu(self.fc2(s_next))
+        s, s_next = mlp_head(
+            s,
+            s_next,
+            self.batch_norm,
+            self.fc1,
+            self.fc2,
+            self.bn1,
+            self.bn2,
+            self.bn1_next,
+        )
 
         # Forward Model
-        x_forward = torch.cat((s, a), axis=1)
-        x_forward = F.relu(self.forward_fc1(x_forward))
-        x_forward = torch.cat((x_forward, a), axis=1)
-        x_forward = self.forward_fc2(x_forward)
+        x_forward, l_f = forward_model(
+            s, a, s_next, self.forward_loss, self.forward_fc1, self.forward_fc2
+        )
 
+        # Inverse Model
+        l_i = inverse_model(
+            s,
+            a,
+            s_next,
+            self.action_type,
+            self.inverse_loss,
+            self.inverse_fc1,
+            self.inverse_fc2,
+        )
+
+        # Get Ri
         r_i = (self.eta * 0.5) * torch.sum(torch.abs(x_forward - s_next), axis=1)
 
         if update_ri:
-            ri_T = r_i.view(self.num_workers, -1).T  # (n_batch, n_workers)
-            rewems = torch.stack(
-                [self.rff.update(rit.detach()) for rit in ri_T]
-            ).ravel()  # (n_batch, n_workers) -> (n_batch * n_workers)
-            self.update_rms_ri(rewems)
+            ri_update(r_i, self.num_workers, self.rff, self.update_rms_ri)
+
         if self.ri_normalize:
             r_i = r_i / (torch.sqrt(self.rms_ri.var) + 1e-7)
-
-        l_f = self.forward_loss(x_forward, s_next.detach())
-
-        # Inverse Model
-        x_inverse = torch.cat((s, s_next), axis=1)
-        x_inverse = F.relu(self.inverse_fc1(x_inverse))
-        x_inverse = self.inverse_fc2(x_inverse)
-
-        if self.action_type == "discrete":
-            l_i = self.inverse_loss(x_inverse, a.view(-1).long())
-        else:
-            l_i = self.inverse_loss(x_inverse, a)
 
         return r_i, l_f, l_i
 
@@ -144,51 +285,26 @@ class ICM_CNN(torch.nn.Module):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
 
-        self.conv1 = torch.nn.Conv2d(
-            in_channels=self.D_in[0], out_channels=32, kernel_size=3, stride=2
+        self.conv1, self.conv2, self.conv3, self.conv4, feature_size = conv_head_weight(
+            self.D_in
         )
-        self.conv2 = torch.nn.Conv2d(
-            in_channels=32, out_channels=32, kernel_size=3, stride=2
+        self.forward_fc1, self.forward_fc2, self.forward_loss = forward_weight(
+            feature_size, D_hidden, D_out, action_type
         )
-        self.conv3 = torch.nn.Conv2d(
-            in_channels=32, out_channels=32, kernel_size=3, stride=2
+        self.inverse_fc1, self.inverse_fc2, self.inverse_loss = inverse_weight(
+            feature_size, D_hidden, D_out, action_type
         )
-        self.conv4 = torch.nn.Conv2d(
-            in_channels=32, out_channels=32, kernel_size=3, stride=2
-        )
-
-        dim1 = ((self.D_in[1] - 3) // 2 + 1, (self.D_in[2] - 3) // 2 + 1)
-        dim2 = ((dim1[0] - 3) // 2 + 1, (dim1[1] - 3) // 2 + 1)
-        dim3 = ((dim2[0] - 3) // 2 + 1, (dim2[1] - 3) // 2 + 1)
-        dim4 = ((dim3[0] - 3) // 2 + 1, (dim3[1] - 3) // 2 + 1)
-
-        feature_size = 32 * dim4[0] * dim4[1]
-
-        self.inverse_fc1 = torch.nn.Linear(2 * feature_size, D_hidden)
-        self.inverse_fc2 = torch.nn.Linear(D_hidden, self.D_out)
-
-        self.forward_loss = torch.nn.MSELoss()
-
-        if self.action_type == "discrete":
-            self.forward_fc1 = torch.nn.Linear(feature_size + 1, D_hidden)
-            self.forward_fc2 = torch.nn.Linear(D_hidden + 1, feature_size)
-
-            self.inverse_loss = torch.nn.CrossEntropyLoss()
-        else:
-            self.forward_fc1 = torch.nn.Linear(feature_size + self.D_out, D_hidden)
-            self.forward_fc2 = torch.nn.Linear(D_hidden + self.D_out, feature_size)
-
-            self.inverse_loss = torch.nn.MSELoss()
 
         if self.batch_norm:
-            self.bn1 = torch.nn.BatchNorm2d(32)
-            self.bn2 = torch.nn.BatchNorm2d(32)
-            self.bn3 = torch.nn.BatchNorm2d(32)
-            self.bn4 = torch.nn.BatchNorm2d(32)
-
-            self.bn1_next = torch.nn.BatchNorm2d(32)
-            self.bn2_next = torch.nn.BatchNorm2d(32)
-            self.bn3_next = torch.nn.BatchNorm2d(32)
+            (
+                self.bn1,
+                self.bn2,
+                self.bn3,
+                self.bn4,
+                self.bn1_next,
+                self.bn2_next,
+                self.bn3_next,
+            ) = conv_batch_norm()
 
     def update_rms_obs(self, v):
         self.rms_obs.update(v / 255.0)
@@ -199,61 +315,49 @@ class ICM_CNN(torch.nn.Module):
     def forward(self, s, a, s_next, update_ri=False):
         if self.obs_normalize:
             s = normalize_obs(s, self.rms_obs.mean, self.rms_obs.var)
-        if self.obs_normalize:
             s_next = normalize_obs(s_next, self.rms_obs.mean, self.rms_obs.var)
 
-        if self.batch_norm:
-            s = F.elu(self.bn1(self.conv1(s)))
-            s = F.elu(self.bn2(self.conv2(s)))
-            s = F.elu(self.bn3(self.conv3(s)))
-            s = F.elu(self.bn4(self.conv4(s)))
-
-            s_next = F.elu(self.bn1_next(self.conv1(s_next)))
-            s_next = F.elu(self.bn2_next(self.conv2(s_next)))
-            s_next = F.elu(self.bn3_next(self.conv3(s_next)))
-
-        else:
-            s = F.elu(self.conv1(s))
-            s = F.elu(self.conv2(s))
-            s = F.elu(self.conv3(s))
-            s = F.elu(self.conv4(s))
-
-            s_next = F.elu(self.conv1(s_next))
-            s_next = F.elu(self.conv2(s_next))
-            s_next = F.elu(self.conv3(s_next))
-
-        s_next = F.elu(self.conv4(s_next))
-        s = s.view(s.size(0), -1)
-        s_next = s_next.view(s_next.size(0), -1)
+        s, s_next = conv_head(
+            s,
+            s_next,
+            self.batch_norm,
+            self.conv1,
+            self.conv2,
+            self.conv3,
+            self.conv4,
+            self.bn1,
+            self.bn2,
+            self.bn3,
+            self.bn4,
+            self.bn1_next,
+            self.bn2_next,
+            self.bn3_next,
+        )
 
         # Forward Model
-        x_forward = torch.cat((s, a), axis=1)
-        x_forward = F.relu(self.forward_fc1(x_forward))
-        x_forward = torch.cat((x_forward, a), axis=1)
-        x_forward = self.forward_fc2(x_forward)
+        x_forward, l_f = forward_model(
+            s, a, s_next, self.forward_loss, self.forward_fc1, self.forward_fc2
+        )
 
+        # Inverse Model
+        l_i = inverse_model(
+            s,
+            a,
+            s_next,
+            self.action_type,
+            self.inverse_loss,
+            self.inverse_fc1,
+            self.inverse_fc2,
+        )
+
+        # Get Ri
         r_i = (self.eta * 0.5) * torch.sum(torch.abs(x_forward - s_next), axis=1)
 
         if update_ri:
-            ri_T = r_i.view(self.num_workers, -1).T  # (n_batch, n_workers)
-            rewems = torch.stack(
-                [self.rff.update(rit.detach()) for rit in ri_T]
-            ).ravel()  # (n_batch, n_workers) -> (n_batch * n_workers)
-            self.update_rms_ri(rewems)
+            ri_update(r_i, self.num_workers, self.rff, self.update_rms_ri)
+
         if self.ri_normalize:
             r_i = r_i / (torch.sqrt(self.rms_ri.var) + 1e-7)
-
-        l_f = self.forward_loss(x_forward, s_next.detach())
-
-        # Inverse Model
-        x_inverse = torch.cat((s, s_next), axis=1)
-        x_inverse = F.relu(self.inverse_fc1(x_inverse))
-        x_inverse = self.inverse_fc2(x_inverse)
-
-        if self.action_type == "discrete":
-            l_i = self.inverse_loss(x_inverse, a.view(-1).long())
-        else:
-            l_i = self.inverse_loss(x_inverse, a)
 
         return r_i, l_f, l_i
 
@@ -290,66 +394,40 @@ class ICM_Multi(torch.nn.Module):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
 
-        ################################## Conv HEAD ##################################
-        self.conv1 = torch.nn.Conv2d(
-            in_channels=self.D_in_img[0], out_channels=32, kernel_size=3, stride=2
-        )
-        self.conv2 = torch.nn.Conv2d(
-            in_channels=32, out_channels=32, kernel_size=3, stride=2
-        )
-        self.conv3 = torch.nn.Conv2d(
-            in_channels=32, out_channels=32, kernel_size=3, stride=2
-        )
-        self.conv4 = torch.nn.Conv2d(
-            in_channels=32, out_channels=32, kernel_size=3, stride=2
-        )
+        (
+            self.conv1,
+            self.conv2,
+            self.conv3,
+            self.conv4,
+            feature_size_img,
+        ) = conv_head_weight(self.D_in_img)
 
-        dim1 = ((self.D_in_img[1] - 3) // 2 + 1, (self.D_in_img[2] - 3) // 2 + 1)
-        dim2 = ((dim1[0] - 3) // 2 + 1, (dim1[1] - 3) // 2 + 1)
-        dim3 = ((dim2[0] - 3) // 2 + 1, (dim2[1] - 3) // 2 + 1)
-        dim4 = ((dim3[0] - 3) // 2 + 1, (dim3[1] - 3) // 2 + 1)
-
-        feature_size_img = 32 * dim4[0] * dim4[1]
-
-        ################################## MLP HEAD ##################################
         feature_size_mlp = 256
 
-        self.fc1_mlp = torch.nn.Linear(self.D_in_vec, D_hidden)
-        self.fc2_mlp = torch.nn.Linear(D_hidden, feature_size_mlp)
-        ##############################################################################
+        self.fc1, self.fc2 = mlp_head_weight(self.D_in_vec, D_hidden, feature_size_mlp)
 
         feature_size = feature_size_img + feature_size_mlp
 
-        self.inverse_fc1 = torch.nn.Linear(2 * feature_size, D_hidden)
-        self.inverse_fc2 = torch.nn.Linear(D_hidden, self.D_out)
-
-        self.forward_loss = torch.nn.MSELoss()
-
-        if self.action_type == "discrete":
-            self.forward_fc1 = torch.nn.Linear(feature_size + 1, D_hidden)
-            self.forward_fc2 = torch.nn.Linear(D_hidden + 1, feature_size)
-
-            self.inverse_loss = torch.nn.CrossEntropyLoss()
-        else:
-            self.forward_fc1 = torch.nn.Linear(feature_size + self.D_out, D_hidden)
-            self.forward_fc2 = torch.nn.Linear(D_hidden + self.D_out, feature_size)
-
-            self.inverse_loss = torch.nn.MSELoss()
+        self.forward_fc1, self.forward_fc2, self.forward_loss = forward_weight(
+            feature_size, D_hidden, D_out, action_type
+        )
+        self.inverse_fc1, self.inverse_fc2, self.inverse_loss = inverse_weight(
+            feature_size, D_hidden, D_out, action_type
+        )
 
         if self.batch_norm:
-            self.bn1_conv = torch.nn.BatchNorm2d(32)
-            self.bn2_conv = torch.nn.BatchNorm2d(32)
-            self.bn3_conv = torch.nn.BatchNorm2d(32)
-            self.bn4_conv = torch.nn.BatchNorm2d(32)
-
-            self.bn1_next_conv = torch.nn.BatchNorm2d(32)
-            self.bn2_next_conv = torch.nn.BatchNorm2d(32)
-            self.bn3_next_conv = torch.nn.BatchNorm2d(32)
-
-            self.bn1_mlp = torch.nn.BatchNorm1d(D_hidden)
-            self.bn2_mlp = torch.nn.BatchNorm1d(feature_size_mlp)
-
-            self.bn1_next_mlp = torch.nn.BatchNorm1d(D_hidden)
+            self.bn1_mlp, self.bn2_mlp, self.bn1_next_mlp = mlp_batch_norm(
+                D_hidden, feature_size_mlp
+            )
+            (
+                self.bn1_conv,
+                self.bn2_conv,
+                self.bn3_conv,
+                self.bn4_conv,
+                self.bn1_next_conv,
+                self.bn2_next_conv,
+                self.bn3_next_conv,
+            ) = conv_batch_norm()
 
     def update_rms_obs(self, v):
         self.rms_obs_img.update(v[0] / 255.0)
@@ -375,71 +453,59 @@ class ICM_Multi(torch.nn.Module):
                 s_next_vec, self.rms_obs_vec.mean, self.rms_obs_vec.var
             )
 
-        if self.batch_norm:
-            s_img = F.elu(self.bn1_conv(self.conv1(s_img)))
-            s_img = F.elu(self.bn2_conv(self.conv2(s_img)))
-            s_img = F.elu(self.bn3_conv(self.conv3(s_img)))
-            s_img = F.elu(self.bn4_conv(self.conv4(s_img)))
-
-            s_next_img = F.elu(self.bn1_next_conv(self.conv1(s_next_img)))
-            s_next_img = F.elu(self.bn2_next_conv(self.conv2(s_next_img)))
-            s_next_img = F.elu(self.bn3_next_conv(self.conv3(s_next_img)))
-
-            s_vec = F.elu(self.bn1_mlp(self.fc1_mlp(s_vec)))
-            s_vec = F.elu(self.bn2_mlp(self.fc2_mlp(s_vec)))
-
-            s_next_vec = F.elu(self.bn1_next_mlp(self.fc1_mlp(s_next_vec)))
-        else:
-            s_img = F.elu(self.conv1(s_img))
-            s_img = F.elu(self.conv2(s_img))
-            s_img = F.elu(self.conv3(s_img))
-            s_img = F.elu(self.conv4(s_img))
-
-            s_next_img = F.elu(self.conv1(s_next_img))
-            s_next_img = F.elu(self.conv2(s_next_img))
-            s_next_img = F.elu(self.conv3(s_next_img))
-
-            s_vec = F.elu(self.fc1_mlp(s_vec))
-            s_vec = F.elu(self.fc2_mlp(s_vec))
-
-            s_next_vec = F.elu(self.fc1_mlp(s_next_vec))
-
-        s_next_img = F.elu(self.conv4(s_next_img))
-        s_img = s_img.view(s_img.size(0), -1)
-        s_next_img = s_next_img.view(s_next_img.size(0), -1)
-
-        s_next_vec = F.elu(self.fc2_mlp(s_next_vec))
+        s_vec, s_next_vec = mlp_head(
+            s,
+            s_next,
+            self.batch_norm,
+            self.fc1,
+            self.fc2,
+            self.bn1_mlp,
+            self.bn2_mlp,
+            self.bn1_next_mlp,
+        )
+        s_img, s_next_img = conv_head(
+            s,
+            s_next,
+            self.batch_norm,
+            self.conv1,
+            self.conv2,
+            self.conv3,
+            self.conv4,
+            self.bn1_conv,
+            self.bn2_conv,
+            self.bn3_conv,
+            self.bn4_conv,
+            self.bn1_next_conv,
+            self.bn2_next_conv,
+            self.bn3_next_conv,
+        )
 
         s = torch.cat((s_img, s_vec), -1)
         s_next = torch.cat((s_next_img, s_next_vec), -1)
 
         # Forward Model
-        x_forward = torch.cat((s, a), axis=1)
-        x_forward = F.relu(self.forward_fc1(x_forward))
-        x_forward = torch.cat((x_forward, a), axis=1)
-        x_forward = self.forward_fc2(x_forward)
+        x_forward, l_f = forward_model(
+            s, a, s_next, self.forward_loss, self.forward_fc1, self.forward_fc2
+        )
 
+        # Inverse Model
+        l_i = inverse_model(
+            s,
+            a,
+            s_next,
+            self.action_type,
+            self.inverse_loss,
+            self.inverse_fc1,
+            self.inverse_fc2,
+        )
+
+        # Get Ri
         r_i = (self.eta * 0.5) * torch.sum(torch.abs(x_forward - s_next), axis=1)
 
         if update_ri:
-            ri_T = r_i.view(self.num_workers, -1).T  # (n_batch, n_workers)
-            rewems = torch.stack(
-                [self.rff.update(rit.detach()) for rit in ri_T]
-            ).ravel()  # (n_batch, n_workers) -> (n_batch * n_workers)
-            self.update_rms_ri(rewems)
+            ri_update(r_i, self.num_workers, self.rff, self.update_rms_ri)
+
         if self.ri_normalize:
             r_i = r_i / (torch.sqrt(self.rms_ri.var) + 1e-7)
-
-        l_f = self.forward_loss(x_forward, s_next.detach())
-
-        # Inverse Model
-        x_inverse = torch.cat((s, s_next), axis=1)
-        x_inverse = F.relu(self.inverse_fc1(x_inverse))
-        x_inverse = self.inverse_fc2(x_inverse)
-
-        if self.action_type == "discrete":
-            l_i = self.inverse_loss(x_inverse, a.view(-1).long())
-        else:
-            l_i = self.inverse_loss(x_inverse, a)
 
         return r_i, l_f, l_i
