@@ -18,7 +18,9 @@ class C51(DQN):
         num_support (int): number of support.
     """
 
-    def __init__(self, state_size, action_size, v_min, v_max, num_support, **kwargs):
+    def __init__(
+        self, state_size, action_size, v_min=-10, v_max=10, num_support=51, **kwargs
+    ):
         super(C51, self).__init__(state_size, action_size * num_support, **kwargs)
 
         self.action_size = action_size
