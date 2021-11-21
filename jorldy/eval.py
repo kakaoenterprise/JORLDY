@@ -29,8 +29,16 @@ if __name__ == "__main__":
     episode, score = 0, 0
     state = env.reset()
     for step in range(1, config.train.run_step + 1):
-        action = agent.act(state, training=False)
-        next_state, reward, done = env.step(action)
+        action_dict = agent.act(state, training=False)
+        next_state, reward, done = env.step(action_dict["action"])
+        transition = {
+            "state": state,
+            "next_state": next_state,
+            "reward": reward,
+            "done": done,
+        }
+        transition.update(action_dict)
+        agent.interact_callback(transition)
         score += reward
         state = next_state
         if done:
