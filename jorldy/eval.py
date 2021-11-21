@@ -39,12 +39,11 @@ if __name__ == "__main__":
         }
         transition.update(action_dict)
         agent.interact_callback(transition)
-        score += reward
         state = next_state
         if done:
             episode += 1
+            print(f"{episode} Episode / Step : {step} / Score: {env.score}")
             state = env.reset()
-            print(f"{episode} Episode / Step : {step} / Score: {score}")
             score = 0
 
     env.close()
