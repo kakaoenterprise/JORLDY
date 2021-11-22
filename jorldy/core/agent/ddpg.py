@@ -66,7 +66,7 @@ class DDPG(BaseAgent):
             else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         )
         self.action_type = "continuous"
-        
+
         self.actor = Network(
             actor, state_size, action_size, D_hidden=hidden_size, head=head
         ).to(self.device)

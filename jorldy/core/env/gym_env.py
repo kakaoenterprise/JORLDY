@@ -62,9 +62,7 @@ class Cartpole(_Gym):
     def __init__(self, action_type="discrete", **kwargs):
         self.action_type = action_type
         if action_type == "continuous":
-            super(Cartpole, self).__init__(
-                "CartPole-v1", custom_action=True, **kwargs
-            )
+            super(Cartpole, self).__init__("CartPole-v1", custom_action=True, **kwargs)
             self.action_size = 1
         else:
             super(Cartpole, self).__init__("CartPole-v1", **kwargs)
