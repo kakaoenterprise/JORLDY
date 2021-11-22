@@ -38,7 +38,7 @@ class _MLAgent(BaseEnv):
             file_name=env_path,
             side_channels=[engine_configuration_channel],
             worker_id=id,
-            no_graphics= no_graphics,
+            no_graphics=no_graphics,
         )
 
         self.env.reset()
