@@ -31,8 +31,8 @@ class _MLAgent(BaseEnv):
         )
 
         graphic_available = False if subprocess.getoutput("which Xorg") == "" else True
-        no_graphics = not(render and graphic_available)
-        
+        no_graphics = not (render and graphic_available)
+
         engine_configuration_channel = EngineConfigurationChannel()
         self.env = UnityEnvironment(
             file_name=env_path,
