@@ -8,7 +8,6 @@ class _Gym(BaseEnv):
 
     Args:
         name (str): name of environment in Gym.
-        action_type (str): type of state and action space. One of ['discrete', 'continuous'].
         render (bool): parameter that determine whether to render.
         custom_action (bool): parameter that determine whether to use custom action.
     """
