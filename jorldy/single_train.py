@@ -64,6 +64,7 @@ if __name__ == "__main__":
     manage.start()
     try:
         agent = Agent(**agent_config)
+        assert agent.action_type == env.action_type
         if config.train.load_path:
             agent.load(config.train.load_path)
 
