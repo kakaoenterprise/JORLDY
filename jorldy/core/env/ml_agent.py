@@ -10,10 +10,7 @@ from .base import BaseEnv
 
 def match_build():
     os = platform.system()
-    if os == "Linux":
-        return "Server" if subprocess.getoutput("which Xorg") == "" else "Linux"
-    else:
-        return {"Windows": "Windows", "Darwin": "Mac"}[os]
+    return {"Windows": "Windows", "Darwin": "Mac", "Linux": "Linux"}[os]
 
 
 class _MLAgent(BaseEnv):
@@ -22,9 +19,10 @@ class _MLAgent(BaseEnv):
     Args:
         env_name (str): name of environment in ML-Agents.
         train_mode (bool): parameter that determine whether to use low-resource training rendering mode.
+        render (bool): parameter that determine whether to render.
     """
 
-    def __init__(self, env_name, train_mode=True, id=None, **kwargs):
+    def __init__(self, env_name, train_mode=True, render=False, id=None, **kwargs):
         env_path = f"./core/env/mlagents/{env_name}/{match_build()}/{env_name}"
         id = (
             np.random.randint(65534 - UnityEnvironment.BASE_ENVIRONMENT_PORT)
@@ -32,11 +30,15 @@ class _MLAgent(BaseEnv):
             else id
         )
 
+        graphic_available = False if subprocess.getoutput("which Xorg") == "" else True
+        no_graphics = not (render and graphic_available)
+
         engine_configuration_channel = EngineConfigurationChannel()
         self.env = UnityEnvironment(
             file_name=env_path,
             side_channels=[engine_configuration_channel],
             worker_id=id,
+            no_graphics=no_graphics,
         )
 
         self.env.reset()
