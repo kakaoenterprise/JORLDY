@@ -2,7 +2,7 @@
 
 env = {
     "name": "cartpole",
-    "mode": "continuous",
+    "action_type": "continuous",
     "render": False,
 }
 
