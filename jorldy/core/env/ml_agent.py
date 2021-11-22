@@ -100,6 +100,7 @@ class HopperMLAgent(_MLAgent):
 
         self.state_size = 19 * 4
         self.action_size = 3
+        self.action_type = "continuous"
 
 
 class PongMLAgent(_MLAgent):
@@ -109,6 +110,7 @@ class PongMLAgent(_MLAgent):
 
         self.state_size = 8 * 1
         self.action_size = 3
+        self.action_type = "discrete"
 
 
 class DroneDeliveryMLAgent(_MLAgent):
@@ -118,6 +120,7 @@ class DroneDeliveryMLAgent(_MLAgent):
 
         self.state_size = [[15, 36, 64], 95]
         self.action_size = 3
+        self.action_type = "continuous"
 
     def state_processing(self, obs):
         vis_obs = []
@@ -143,3 +146,4 @@ class WormMLAgent(_MLAgent):
 
         self.state_size = 64 * 1
         self.action_size = 9
+        self.action_type = "discrete"

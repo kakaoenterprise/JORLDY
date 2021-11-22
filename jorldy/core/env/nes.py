@@ -21,6 +21,7 @@ class _Nes(_Atari):
         self.env = JoypadSpace(self.env, RIGHT_ONLY)
         print(f"action size changed: {self.action_size} -> {self.env.action_space.n}")
         self.action_size = self.env.action_space.n
+        self.action_type = "discrete"
 
     def get_frame(self):
         return np.copy(self.env.screen)

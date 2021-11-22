@@ -48,6 +48,7 @@ class _Procgen(BaseEnv):
         self.env = ProcgenEnv(1, name, render_mode="rgb_array")
         self.state_size = [stack_frame, img_height, img_width]
         self.action_size = self.env.action_space.n
+        self.action_type = "discrete"
         self.score = 0
         self.no_op = no_op
         self.no_op_max = 30

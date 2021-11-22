@@ -64,6 +64,7 @@ class DQN(BaseAgent):
             else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         )
         self.action_size = action_size
+        self.action_type = "discrete"
         self.network = Network(
             network, state_size, action_size, D_hidden=hidden_size, head=head
         ).to(self.device)
