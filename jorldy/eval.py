@@ -4,7 +4,7 @@ from core import *
 from manager import *
 
 # default_config_path = "config.YOUR_AGENT.YOUR_ENV"
-default_config_path = "config.ppo.breakout"
+default_config_path = "config.dqn.cartpole"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -15,9 +15,13 @@ if __name__ == "__main__":
     config = config_manager.config
 
     env = Env(**config.env)
-    agent = Agent(
-        state_size=env.state_size, action_size=env.action_size, **config.agent
-    )
+    agent_config = {
+        "state_size": env.state_size,
+        "action_size": env.action_size,
+        "optim_config": config.optim,
+    }
+    agent_config.update(config.agent)
+    agent = Agent(**agent_config)
 
     assert config.train.load_path
     agent.load(config.train.load_path)
@@ -35,12 +39,11 @@ if __name__ == "__main__":
         }
         transition.update(action_dict)
         agent.interact_callback(transition)
-        score += reward
         state = next_state
         if done:
             episode += 1
+            print(f"{episode} Episode / Step : {step} / Score: {env.score}")
             state = env.reset()
-            print(f"{episode} Episode / Step : {step} / Score: {score}")
             score = 0
 
     env.close()
