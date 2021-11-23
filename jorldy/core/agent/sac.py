@@ -79,17 +79,19 @@ class SAC(BaseAgent):
         ).to(self.device)
         self.target_critic.load_state_dict(self.critic.state_dict())
         self.actor_optimizer = Optimizer(
-            optim_config.actor, self.actor.parameters(), lr=optim_config.actor_lr
+            optim_config["actor"], self.actor.parameters(), lr=optim_config["actor_lr"]
         )
         self.critic_optimizer = Optimizer(
-            optim_config.critic, self.critic.parameters(), lr=optim_config.critic_lr
+            optim_config["critic"],
+            self.critic.parameters(),
+            lr=optim_config["critic_lr"],
         )
 
         self.use_dynamic_alpha = use_dynamic_alpha
         if use_dynamic_alpha:
             self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
             self.alpha_optimizer = Optimizer(
-                optim_config.alpha, [self.log_alpha], lr=optim_config.alpha_lr
+                optim_config["alpha"], [self.log_alpha], lr=optim_config["alpha_lr"]
             )
         else:
             self.log_alpha = torch.tensor(static_log_alpha).to(self.device)

@@ -83,10 +83,12 @@ class DDPG(BaseAgent):
         self.target_critic.load_state_dict(self.critic.state_dict())
 
         self.actor_optimizer = Optimizer(
-            optim_config.actor, self.actor.parameters(), lr=optim_config.actor_lr
+            optim_config["actor"], self.actor.parameters(), lr=optim_config["actor_lr"]
         )
         self.critic_optimizer = Optimizer(
-            optim_config.critic, self.critic.parameters(), lr=optim_config.critic_lr
+            optim_config["critic"],
+            self.critic.parameters(),
+            lr=optim_config["critic_lr"],
         )
 
         self.OU = OU_Noise(action_size, mu, theta, sigma)

@@ -32,7 +32,7 @@ class RND_PPO(PPO):
         action_size,
         hidden_size=512,
         # Parameters for Random Network Distillation
-        rnd_network="rnd_cnn",
+        rnd_network="rnd_mlp",
         gamma_i=0.99,
         extrinsic_coeff=1.0,
         intrinsic_coeff=1.0,
