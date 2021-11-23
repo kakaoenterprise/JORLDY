@@ -78,6 +78,7 @@ python sync_distributed_train.py --config config.ppo.cartpole --train.num_worker
 
 | Version |   Release Date   |   Source   |   Release Note  |
 | :-----: | :--------------: | :--------: | :----------: |
+|  0.0.3  | November 23, 2021 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.0.3) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.0.3) |
 |  0.0.2  | November 06, 2021 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.0.2) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.0.2) |
 |  0.0.1  | November 03, 2021 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.0.1) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.0.1) |
 
