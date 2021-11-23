@@ -9,6 +9,131 @@ def normalize_obs(obs, m, v):
     return torch.clip((obs - m) / (torch.sqrt(v) + 1e-7), min=-5.0, max=5.0)
 
 
+def define_mlp_head_weight(instance, D_in, D_hidden, feature_size):
+    instance.fc1_p_mlp = torch.nn.Linear(D_in, D_hidden)
+    instance.fc2_p_mlp = torch.nn.Linear(D_hidden, feature_size)
+
+    instance.fc1_t_mlp = torch.nn.Linear(D_in, D_hidden)
+    instance.fc2_t_mlp = torch.nn.Linear(D_hidden, feature_size)
+
+
+def define_mlp_batch_norm(instance, D_hidden, feature_size):
+    instance.bn1_p_mlp = torch.nn.BatchNorm1d(D_hidden)
+    instance.bn2_p_mlp = torch.nn.BatchNorm1d(feature_size)
+
+    instance.bn1_t_mlp = torch.nn.BatchNorm1d(D_hidden)
+    instance.bn2_t_mlp = torch.nn.BatchNorm1d(feature_size)
+
+
+def mlp_head(instance, s_next):
+    if instance.batch_norm:
+        p = F.relu(instance.bn1_p_mlp(instance.fc1_p_mlp(s_next)))
+        p = F.relu(instance.bn2_p_mlp(instance.fc2_p_mlp(p)))
+
+        t = F.relu(instance.bn1_t_mlp(instance.fc1_t_mlp(s_next)))
+        t = F.relu(instance.bn2_t_mlp(instance.fc2_t_mlp(t)))
+    else:
+        p = F.relu(instance.fc1_p_mlp(s_next))
+        p = F.relu(instance.fc2_p_mlp(p))
+
+        t = F.relu(instance.fc1_t_mlp(s_next))
+        t = F.relu(instance.fc2_t_mlp(t))
+
+    return p, t
+
+
+def define_conv_head_weight(instance, D_in):
+    dim1 = ((D_in[1] - 8) // 4 + 1, (D_in[2] - 8) // 4 + 1)
+    dim2 = ((dim1[0] - 4) // 2 + 1, (dim1[1] - 4) // 2 + 1)
+    dim3 = ((dim2[0] - 3) // 1 + 1, (dim2[1] - 3) // 1 + 1)
+
+    feature_size = 64 * dim3[0] * dim3[1]
+
+    # Predictor Networks
+    instance.conv1_p = torch.nn.Conv2d(
+        in_channels=D_in[0], out_channels=32, kernel_size=8, stride=4
+    )
+    instance.conv2_p = torch.nn.Conv2d(
+        in_channels=32, out_channels=64, kernel_size=4, stride=2
+    )
+    instance.conv3_p = torch.nn.Conv2d(
+        in_channels=64, out_channels=64, kernel_size=3, stride=1
+    )
+
+    # Target Networks
+    instance.conv1_t = torch.nn.Conv2d(
+        in_channels=D_in[0], out_channels=32, kernel_size=8, stride=4
+    )
+    instance.conv2_t = torch.nn.Conv2d(
+        in_channels=32, out_channels=64, kernel_size=4, stride=2
+    )
+    instance.conv3_t = torch.nn.Conv2d(
+        in_channels=64, out_channels=64, kernel_size=3, stride=1
+    )
+
+    return feature_size
+
+
+def define_conv_batch_norm(instance):
+    instance.bn1_p_conv = torch.nn.BatchNorm2d(32)
+    instance.bn2_p_conv = torch.nn.BatchNorm2d(64)
+    instance.bn3_p_conv = torch.nn.BatchNorm2d(64)
+
+    instance.bn1_t_conv = torch.nn.BatchNorm2d(32)
+    instance.bn2_t_conv = torch.nn.BatchNorm2d(64)
+    instance.bn3_t_conv = torch.nn.BatchNorm2d(64)
+
+
+def conv_head(instance, s_next):
+    if instance.batch_norm:
+        p = F.relu(instance.bn1_p_conv(instance.conv1_p(s_next)))
+        p = F.relu(instance.bn2_p_conv(instance.conv2_p(p)))
+        p = F.relu(instance.bn3_p_conv(instance.conv3_p(p)))
+
+        t = F.relu(instance.bn1_t_conv(instance.conv1_t(s_next)))
+        t = F.relu(instance.bn2_t_conv(instance.conv2_t(t)))
+        t = F.relu(instance.bn3_t_conv(instance.conv3_t(t)))
+    else:
+        p = F.relu(instance.conv1_p(s_next))
+        p = F.relu(instance.conv2_p(p))
+        p = F.relu(instance.conv3_p(p))
+
+        t = F.relu(instance.conv1_t(s_next))
+        t = F.relu(instance.conv2_t(t))
+        t = F.relu(instance.conv3_t(t))
+
+    p = p.view(p.size(0), -1)
+    t = t.view(t.size(0), -1)
+
+    return p, t
+
+
+def define_fc_layers_weight(instance, feature_size, D_hidden):
+    instance.fc1_p = torch.nn.Linear(feature_size, D_hidden)
+    instance.fc2_p = torch.nn.Linear(D_hidden, D_hidden)
+    instance.fc3_p = torch.nn.Linear(D_hidden, D_hidden)
+
+    instance.fc1_t = torch.nn.Linear(feature_size, D_hidden)
+
+
+def fc_layers(instance, p, t):
+    p = F.relu(instance.fc1_p(p))
+    p = F.relu(instance.fc2_p(p))
+    p = instance.fc3_p(p)
+
+    t = instance.fc1_t(t)
+
+    return p, t
+
+
+def ri_update(r_i, num_workers, rff, update_rms_ri):
+    ri_T = r_i.view(num_workers, -1).T  # (n_batch, n_workers)
+    rewems = torch.stack(
+        [rff.update(rit.detach()) for rit in ri_T]
+    ).ravel()  # (n_batch, n_workers) -> (n_batch * n_workers)
+    update_rms_ri(rewems)
+
+
 class RND_MLP(torch.nn.Module):
     def __init__(
         self,
@@ -34,18 +159,10 @@ class RND_MLP(torch.nn.Module):
 
         feature_size = 256
 
-        self.fc1_predict = torch.nn.Linear(self.D_in, D_hidden)
-        self.fc2_predict = torch.nn.Linear(D_hidden, feature_size)
+        define_mlp_head_weight(self, D_in, D_hidden, feature_size)
 
-        self.fc1_target = torch.nn.Linear(self.D_in, D_hidden)
-        self.fc2_target = torch.nn.Linear(D_hidden, feature_size)
-
-        if batch_norm:
-            self.bn1_predict = torch.nn.BatchNorm1d(D_hidden)
-            self.bn2_predict = torch.nn.BatchNorm1d(feature_size)
-
-            self.bn1_target = torch.nn.BatchNorm1d(D_hidden)
-            self.bn2_target = torch.nn.BatchNorm1d(feature_size)
+        if self.batch_norm:
+            define_mlp_batch_norm(self, D_hidden, feature_size)
 
     def update_rms_obs(self, v):
         self.rms_obs.update(v)
@@ -57,27 +174,13 @@ class RND_MLP(torch.nn.Module):
         if self.obs_normalize:
             s_next = normalize_obs(s_next, self.rms_obs.mean, self.rms_obs.var)
 
-        if self.batch_norm:
-            p = F.relu(self.bn1_predict(self.fc1_predict(s_next)))
-            p = F.relu(self.bn2_predict(self.fc2_predict(p)))
-
-            t = F.relu(self.bn1_target(self.fc1_target(s_next)))
-            t = F.relu(self.bn2_target(self.fc2_target(t)))
-        else:
-            p = F.relu(self.fc1_predict(s_next))
-            p = F.relu(self.fc2_predict(p))
-
-            t = F.relu(self.fc1_target(s_next))
-            t = F.relu(self.fc2_target(t))
+        p, t = mlp_head(self, s_next)
 
         r_i = torch.mean(torch.square(p - t), axis=1)
 
         if update_ri:
-            ri_T = r_i.view(self.num_workers, -1).T  # (n_batch, n_workers)
-            rewems = torch.stack(
-                [self.rff.update(rit.detach()) for rit in ri_T]
-            ).ravel()  # (n_batch, n_workers) -> (n_batch * n_workers)
-            self.update_rms_ri(rewems)
+            ri_update(r_i, self.num_workers, self.rff, self.update_rms_ri)
+
         if self.ri_normalize:
             r_i = r_i / (torch.sqrt(self.rms_ri.var) + 1e-7)
 
@@ -107,48 +210,9 @@ class RND_CNN(torch.nn.Module):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
 
-        dim1 = ((self.D_in[1] - 8) // 4 + 1, (self.D_in[2] - 8) // 4 + 1)
-        dim2 = ((dim1[0] - 4) // 2 + 1, (dim1[1] - 4) // 2 + 1)
-        dim3 = ((dim2[0] - 3) // 1 + 1, (dim2[1] - 3) // 1 + 1)
-
-        feature_size = 64 * dim3[0] * dim3[1]
-
-        # Predictor Networks
-        self.conv1_predict = torch.nn.Conv2d(
-            in_channels=self.D_in[0], out_channels=32, kernel_size=8, stride=4
-        )
-        self.conv2_predict = torch.nn.Conv2d(
-            in_channels=32, out_channels=64, kernel_size=4, stride=2
-        )
-        self.conv3_predict = torch.nn.Conv2d(
-            in_channels=64, out_channels=64, kernel_size=3, stride=1
-        )
-
-        self.fc1_predict = torch.nn.Linear(feature_size, D_hidden)
-        self.fc2_predict = torch.nn.Linear(D_hidden, D_hidden)
-        self.fc3_predict = torch.nn.Linear(D_hidden, D_hidden)
-
-        # Target Networks
-        self.conv1_target = torch.nn.Conv2d(
-            in_channels=self.D_in[0], out_channels=32, kernel_size=8, stride=4
-        )
-        self.conv2_target = torch.nn.Conv2d(
-            in_channels=32, out_channels=64, kernel_size=4, stride=2
-        )
-        self.conv3_target = torch.nn.Conv2d(
-            in_channels=64, out_channels=64, kernel_size=3, stride=1
-        )
-
-        self.fc1_target = torch.nn.Linear(feature_size, D_hidden)
-
-        if batch_norm:
-            self.bn1_predict = torch.nn.BatchNorm2d(32)
-            self.bn2_predict = torch.nn.BatchNorm2d(64)
-            self.bn3_predict = torch.nn.BatchNorm2d(64)
-
-            self.bn1_target = torch.nn.BatchNorm2d(32)
-            self.bn2_target = torch.nn.BatchNorm2d(64)
-            self.bn3_target = torch.nn.BatchNorm2d(64)
+        feature_size = define_conv_head_weight(self, D_in)
+        define_conv_batch_norm(self)
+        define_fc_layers_weight(self, feature_size, D_hidden)
 
     def update_rms_obs(self, v):
         self.rms_obs.update(v / 255.0)
@@ -161,40 +225,14 @@ class RND_CNN(torch.nn.Module):
         if self.obs_normalize:
             s_next = normalize_obs(s_next, self.rms_obs.mean, self.rms_obs.var)
 
-        if self.batch_norm:
-            p = F.relu(self.bn1_predict(self.conv1_predict(s_next)))
-            p = F.relu(self.bn2_predict(self.conv2_predict(p)))
-            p = F.relu(self.bn3_predict(self.conv3_predict(p)))
-        else:
-            p = F.relu(self.conv1_predict(s_next))
-            p = F.relu(self.conv2_predict(p))
-            p = F.relu(self.conv3_predict(p))
-
-        p = p.view(p.size(0), -1)
-        p = F.relu(self.fc1_predict(p))
-        p = F.relu(self.fc2_predict(p))
-        p = self.fc3_predict(p)
-
-        if self.batch_norm:
-            t = F.relu(self.bn1_target(self.conv1_target(s_next)))
-            t = F.relu(self.bn2_target(self.conv2_target(t)))
-            t = F.relu(self.bn3_target(self.conv3_target(t)))
-        else:
-            t = F.relu(self.conv1_target(s_next))
-            t = F.relu(self.conv2_target(t))
-            t = F.relu(self.conv3_target(t))
-
-        t = t.view(t.size(0), -1)
-        t = self.fc1_target(t)
+        p, t = conv_head(self, s_next)
+        p, t = fc_layers(self, p, t)
 
         r_i = torch.mean(torch.square(p - t), axis=1)
 
         if update_ri:
-            ri_T = r_i.view(self.num_workers, -1).T  # (n_batch, n_workers)
-            rewems = torch.stack(
-                [self.rff.update(rit.detach()) for rit in ri_T]
-            ).ravel()  # (n_batch, n_workers) -> (n_batch * n_workers)
-            self.update_rms_ri(rewems)
+            ri_update(r_i, self.num_workers, self.rff, self.update_rms_ri)
+
         if self.ri_normalize:
             r_i = r_i / (torch.sqrt(self.rms_ri.var) + 1e-7)
 
@@ -229,68 +267,17 @@ class RND_Multi(torch.nn.Module):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
 
-        ################################## Conv HEAD ##################################
-        dim1 = ((self.D_in_img[1] - 8) // 4 + 1, (self.D_in_img[2] - 8) // 4 + 1)
-        dim2 = ((dim1[0] - 4) // 2 + 1, (dim1[1] - 4) // 2 + 1)
-        dim3 = ((dim2[0] - 3) // 1 + 1, (dim2[1] - 3) // 1 + 1)
+        feature_size_img = define_conv_head_weight(self, self.D_in_img)
+        define_conv_batch_norm(self)
 
-        feature_size_img = 64 * dim3[0] * dim3[1]
-
-        # Predictor Networks
-        self.conv1_predict = torch.nn.Conv2d(
-            in_channels=self.D_in_img[0], out_channels=32, kernel_size=8, stride=4
-        )
-        self.conv2_predict = torch.nn.Conv2d(
-            in_channels=32, out_channels=64, kernel_size=4, stride=2
-        )
-        self.conv3_predict = torch.nn.Conv2d(
-            in_channels=64, out_channels=64, kernel_size=3, stride=1
-        )
-
-        # Target Networks
-        self.conv1_target = torch.nn.Conv2d(
-            in_channels=self.D_in_img[0], out_channels=32, kernel_size=8, stride=4
-        )
-        self.conv2_target = torch.nn.Conv2d(
-            in_channels=32, out_channels=64, kernel_size=4, stride=2
-        )
-        self.conv3_target = torch.nn.Conv2d(
-            in_channels=64, out_channels=64, kernel_size=3, stride=1
-        )
-
-        if batch_norm:
-            self.bn1_predict_conv = torch.nn.BatchNorm2d(32)
-            self.bn2_predict_conv = torch.nn.BatchNorm2d(64)
-            self.bn3_predict_conv = torch.nn.BatchNorm2d(64)
-
-            self.bn1_target_conv = torch.nn.BatchNorm2d(32)
-            self.bn2_target_conv = torch.nn.BatchNorm2d(64)
-            self.bn3_target_conv = torch.nn.BatchNorm2d(64)
-
-        ################################## MLP HEAD ##################################
         feature_size_mlp = 256
+        define_mlp_head_weight(self, self.D_in_vec, D_hidden, feature_size_mlp)
 
-        self.fc1_predict_mlp = torch.nn.Linear(self.D_in_vec, D_hidden)
-        self.fc2_predict_mlp = torch.nn.Linear(D_hidden, feature_size_mlp)
+        define_mlp_batch_norm(self, D_hidden, feature_size_mlp)
 
-        self.fc1_target_mlp = torch.nn.Linear(self.D_in_vec, D_hidden)
-        self.fc2_target_mlp = torch.nn.Linear(D_hidden, feature_size_mlp)
+        feature_size = feature_size_img + feature_size_mlp
 
-        if batch_norm:
-            self.bn1_predict_mlp = torch.nn.BatchNorm1d(D_hidden)
-            self.bn2_predict_mlp = torch.nn.BatchNorm1d(feature_size_mlp)
-
-            self.bn1_target_mlp = torch.nn.BatchNorm1d(D_hidden)
-            self.bn2_target_mlp = torch.nn.BatchNorm1d(feature_size_mlp)
-
-        ################################## FC Layers ##################################
-        self.fc1_predict = torch.nn.Linear(
-            feature_size_img + feature_size_mlp, D_hidden
-        )
-        self.fc2_predict = torch.nn.Linear(D_hidden, D_hidden)
-        self.fc3_predict = torch.nn.Linear(D_hidden, D_hidden)
-
-        self.fc1_target = torch.nn.Linear(feature_size_img + feature_size_mlp, D_hidden)
+        define_fc_layers_weight(self, feature_size, D_hidden)
 
     def update_rms_obs(self, v):
         self.rms_obs_img.update(v[0] / 255.0)
@@ -313,57 +300,19 @@ class RND_Multi(torch.nn.Module):
                 s_next_vec, self.rms_obs_vec.mean, self.rms_obs_vec.var
             )
 
-        ################################## Predict ##################################
-        if self.batch_norm:
-            p_i = F.relu(self.bn1_predict_conv(self.conv1_predict(s_next_img)))
-            p_i = F.relu(self.bn2_predict_conv(self.conv2_predict(p_i)))
-            p_i = F.relu(self.bn3_predict_conv(self.conv3_predict(p_i)))
+        p_conv, t_conv = conv_head(self, s_next_img)
+        p_mlp, t_mlp = mlp_head(self, s_next_vec)
 
-            p_v = F.relu(self.bn1_predict_mlp(self.fc1_predict_mlp(s_next_vec)))
-            p_v = F.relu(self.bn2_predict_mlp(self.fc2_predict_mlp(p_v)))
-        else:
-            p_i = F.relu(self.conv1_predict(s_next_img))
-            p_i = F.relu(self.conv2_predict(p_i))
-            p_i = F.relu(self.conv3_predict(p_i))
+        p = torch.cat((p_conv, p_mlp), -1)
+        t = torch.cat((t_conv, t_mlp), -1)
 
-            p_v = F.relu(self.fc1_predict_mlp(s_next_vec))
-            p_v = F.relu(self.fc2_predict_mlp(p_v))
-
-        p_i = p_i.view(p_i.size(0), -1)
-        p = torch.cat((p_i, p_v), -1)
-
-        p = F.relu(self.fc1_predict(p))
-        p = F.relu(self.fc2_predict(p))
-        p = self.fc3_predict(p)
-
-        ################################## target ##################################
-        if self.batch_norm:
-            t_i = F.relu(self.bn1_target_conv(self.conv1_target(s_next_img)))
-            t_i = F.relu(self.bn2_target_conv(self.conv2_target(t_i)))
-            t_i = F.relu(self.bn3_target_conv(self.conv3_target(t_i)))
-
-            t_v = F.relu(self.bn1_target_mlp(self.fc1_target_mlp(s_next_vec)))
-            t_v = F.relu(self.bn2_target_mlp(self.fc2_target_mlp(t_v)))
-        else:
-            t_i = F.relu(self.conv1_target(s_next_img))
-            t_i = F.relu(self.conv2_target(t_i))
-            t_i = F.relu(self.conv3_target(t_i))
-
-            t_v = F.relu(self.fc1_target_mlp(s_next_vec))
-            t_v = F.relu(self.fc2_target_mlp(t_v))
-
-        t_i = t_i.view(t_i.size(0), -1)
-        t = torch.cat((t_i, t_v), -1)
-        t = self.fc1_target(t)
+        p, t = fc_layers(self, p, t)
 
         r_i = torch.mean(torch.square(p - t), axis=1)
 
         if update_ri:
-            ri_T = r_i.view(self.num_workers, -1).T  # (n_batch, n_workers)
-            rewems = torch.stack(
-                [self.rff.update(rit.detach()) for rit in ri_T]
-            ).ravel()  # (n_batch, n_workers) -> (n_batch * n_workers)
-            self.update_rms_ri(rewems)
+            ri_update(r_i, self.num_workers, self.rff, self.update_rms_ri)
+
         if self.ri_normalize:
             r_i = r_i / (torch.sqrt(self.rms_ri.var) + 1e-7)
 
