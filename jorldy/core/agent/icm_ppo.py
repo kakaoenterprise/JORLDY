@@ -34,7 +34,7 @@ class ICM_PPO(PPO):
         action_size,
         hidden_size=512,
         # Parameters for Curiosity-driven Exploration
-        icm_network="icm",
+        icm_network="icm_mlp",
         beta=0.2,
         lamb=1.0,
         eta=0.01,

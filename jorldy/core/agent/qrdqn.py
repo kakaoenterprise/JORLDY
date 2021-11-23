@@ -16,7 +16,7 @@ class QRDQN(DQN):
         num_support (int): the number of supports.
     """
 
-    def __init__(self, state_size, action_size, num_support, **kwargs):
+    def __init__(self, state_size, action_size, num_support=200, **kwargs):
         super(QRDQN, self).__init__(state_size, action_size * num_support, **kwargs)
 
         self.action_size = action_size

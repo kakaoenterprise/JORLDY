@@ -17,7 +17,7 @@ class PER(DQN):
     """
 
     def __init__(
-        self, alpha, beta, learn_period=16, uniform_sample_prob=1e-3, **kwargs
+        self, alpha=0.6, beta=0.4, learn_period=16, uniform_sample_prob=1e-3, **kwargs
     ):
         super(PER, self).__init__(**kwargs)
         self.memory = PERBuffer(self.buffer_size, uniform_sample_prob)
