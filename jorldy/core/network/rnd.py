@@ -9,46 +9,40 @@ def normalize_obs(obs, m, v):
     return torch.clip((obs - m) / (torch.sqrt(v) + 1e-7), min=-5.0, max=5.0)
 
 
-def mlp_head_weight(D_in, D_hidden, feature_size):
-    fc1_p = torch.nn.Linear(D_in, D_hidden)
-    fc2_p = torch.nn.Linear(D_hidden, feature_size)
+def mlp_head_weight(instance, D_in, D_hidden, feature_size):
+    instance.fc1_p_mlp = torch.nn.Linear(D_in, D_hidden)
+    instance.fc2_p_mlp = torch.nn.Linear(D_hidden, feature_size)
 
-    fc1_t = torch.nn.Linear(D_in, D_hidden)
-    fc2_t = torch.nn.Linear(D_hidden, feature_size)
-
-    return fc1_p, fc2_p, fc1_t, fc2_t
+    instance.fc1_t_mlp = torch.nn.Linear(D_in, D_hidden)
+    instance.fc2_t_mlp = torch.nn.Linear(D_hidden, feature_size)
 
 
-def mlp_batch_norm(D_hidden, feature_size):
-    bn1_p = torch.nn.BatchNorm1d(D_hidden)
-    bn2_p = torch.nn.BatchNorm1d(feature_size)
+def mlp_batch_norm(instance, D_hidden, feature_size):
+    instance.bn1_p_mlp = torch.nn.BatchNorm1d(D_hidden)
+    instance.bn2_p_mlp = torch.nn.BatchNorm1d(feature_size)
 
-    bn1_t = torch.nn.BatchNorm1d(D_hidden)
-    bn2_t = torch.nn.BatchNorm1d(feature_size)
-
-    return bn1_p, bn2_p, bn1_t, bn2_t
+    instance.bn1_t_mlp = torch.nn.BatchNorm1d(D_hidden)
+    instance.bn2_t_mlp = torch.nn.BatchNorm1d(feature_size)
 
 
-def mlp_head(
-    s_next, batch_norm, fc1_p, fc2_p, fc1_t, fc2_t, bn1_p, bn2_p, bn1_t, bn2_t
-):
-    if batch_norm:
-        p = F.relu(bn1_p(fc1_p(s_next)))
-        p = F.relu(bn2_p(fc2_p(p)))
+def mlp_head(instance, s_next):
+    if instance.batch_norm:
+        p = F.relu(instance.bn1_p_mlp(instance.fc1_p_mlp(s_next)))
+        p = F.relu(instance.bn2_p_mlp(instance.fc2_p_mlp(p)))
 
-        t = F.relu(bn1_t(fc1_t(s_next)))
-        t = F.relu(bn2_t(fc2_t(t)))
+        t = F.relu(instance.bn1_t_mlp(instance.fc1_t_mlp(s_next)))
+        t = F.relu(instance.bn2_t_mlp(instance.fc2_t_mlp(t)))
     else:
-        p = F.relu(fc1_p(s_next))
-        p = F.relu(fc2_p(p))
+        p = F.relu(instance.fc1_p_mlp(s_next))
+        p = F.relu(instance.fc2_p_mlp(p))
 
-        t = F.relu(fc1_t(s_next))
-        t = F.relu(fc2_t(t))
+        t = F.relu(instance.fc1_t_mlp(s_next))
+        t = F.relu(instance.fc2_t_mlp(t))
 
     return p, t
 
 
-def conv_head_weight(D_in):
+def conv_head_weight(instance, D_in):
     dim1 = ((D_in[1] - 8) // 4 + 1, (D_in[2] - 8) // 4 + 1)
     dim2 = ((dim1[0] - 4) // 2 + 1, (dim1[1] - 4) // 2 + 1)
     dim3 = ((dim2[0] - 3) // 1 + 1, (dim2[1] - 3) // 1 + 1)
@@ -56,66 +50,49 @@ def conv_head_weight(D_in):
     feature_size = 64 * dim3[0] * dim3[1]
 
     # Predictor Networks
-    conv1_p = torch.nn.Conv2d(
+    instance.conv1_p = torch.nn.Conv2d(
         in_channels=D_in[0], out_channels=32, kernel_size=8, stride=4
     )
-    conv2_p = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
-    conv3_p = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+    instance.conv2_p = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
+    instance.conv3_p = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
 
     # Target Networks
-    conv1_t = torch.nn.Conv2d(
+    instance.conv1_t = torch.nn.Conv2d(
         in_channels=D_in[0], out_channels=32, kernel_size=8, stride=4
     )
-    conv2_t = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
-    conv3_t = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+    instance.conv2_t = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
+    instance.conv3_t = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
 
-    return conv1_p, conv2_p, conv3_p, conv1_t, conv2_t, conv3_t, feature_size
-
-
-def conv_batch_norm():
-    bn1_p = torch.nn.BatchNorm2d(32)
-    bn2_p = torch.nn.BatchNorm2d(64)
-    bn3_p = torch.nn.BatchNorm2d(64)
-
-    bn1_t = torch.nn.BatchNorm2d(32)
-    bn2_t = torch.nn.BatchNorm2d(64)
-    bn3_t = torch.nn.BatchNorm2d(64)
-
-    return bn1_p, bn2_p, bn3_p, bn1_t, bn2_t, bn3_t
+    return feature_size
 
 
-def conv_head(
-    s_next,
-    batch_norm,
-    conv1_p,
-    conv2_p,
-    conv3_p,
-    conv1_t,
-    conv2_t,
-    conv3_t,
-    bn1_p,
-    bn2_p,
-    bn3_p,
-    bn1_t,
-    bn2_t,
-    bn3_t,
-):
-    if batch_norm:
-        p = F.relu(bn1_p(conv1_p(s_next)))
-        p = F.relu(bn2_p(conv2_p(p)))
-        p = F.relu(bn3_p(conv3_p(p)))
+def conv_batch_norm(instance):
+    instance.bn1_p_conv = torch.nn.BatchNorm2d(32)
+    instance.bn2_p_conv = torch.nn.BatchNorm2d(64)
+    instance.bn3_p_conv = torch.nn.BatchNorm2d(64)
 
-        t = F.relu(bn1_t(conv1_t(s_next)))
-        t = F.relu(bn2_t(conv2_t(t)))
-        t = F.relu(bn3_t(conv3_t(t)))
+    instance.bn1_t_conv = torch.nn.BatchNorm2d(32)
+    instance.bn2_t_conv = torch.nn.BatchNorm2d(64)
+    instance.bn3_t_conv = torch.nn.BatchNorm2d(64)
+
+
+def conv_head(instance, s_next):
+    if instance.batch_norm:
+        p = F.relu(instance.bn1_p_conv(instance.conv1_p(s_next)))
+        p = F.relu(instance.bn2_p_conv(instance.conv2_p(p)))
+        p = F.relu(instance.bn3_p_conv(instance.conv3_p(p)))
+
+        t = F.relu(instance.bn1_t_conv(instance.conv1_t(s_next)))
+        t = F.relu(instance.bn2_t_conv(instance.conv2_t(t)))
+        t = F.relu(instance.bn3_t_conv(instance.conv3_t(t)))
     else:
-        p = F.relu(conv1_p(s_next))
-        p = F.relu(conv2_p(p))
-        p = F.relu(conv3_p(p))
+        p = F.relu(instance.conv1_p(s_next))
+        p = F.relu(instance.conv2_p(p))
+        p = F.relu(instance.conv3_p(p))
 
-        t = F.relu(conv1_t(s_next))
-        t = F.relu(conv2_t(t))
-        t = F.relu(conv3_t(t))
+        t = F.relu(instance.conv1_t(s_next))
+        t = F.relu(instance.conv2_t(t))
+        t = F.relu(instance.conv3_t(t))
 
     p = p.view(p.size(0), -1)
     t = t.view(t.size(0), -1)
@@ -123,22 +100,20 @@ def conv_head(
     return p, t
 
 
-def fc_layers_weight(feature_size, D_hidden):
-    fc1_p = torch.nn.Linear(feature_size, D_hidden)
-    fc2_p = torch.nn.Linear(D_hidden, D_hidden)
-    fc3_p = torch.nn.Linear(D_hidden, D_hidden)
+def fc_layers_weight(instance, feature_size, D_hidden):
+    instance.fc1_p = torch.nn.Linear(feature_size, D_hidden)
+    instance.fc2_p = torch.nn.Linear(D_hidden, D_hidden)
+    instance.fc3_p = torch.nn.Linear(D_hidden, D_hidden)
 
-    fc1_t = torch.nn.Linear(feature_size, D_hidden)
-
-    return fc1_p, fc2_p, fc3_p, fc1_t
+    instance.fc1_t = torch.nn.Linear(feature_size, D_hidden)
 
 
-def fc_layers(p, t, fc1_p, fc2_p, fc3_p, fc1_t):
-    p = F.relu(fc1_p(p))
-    p = F.relu(fc2_p(p))
-    p = fc3_p(p)
+def fc_layers(instance, p, t):
+    p = F.relu(instance.fc1_p(p))
+    p = F.relu(instance.fc2_p(p))
+    p = instance.fc3_p(p)
 
-    t = fc1_t(t)
+    t = instance.fc1_t(t)
 
     return p, t
 
@@ -176,12 +151,10 @@ class RND_MLP(torch.nn.Module):
 
         feature_size = 256
 
-        self.fc1_p, self.fc2_p, self.fc1_t, self.fc2_t = mlp_head_weight(
-            D_in, D_hidden, feature_size
-        )
-        self.bn1_p, self.bn2_p, self.bn1_t, self.bn2_t = mlp_batch_norm(
-            D_hidden, feature_size
-        )
+        mlp_head_weight(self, D_in, D_hidden, feature_size)
+        
+        if self.batch_norm:
+            mlp_batch_norm(self, D_hidden, feature_size)
 
     def update_rms_obs(self, v):
         self.rms_obs.update(v)
@@ -193,18 +166,7 @@ class RND_MLP(torch.nn.Module):
         if self.obs_normalize:
             s_next = normalize_obs(s_next, self.rms_obs.mean, self.rms_obs.var)
 
-        p, t = mlp_head(
-            s_next,
-            self.batch_norm,
-            self.fc1_p,
-            self.fc2_p,
-            self.fc1_t,
-            self.fc2_t,
-            self.bn1_p,
-            self.bn2_p,
-            self.bn1_t,
-            self.bn2_t,
-        )
+        p, t = mlp_head(self, s_next)
 
         r_i = torch.mean(torch.square(p - t), axis=1)
 
@@ -240,26 +202,9 @@ class RND_CNN(torch.nn.Module):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
 
-        (
-            self.conv1_p,
-            self.conv2_p,
-            self.conv3_p,
-            self.conv1_t,
-            self.conv2_t,
-            self.conv3_t,
-            feature_size,
-        ) = conv_head_weight(D_in)
-        (
-            self.bn1_p,
-            self.bn2_p,
-            self.bn3_p,
-            self.bn1_t,
-            self.bn2_t,
-            self.bn3_t,
-        ) = conv_batch_norm()
-        self.fc1_p, self.fc2_p, self.fc3_p, self.fc1_t = fc_layers_weight(
-            feature_size, D_hidden
-        )
+        feature_size = conv_head_weight(self, D_in)
+        conv_batch_norm(self)
+        fc_layers_weight(self, feature_size, D_hidden)
 
     def update_rms_obs(self, v):
         self.rms_obs.update(v / 255.0)
@@ -272,24 +217,8 @@ class RND_CNN(torch.nn.Module):
         if self.obs_normalize:
             s_next = normalize_obs(s_next, self.rms_obs.mean, self.rms_obs.var)
 
-        p, t = conv_head(
-            s_next,
-            self.batch_norm,
-            self.conv1_p,
-            self.conv2_p,
-            self.conv3_p,
-            self.conv1_t,
-            self.conv2_t,
-            self.conv3_t,
-            self.bn1_p,
-            self.bn2_p,
-            self.bn3_p,
-            self.bn1_t,
-            self.bn2_t,
-            self.bn3_t,
-        )
-
-        p, t = fc_layers(p, t, self.fc1_p, self.fc2_p, self.fc3_p, self.fc1_t)
+        p, t = conv_head(self, s_next)
+        p, t = fc_layers(self, p, t)
 
         r_i = torch.mean(torch.square(p - t), axis=1)
 
@@ -330,42 +259,17 @@ class RND_Multi(torch.nn.Module):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
 
-        (
-            self.conv1_p,
-            self.conv2_p,
-            self.conv3_p,
-            self.conv1_t,
-            self.conv2_t,
-            self.conv3_t,
-            feature_size_img,
-        ) = conv_head_weight(self.D_in_img)
-        (
-            self.bn1_p_conv,
-            self.bn2_p_conv,
-            self.bn3_p_conv,
-            self.bn1_t_conv,
-            self.bn2_t_conv,
-            self.bn3_t_conv,
-        ) = conv_batch_norm()
+        feature_size_img = conv_head_weight(self, self.D_in_img)
+        conv_batch_norm(self)
 
         feature_size_mlp = 256
+        mlp_head_weight(self, self.D_in_vec, D_hidden, feature_size_mlp)
 
-        (
-            self.fc1_p_mlp,
-            self.fc2_p_mlp,
-            self.fc1_t_mlp,
-            self.fc2_t_mlp,
-        ) = mlp_head_weight(self.D_in_vec, D_hidden, feature_size_mlp)
-
-        self.bn1_p_mlp, self.bn2_p_mlp, self.bn1_t_mlp, self.bn2_t_mlp = mlp_batch_norm(
-            D_hidden, feature_size_mlp
-        )
+        mlp_batch_norm(self, D_hidden, feature_size_mlp)
 
         feature_size = feature_size_img + feature_size_mlp
 
-        self.fc1_p, self.fc2_p, self.fc3_p, self.fc1_t = fc_layers_weight(
-            feature_size, D_hidden
-        )
+        fc_layers_weight(self, feature_size, D_hidden)
 
     def update_rms_obs(self, v):
         self.rms_obs_img.update(v[0] / 255.0)
@@ -388,40 +292,13 @@ class RND_Multi(torch.nn.Module):
                 s_next_vec, self.rms_obs_vec.mean, self.rms_obs_vec.var
             )
 
-        p_conv, t_conv = conv_head(
-            s_next_img,
-            self.batch_norm,
-            self.conv1_p,
-            self.conv2_p,
-            self.conv3_p,
-            self.conv1_t,
-            self.conv2_t,
-            self.conv3_t,
-            self.bn1_p_conv,
-            self.bn2_p_conv,
-            self.bn3_p_conv,
-            self.bn1_t_conv,
-            self.bn2_t_conv,
-            self.bn3_t_conv,
-        )
-
-        p_mlp, t_mlp = mlp_head(
-            s_next_vec,
-            self.batch_norm,
-            self.fc1_p_mlp,
-            self.fc2_p_mlp,
-            self.fc1_t_mlp,
-            self.fc2_t_mlp,
-            self.bn1_p_mlp,
-            self.bn2_p_mlp,
-            self.bn1_t_mlp,
-            self.bn2_t_mlp,
-        )
+        p_conv, t_conv = conv_head(self, s_next_img)
+        p_mlp, t_mlp = mlp_head(self, s_next_vec)
 
         p = torch.cat((p_conv, p_mlp), -1)
         t = torch.cat((t_conv, t_mlp), -1)
 
-        p, t = fc_layers(p, t, self.fc1_p, self.fc2_p, self.fc3_p, self.fc1_t)
+        p, t = fc_layers(self, p, t)
 
         r_i = torch.mean(torch.square(p - t), axis=1)
 
