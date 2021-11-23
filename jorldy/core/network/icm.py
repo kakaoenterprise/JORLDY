@@ -5,12 +5,12 @@ from .rnd import normalize_obs
 from .utils import RewardForwardFilter, RunningMeanStd
 
 
-def mlp_head_weight(instance, D_in, D_hidden, feature_size):
+def define_mlp_head_weight(instance, D_in, D_hidden, feature_size):
     instance.fc1 = torch.nn.Linear(D_in, D_hidden)
     instance.fc2 = torch.nn.Linear(D_hidden, feature_size)
 
 
-def mlp_batch_norm(instance, D_hidden, feature_size):
+def define_mlp_batch_norm(instance, D_hidden, feature_size):
     instance.bn1 = torch.nn.BatchNorm1d(D_hidden)
     instance.bn2 = torch.nn.BatchNorm1d(feature_size)
 
@@ -34,7 +34,7 @@ def mlp_head(instance, s, s_next):
     return s, s_next
 
 
-def conv_head_weight(instance, D_in):
+def define_conv_head_weight(instance, D_in):
     instance.conv1 = torch.nn.Conv2d(
         in_channels=D_in[0], out_channels=32, kernel_size=3, stride=2
     )
@@ -57,7 +57,7 @@ def conv_head_weight(instance, D_in):
     return feature_size
 
 
-def conv_batch_norm(instance):
+def define_conv_batch_norm(instance):
     instance.bn1_conv = torch.nn.BatchNorm2d(32)
     instance.bn2_conv = torch.nn.BatchNorm2d(32)
     instance.bn3_conv = torch.nn.BatchNorm2d(32)
@@ -96,7 +96,7 @@ def conv_head(instance, s, s_next):
     return s, s_next
 
 
-def forward_weight(instance, feature_size, D_hidden, D_out):
+def define_forward_weight(instance, feature_size, D_hidden, D_out):
     if instance.action_type == "discrete":
         instance.forward_fc1 = torch.nn.Linear(feature_size + 1, D_hidden)
         instance.forward_fc2 = torch.nn.Linear(D_hidden + 1, feature_size)
@@ -107,7 +107,7 @@ def forward_weight(instance, feature_size, D_hidden, D_out):
     instance.forward_loss = torch.nn.MSELoss()
 
 
-def inverse_weight(instance, feature_size, D_hidden, D_out):
+def define_inverse_weight(instance, feature_size, D_hidden, D_out):
     instance.inverse_fc1 = torch.nn.Linear(2 * feature_size, D_hidden)
     instance.inverse_fc2 = torch.nn.Linear(D_hidden, D_out)
 
@@ -180,12 +180,12 @@ class ICM_MLP(torch.nn.Module):
 
         feature_size = 256
 
-        mlp_head_weight(self, D_in, D_hidden, feature_size)
-        forward_weight(self, feature_size, D_hidden, D_out)
-        inverse_weight(self, feature_size, D_hidden, D_out)
+        define_mlp_head_weight(self, D_in, D_hidden, feature_size)
+        define_forward_weight(self, feature_size, D_hidden, D_out)
+        define_inverse_weight(self, feature_size, D_hidden, D_out)
 
         if self.batch_norm:
-            mlp_batch_norm(self, D_hidden, feature_size)
+            define_mlp_batch_norm(self, D_hidden, feature_size)
 
     def update_rms_obs(self, v):
         self.rms_obs.update(v)
@@ -246,12 +246,12 @@ class ICM_CNN(torch.nn.Module):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
 
-        feature_size = conv_head_weight(self, self.D_in)
-        forward_weight(self, feature_size, D_hidden, D_out)
-        inverse_weight(self, feature_size, D_hidden, D_out)
+        feature_size = define_conv_head_weight(self, self.D_in)
+        define_forward_weight(self, feature_size, D_hidden, D_out)
+        define_inverse_weight(self, feature_size, D_hidden, D_out)
 
         if self.batch_norm:
-            conv_batch_norm(self)
+            define_conv_batch_norm(self)
 
     def update_rms_obs(self, v):
         self.rms_obs.update(v / 255.0)
@@ -316,19 +316,19 @@ class ICM_Multi(torch.nn.Module):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
 
-        feature_size_img = conv_head_weight(self, self.D_in_img)
+        feature_size_img = define_conv_head_weight(self, self.D_in_img)
         feature_size_mlp = 256
 
-        mlp_head_weight(self, self.D_in_vec, D_hidden, feature_size_mlp)
+        define_mlp_head_weight(self, self.D_in_vec, D_hidden, feature_size_mlp)
 
         feature_size = feature_size_img + feature_size_mlp
 
-        forward_weight(self, feature_size, D_hidden, D_out)
-        inverse_weight(self, feature_size, D_hidden, D_out)
+        define_forward_weight(self, feature_size, D_hidden, D_out)
+        define_inverse_weight(self, feature_size, D_hidden, D_out)
 
         if self.batch_norm:
-            mlp_batch_norm(self, D_hidden, feature_size_mlp)
-            conv_batch_norm(self)
+            define_mlp_batch_norm(self, D_hidden, feature_size_mlp)
+            define_conv_batch_norm(self)
 
     def update_rms_obs(self, v):
         self.rms_obs_img.update(v[0] / 255.0)

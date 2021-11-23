@@ -9,7 +9,7 @@ def normalize_obs(obs, m, v):
     return torch.clip((obs - m) / (torch.sqrt(v) + 1e-7), min=-5.0, max=5.0)
 
 
-def mlp_head_weight(instance, D_in, D_hidden, feature_size):
+def define_mlp_head_weight(instance, D_in, D_hidden, feature_size):
     instance.fc1_p_mlp = torch.nn.Linear(D_in, D_hidden)
     instance.fc2_p_mlp = torch.nn.Linear(D_hidden, feature_size)
 
@@ -17,7 +17,7 @@ def mlp_head_weight(instance, D_in, D_hidden, feature_size):
     instance.fc2_t_mlp = torch.nn.Linear(D_hidden, feature_size)
 
 
-def mlp_batch_norm(instance, D_hidden, feature_size):
+def define_mlp_batch_norm(instance, D_hidden, feature_size):
     instance.bn1_p_mlp = torch.nn.BatchNorm1d(D_hidden)
     instance.bn2_p_mlp = torch.nn.BatchNorm1d(feature_size)
 
@@ -42,7 +42,7 @@ def mlp_head(instance, s_next):
     return p, t
 
 
-def conv_head_weight(instance, D_in):
+def define_conv_head_weight(instance, D_in):
     dim1 = ((D_in[1] - 8) // 4 + 1, (D_in[2] - 8) // 4 + 1)
     dim2 = ((dim1[0] - 4) // 2 + 1, (dim1[1] - 4) // 2 + 1)
     dim3 = ((dim2[0] - 3) // 1 + 1, (dim2[1] - 3) // 1 + 1)
@@ -53,20 +53,28 @@ def conv_head_weight(instance, D_in):
     instance.conv1_p = torch.nn.Conv2d(
         in_channels=D_in[0], out_channels=32, kernel_size=8, stride=4
     )
-    instance.conv2_p = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
-    instance.conv3_p = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+    instance.conv2_p = torch.nn.Conv2d(
+        in_channels=32, out_channels=64, kernel_size=4, stride=2
+    )
+    instance.conv3_p = torch.nn.Conv2d(
+        in_channels=64, out_channels=64, kernel_size=3, stride=1
+    )
 
     # Target Networks
     instance.conv1_t = torch.nn.Conv2d(
         in_channels=D_in[0], out_channels=32, kernel_size=8, stride=4
     )
-    instance.conv2_t = torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2)
-    instance.conv3_t = torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+    instance.conv2_t = torch.nn.Conv2d(
+        in_channels=32, out_channels=64, kernel_size=4, stride=2
+    )
+    instance.conv3_t = torch.nn.Conv2d(
+        in_channels=64, out_channels=64, kernel_size=3, stride=1
+    )
 
     return feature_size
 
 
-def conv_batch_norm(instance):
+def define_conv_batch_norm(instance):
     instance.bn1_p_conv = torch.nn.BatchNorm2d(32)
     instance.bn2_p_conv = torch.nn.BatchNorm2d(64)
     instance.bn3_p_conv = torch.nn.BatchNorm2d(64)
@@ -100,7 +108,7 @@ def conv_head(instance, s_next):
     return p, t
 
 
-def fc_layers_weight(instance, feature_size, D_hidden):
+def define_fc_layers_weight(instance, feature_size, D_hidden):
     instance.fc1_p = torch.nn.Linear(feature_size, D_hidden)
     instance.fc2_p = torch.nn.Linear(D_hidden, D_hidden)
     instance.fc3_p = torch.nn.Linear(D_hidden, D_hidden)
@@ -151,10 +159,10 @@ class RND_MLP(torch.nn.Module):
 
         feature_size = 256
 
-        mlp_head_weight(self, D_in, D_hidden, feature_size)
-        
+        define_mlp_head_weight(self, D_in, D_hidden, feature_size)
+
         if self.batch_norm:
-            mlp_batch_norm(self, D_hidden, feature_size)
+            define_mlp_batch_norm(self, D_hidden, feature_size)
 
     def update_rms_obs(self, v):
         self.rms_obs.update(v)
@@ -202,9 +210,9 @@ class RND_CNN(torch.nn.Module):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
 
-        feature_size = conv_head_weight(self, D_in)
-        conv_batch_norm(self)
-        fc_layers_weight(self, feature_size, D_hidden)
+        feature_size = define_conv_head_weight(self, D_in)
+        define_conv_batch_norm(self)
+        define_fc_layers_weight(self, feature_size, D_hidden)
 
     def update_rms_obs(self, v):
         self.rms_obs.update(v / 255.0)
@@ -259,17 +267,17 @@ class RND_Multi(torch.nn.Module):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
 
-        feature_size_img = conv_head_weight(self, self.D_in_img)
-        conv_batch_norm(self)
+        feature_size_img = define_conv_head_weight(self, self.D_in_img)
+        define_conv_batch_norm(self)
 
         feature_size_mlp = 256
-        mlp_head_weight(self, self.D_in_vec, D_hidden, feature_size_mlp)
+        define_mlp_head_weight(self, self.D_in_vec, D_hidden, feature_size_mlp)
 
-        mlp_batch_norm(self, D_hidden, feature_size_mlp)
+        define_mlp_batch_norm(self, D_hidden, feature_size_mlp)
 
         feature_size = feature_size_img + feature_size_mlp
 
-        fc_layers_weight(self, feature_size, D_hidden)
+        define_fc_layers_weight(self, feature_size, D_hidden)
 
     def update_rms_obs(self, v):
         self.rms_obs_img.update(v[0] / 255.0)
