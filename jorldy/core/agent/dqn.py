@@ -12,6 +12,7 @@ from .base import BaseAgent
 
 
 class DQN(BaseAgent):
+    action_type = "discrete"
     """DQN agent.
 
     Args:
@@ -57,7 +58,6 @@ class DQN(BaseAgent):
         num_workers=1,
         **kwargs,
     ):
-
         self.device = (
             torch.device(device)
             if device

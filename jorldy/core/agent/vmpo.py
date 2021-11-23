@@ -31,6 +31,7 @@ class VMPO(REINFORCE):
 
     def __init__(
         self,
+        network="discrete_policy_value",
         optim_config={"name": "adam"},
         batch_size=32,
         n_step=128,
@@ -49,7 +50,11 @@ class VMPO(REINFORCE):
         alpha_sigma=1.0,
         **kwargs,
     ):
-        super(VMPO, self).__init__(optim_config=optim_config, **kwargs)
+        super(VMPO, self).__init__(
+            network=network,
+            optim_config=optim_config,
+            **kwargs,
+        )
 
         self.batch_size = batch_size
         self.n_step = n_step
