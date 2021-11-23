@@ -8,7 +8,6 @@ class _Gym(BaseEnv):
 
     Args:
         name (str): name of environment in Gym.
-        mode (str): type of state and action space. One of ['discrete', 'continuous'].
         render (bool): parameter that determine whether to render.
         custom_action (bool): parameter that determine whether to use custom action.
     """
@@ -16,18 +15,16 @@ class _Gym(BaseEnv):
     def __init__(
         self,
         name,
-        mode,
         render=False,
         custom_action=False,
         **kwargs,
     ):
         self.env = gym.make(name)
-        self.mode = mode
         self.state_size = self.env.observation_space.shape[0]
         if not custom_action:
             self.action_size = (
                 self.env.action_space.shape[0]
-                if mode == "continuous"
+                if self.action_type == "continuous"
                 else self.env.action_space.n
             )
         self.render = render
@@ -41,7 +38,7 @@ class _Gym(BaseEnv):
     def step(self, action):
         if self.render:
             self.env.render()
-        if self.mode == "continuous":
+        if self.action_type == "continuous":
             action = ((action + 1.0) / 2.0) * (
                 self.env.action_space.high - self.env.action_space.low
             ) + self.env.action_space.low
@@ -62,20 +59,19 @@ class _Gym(BaseEnv):
 
 
 class Cartpole(_Gym):
-    def __init__(self, mode="discrete", **kwargs):
-        if mode == "continuous":
-            super(Cartpole, self).__init__(
-                "CartPole-v1", mode, custom_action=True, **kwargs
-            )
+    def __init__(self, action_type="discrete", **kwargs):
+        self.action_type = action_type
+        if action_type == "continuous":
+            super(Cartpole, self).__init__("CartPole-v1", custom_action=True, **kwargs)
             self.action_size = 1
         else:
-            super(Cartpole, self).__init__("CartPole-v1", mode, **kwargs)
+            super(Cartpole, self).__init__("CartPole-v1", **kwargs)
 
     def step(self, action):
         if self.render:
             self.env.render()
         action = np.asscalar(action)
-        if self.mode == "continuous":
+        if self.action_type == "continuous":
             action = 0 if action < 0 else 1
         next_state, reward, done, info = self.env.step(action)
         self.score += reward
@@ -89,9 +85,11 @@ class Cartpole(_Gym):
 
 class Pendulum(_Gym):
     def __init__(self, **kwargs):
-        super(Pendulum, self).__init__("Pendulum-v0", "continuous", **kwargs)
+        self.action_type = "continuous"
+        super(Pendulum, self).__init__("Pendulum-v1", **kwargs)
 
 
 class MountainCar(_Gym):
     def __init__(self, **kwargs):
-        super(MountainCar, self).__init__("MountainCar-v0", "discrete", **kwargs)
+        self.action_type = "discrete"
+        super(MountainCar, self).__init__("MountainCar-v0", **kwargs)

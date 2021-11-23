@@ -22,6 +22,7 @@ if __name__ == "__main__":
     }
     agent_config.update(config.agent)
     agent = Agent(**agent_config)
+    assert agent.action_type == env.action_type
 
     assert config.train.load_path
     agent.load(config.train.load_path)

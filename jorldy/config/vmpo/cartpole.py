@@ -2,7 +2,7 @@
 
 env = {
     "name": "cartpole",
-    "mode": "discrete",
+    "action_type": "discrete",
     "render": False,
 }
 
