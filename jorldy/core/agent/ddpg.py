@@ -12,6 +12,7 @@ from .utils import OU_Noise
 
 
 class DDPG(BaseAgent):
+    action_type = "continuous"
     """Deep deterministic policy gradient (DDPG) agent.
 
     Args:
@@ -65,7 +66,6 @@ class DDPG(BaseAgent):
             if device
             else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         )
-        self.action_type = "continuous"
 
         self.actor = Network(
             actor, state_size, action_size, D_hidden=hidden_size, head=head

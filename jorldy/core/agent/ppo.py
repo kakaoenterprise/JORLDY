@@ -25,6 +25,7 @@ class PPO(REINFORCE):
 
     def __init__(
         self,
+        network="discrete_policy_value",
         batch_size=32,
         n_step=128,
         n_epoch=3,
@@ -36,7 +37,7 @@ class PPO(REINFORCE):
         num_workers=1,
         **kwargs,
     ):
-        super(PPO, self).__init__(**kwargs)
+        super(PPO, self).__init__(network=network, **kwargs)
 
         self.batch_size = batch_size
         self.n_step = n_step
