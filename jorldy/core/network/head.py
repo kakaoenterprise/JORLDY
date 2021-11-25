@@ -36,7 +36,7 @@ class CNN(torch.nn.Module):
         self.D_head_out = 64 * dim3[0] * dim3[1]
 
     def forward(self, x):
-        x = x / 255.
+        x = x / 255.0
 
         if len(x.shape) == 5:  # sequence
             batch_len, seq_len = x.size(0), x.size(1)
@@ -86,7 +86,7 @@ class Multi(torch.nn.Module):
         self.D_head_out = self.D_conv_out + self.D_mlp_out
 
     def forward(self, x):
-        x_img = x[0] / 255.
+        x_img = x[0] / 255.0
         x_vec = x[1]
 
         if len(x_img.shape) == 5:  # sequence
@@ -162,7 +162,7 @@ class CNN_LSTM(torch.nn.Module):
         self.D_head_out = D_hidden
 
     def forward(self, x, hidden_in=None):
-        x = x / 255.
+        x = x / 255.0
 
         seq_len = x.size(1)
 

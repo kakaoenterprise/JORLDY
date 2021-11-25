@@ -254,7 +254,7 @@ class ICM_CNN(torch.nn.Module):
             define_conv_batch_norm(self)
 
     def update_rms_obs(self, v):
-        self.rms_obs.update(v / 255.)
+        self.rms_obs.update(v / 255.0)
 
     def update_rms_ri(self, v):
         self.rms_ri.update(v)
@@ -331,7 +331,7 @@ class ICM_Multi(torch.nn.Module):
             define_conv_batch_norm(self)
 
     def update_rms_obs(self, v):
-        self.rms_obs_img.update(v[0] / 255.)
+        self.rms_obs_img.update(v[0] / 255.0)
         self.rms_obs_vec.update(v[1])
 
     def update_rms_ri(self, v):

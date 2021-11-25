@@ -215,13 +215,13 @@ class RND_CNN(torch.nn.Module):
         define_fc_layers_weight(self, feature_size, D_hidden)
 
     def update_rms_obs(self, v):
-        self.rms_obs.update(v / 255.)
+        self.rms_obs.update(v / 255.0)
 
     def update_rms_ri(self, v):
         self.rms_ri.update(v)
 
     def forward(self, s_next, update_ri=False):
-        s_next = s_next / 255.
+        s_next = s_next / 255.0
         if self.obs_normalize:
             s_next = normalize_obs(s_next, self.rms_obs.mean, self.rms_obs.var)
 
@@ -280,7 +280,7 @@ class RND_Multi(torch.nn.Module):
         define_fc_layers_weight(self, feature_size, D_hidden)
 
     def update_rms_obs(self, v):
-        self.rms_obs_img.update(v[0] / 255.)
+        self.rms_obs_img.update(v[0] / 255.0)
         self.rms_obs_vec.update(v[1])
 
     def update_rms_ri(self, v):
@@ -290,7 +290,7 @@ class RND_Multi(torch.nn.Module):
         s_next_img = s_next[0]
         s_next_vec = s_next[1]
 
-        s_next_img = s_next_img / 255.
+        s_next_img = s_next_img / 255.0
 
         if self.obs_normalize:
             s_next_img = normalize_obs(
