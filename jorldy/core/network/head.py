@@ -2,9 +2,23 @@ import torch
 import torch.nn.functional as F
 
 
+class MLP(torch.nn.Module):
+    def __init__(self, D_in, D_hidden=512):
+        super(MLP, self).__init__()
+
+        self.l = torch.nn.Linear(D_in, D_hidden)
+        self.D_head_out = D_hidden
+
+    def forward(self, x):
+        x = F.relu(self.l(x))
+        return x
+
+
 class CNN(torch.nn.Module):
     def __init__(self, D_in, D_hidden=512):
         super(CNN, self).__init__()
+
+        assert D_in[1] >= 36 and D_in[2] >= 36
 
         self.conv1 = torch.nn.Conv2d(
             in_channels=D_in[0], out_channels=32, kernel_size=8, stride=4
@@ -22,7 +36,7 @@ class CNN(torch.nn.Module):
         self.D_head_out = 64 * dim3[0] * dim3[1]
 
     def forward(self, x):
-        x = (x - (255.0 / 2)) / (255.0 / 2)
+        x = x / 255.
 
         if len(x.shape) == 5:  # sequence
             batch_len, seq_len = x.size(0), x.size(1)
@@ -40,24 +54,14 @@ class CNN(torch.nn.Module):
         return x
 
 
-class MLP(torch.nn.Module):
-    def __init__(self, D_in, D_hidden=512):
-        super(MLP, self).__init__()
-
-        self.l = torch.nn.Linear(D_in, D_hidden)
-        self.D_head_out = D_hidden
-
-    def forward(self, x):
-        x = F.relu(self.l(x))
-        return x
-
-
 class Multi(torch.nn.Module):
     def __init__(self, D_in, D_hidden=512):
         super(Multi, self).__init__()
 
         D_in_img = D_in[0]
         D_in_vec = D_in[1]
+
+        assert D_in_img[1] >= 36 and D_in_img[2] >= 36
 
         self.conv1 = torch.nn.Conv2d(
             in_channels=D_in_img[0], out_channels=32, kernel_size=8, stride=4
@@ -82,7 +86,7 @@ class Multi(torch.nn.Module):
         self.D_head_out = self.D_conv_out + self.D_mlp_out
 
     def forward(self, x):
-        x_img = (x[0] - (255.0 / 2)) / (255.0 / 2)
+        x_img = x[0] / 255.
         x_vec = x[1]
 
         if len(x_img.shape) == 5:  # sequence
@@ -107,9 +111,34 @@ class Multi(torch.nn.Module):
         return x_multi
 
 
+class MLP_LSTM(torch.nn.Module):
+    def __init__(self, D_in, D_hidden=512):
+        super(MLP_LSTM, self).__init__()
+
+        self.l = torch.nn.Linear(D_in, D_hidden)
+        self.lstm = torch.nn.LSTM(
+            input_size=D_hidden, hidden_size=D_hidden, batch_first=True
+        )
+        self.D_head_out = D_hidden
+
+    def forward(self, x, hidden_in=None):
+        if hidden_in is None:
+            hidden_in = (
+                torch.zeros(1, x.size(0), self.D_head_out).to(x.device),
+                torch.zeros(1, x.size(0), self.D_head_out).to(x.device),
+            )
+
+        x = F.relu(self.l(x))
+        x, hidden_out = self.lstm(x, hidden_in)
+
+        return x, hidden_in, hidden_out
+
+
 class CNN_LSTM(torch.nn.Module):
     def __init__(self, D_in, D_hidden=512):
         super(CNN_LSTM, self).__init__()
+
+        assert D_in[1] >= 36 and D_in[2] >= 36
 
         self.conv1 = torch.nn.Conv2d(
             in_channels=D_in[0], out_channels=32, kernel_size=8, stride=4
@@ -133,7 +162,7 @@ class CNN_LSTM(torch.nn.Module):
         self.D_head_out = D_hidden
 
     def forward(self, x, hidden_in=None):
-        x = (x - (255.0 / 2)) / (255.0 / 2)
+        x = x / 255.
 
         seq_len = x.size(1)
 
@@ -148,29 +177,6 @@ class CNN_LSTM(torch.nn.Module):
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
         x = x.view(-1, seq_len, self.D_conv_out)
-        x, hidden_out = self.lstm(x, hidden_in)
-
-        return x, hidden_in, hidden_out
-
-
-class MLP_LSTM(torch.nn.Module):
-    def __init__(self, D_in, D_hidden=512):
-        super(MLP_LSTM, self).__init__()
-
-        self.l = torch.nn.Linear(D_in, D_hidden)
-        self.lstm = torch.nn.LSTM(
-            input_size=D_hidden, hidden_size=D_hidden, batch_first=True
-        )
-        self.D_head_out = D_hidden
-
-    def forward(self, x, hidden_in=None):
-        if hidden_in is None:
-            hidden_in = (
-                torch.zeros(1, x.size(0), self.D_head_out).to(x.device),
-                torch.zeros(1, x.size(0), self.D_head_out).to(x.device),
-            )
-
-        x = F.relu(self.l(x))
         x, hidden_out = self.lstm(x, hidden_in)
 
         return x, hidden_in, hidden_out

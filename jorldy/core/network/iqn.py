@@ -20,6 +20,7 @@ class IQN(BaseNetwork):
         self.q = torch.nn.Linear(D_hidden, D_out)
 
     def forward(self, x, tau_min=0, tau_max=1):
+        assert 0 <= tau_min <= tau_max <= 1
         x = super(IQN, self).forward(x)
         state_embed = F.relu(self.state_embed(x))
 
