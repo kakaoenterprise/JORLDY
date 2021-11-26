@@ -263,7 +263,7 @@ class Rainbow(DQN):
         self.time_t = step
         self.target_update_stamp += delta_t
         self.learn_period_stamp += delta_t
-        
+
         # Annealing beta
         self.beta = min(1.0, self.beta + (self.beta_add * delta_t))
 
