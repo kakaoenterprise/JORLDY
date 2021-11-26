@@ -23,7 +23,7 @@ class Rainbow(DQN):
         optim_config (dict): dictionary of the optimizer info.
             (key: 'name', value: name of optimizer)
         gamma (float): discount factor.
-        explore_step (int): the number of steps the epsilon decays.
+        explore_ratio (float): the ratio of steps the epsilon decays.
         buffer_size (int): the size of the memory buffer.
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
@@ -41,6 +41,7 @@ class Rainbow(DQN):
         num_support (int): number of support.
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
+        run_step (int): number of run step.
     """
 
     def __init__(
@@ -52,7 +53,7 @@ class Rainbow(DQN):
         head="mlp",
         optim_config={"name": "adam"},
         gamma=0.99,
-        explore_step=90000,
+        explore_ratio=0.1,
         buffer_size=50000,
         batch_size=64,
         start_train_step=2000,
@@ -72,6 +73,7 @@ class Rainbow(DQN):
         v_max=10,
         num_support=51,
         device=None,
+        run_step=1e6,
         **kwargs,
     ):
         self.device = (
@@ -101,7 +103,7 @@ class Rainbow(DQN):
         self.target_network.load_state_dict(self.network.state_dict())
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma
-        self.explore_step = explore_step
+        self.explore_step = run_step * explore_ratio
         self.batch_size = batch_size
         self.start_train_step = start_train_step
         self.target_update_stamp = 0
@@ -120,7 +122,7 @@ class Rainbow(DQN):
         self.learn_period = learn_period
         self.learn_period_stamp = 0
         self.uniform_sample_prob = uniform_sample_prob
-        self.beta_add = 1 / explore_step
+        self.beta_add = (1 - beta) / run_step
 
         # C51
         self.v_min = v_min
@@ -230,9 +232,6 @@ class Rainbow(DQN):
         for i, p in zip(indices, p_j):
             self.memory.update_priority(p.item(), i)
 
-        # Annealing beta
-        self.beta = min(1.0, self.beta + self.beta_add)
-
         weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
 
         loss = (weights * KL).mean()
@@ -245,6 +244,7 @@ class Rainbow(DQN):
 
         result = {
             "loss": loss.item(),
+            "beta": self.beta,
             "max_Q": max_Q,
             "max_logit": max_logit,
             "min_logit": min_logit,
@@ -263,6 +263,9 @@ class Rainbow(DQN):
         self.time_t = step
         self.target_update_stamp += delta_t
         self.learn_period_stamp += delta_t
+
+        # Annealing beta
+        self.beta = min(1.0, self.beta + (self.beta_add * delta_t))
 
         if (
             self.learn_period_stamp >= self.learn_period

@@ -19,7 +19,7 @@ agent = {
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
-    "explore_step": 1000000,
+    "explore_ratio": 0.1,
     "buffer_size": 1000000,
     "batch_size": 32,
     "start_train_step": 100000,

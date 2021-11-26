@@ -22,6 +22,7 @@ if __name__ == "__main__":
         "state_size": env.state_size,
         "action_size": env.action_size,
         "optim_config": config.optim,
+        "run_step": config.train.run_step,
         "num_workers": config.train.num_workers,
     }
     env.close()

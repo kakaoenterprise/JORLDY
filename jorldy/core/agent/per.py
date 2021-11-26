@@ -17,13 +17,19 @@ class PER(DQN):
     """
 
     def __init__(
-        self, alpha=0.6, beta=0.4, learn_period=16, uniform_sample_prob=1e-3, **kwargs
+        self,
+        alpha=0.6,
+        beta=0.4,
+        learn_period=16,
+        uniform_sample_prob=1e-3,
+        run_step=1e6,
+        **kwargs
     ):
-        super(PER, self).__init__(**kwargs)
+        super(PER, self).__init__(run_step=run_step, **kwargs)
         self.memory = PERBuffer(self.buffer_size, uniform_sample_prob)
         self.alpha = alpha
         self.beta = beta
-        self.beta_add = 1 / self.explore_step
+        self.beta_add = (1 - beta) / run_step
         self.learn_period = learn_period
         self.learn_period_stamp = 0
 
@@ -62,9 +68,6 @@ class PER(DQN):
         for i, p in zip(indices, p_j):
             self.memory.update_priority(p.item(), i)
 
-        # Annealing beta
-        self.beta = min(1.0, self.beta + self.beta_add)
-
         weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
 
         loss = (weights * (td_error ** 2)).mean()
@@ -77,6 +80,7 @@ class PER(DQN):
         result = {
             "loss": loss.item(),
             "epsilon": self.epsilon,
+            "beta": self.beta,
             "max_Q": max_Q,
             "sampled_p": sampled_p,
             "mean_p": mean_p,
@@ -92,6 +96,9 @@ class PER(DQN):
         self.time_t = step
         self.target_update_stamp += delta_t
         self.learn_period_stamp += delta_t
+
+        # Annealing beta
+        self.beta = min(1.0, self.beta + (self.beta_add * delta_t))
 
         if (
             self.learn_period_stamp >= self.learn_period

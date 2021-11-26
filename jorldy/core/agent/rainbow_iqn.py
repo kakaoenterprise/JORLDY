@@ -23,13 +23,12 @@ class RainbowIQN(Rainbow):
         optim_config (dict): dictionary of the optimizer info.
             (key: 'name', value: name of optimizer)
         gamma (float): discount factor.
-        explore_step (int): the number of steps the epsilon decays.
+        explore_ratio (float): the ratio of steps the epsilon decays.
         buffer_size (int): the size of the memory buffer.
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
         target_update_period (int): period to update the target network. (unit: step)
         n_step: number of steps in multi-step Q learning.
-        num_workers: the number of agents in distributed learning
         alpha (float): prioritization exponent.
         beta (float): initial value of degree to use importance sampling.
         learn_period (int): period to train (unit: step)
@@ -41,6 +40,7 @@ class RainbowIQN(Rainbow):
         sample_min (float): quantile minimum thresholds (tau_min).
         sample_max (float): quantile maximum thresholds (tau_max).
         device (str): device to use. (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
+        run_step (int): number of run step.
     """
 
     def __init__(
@@ -52,14 +52,13 @@ class RainbowIQN(Rainbow):
         head="mlp",
         optim_config={"name": "adam"},
         gamma=0.99,
-        explore_step=90000,
+        explore_ratio=0.1,
         buffer_size=50000,
         batch_size=64,
         start_train_step=2000,
         target_update_period=500,
         # MultiStep
         n_step=4,
-        num_workers=1,
         # PER
         alpha=0.6,
         beta=0.4,
@@ -73,6 +72,7 @@ class RainbowIQN(Rainbow):
         sample_min=0.0,
         sample_max=1.0,
         device=None,
+        run_step=1e6,
         **kwargs,
     ):
         self.device = (
@@ -104,7 +104,7 @@ class RainbowIQN(Rainbow):
         self.target_network.load_state_dict(self.network.state_dict())
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma
-        self.explore_step = explore_step
+        self.explore_step = run_step * explore_ratio
         self.batch_size = batch_size
         self.start_train_step = start_train_step
         self.target_update_stamp = 0
@@ -114,7 +114,6 @@ class RainbowIQN(Rainbow):
 
         # MultiStep
         self.n_step = n_step
-        self.num_workers = num_workers
         self.tmp_buffer = deque(maxlen=n_step)
 
         # PER
@@ -123,7 +122,7 @@ class RainbowIQN(Rainbow):
         self.learn_period = learn_period
         self.learn_period_stamp = 0
         self.uniform_sample_prob = uniform_sample_prob
-        self.beta_add = 1 / explore_step
+        self.beta_add = (1 - beta) / run_step
 
         # IQN
         self.num_sample = num_sample
@@ -212,9 +211,6 @@ class RainbowIQN(Rainbow):
         for i, p in zip(indices, p_j):
             self.memory.update_priority(p.item(), i)
 
-        # Annealing beta
-        self.beta = min(1.0, self.beta + self.beta_add)
-
         weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
 
         loss = (weights * loss).mean()
@@ -227,6 +223,7 @@ class RainbowIQN(Rainbow):
 
         result = {
             "loss": loss.item(),
+            "beta": self.beta,
             "max_Q": max_Q,
             "max_logit": max_logit,
             "min_logit": min_logit,
