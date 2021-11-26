@@ -27,13 +27,14 @@ class DQN(BaseAgent):
         epsilon_init (float): initial epsilon value (random action ratio) in decaying epsilon-greedy policy.
         epsilon_min (float): final epsilon value in decaying epsilon-greedy policy.
         epsilon_eval (float): evaluate time epsilon value.
-        explore_step (int): the number of steps the epsilon decays.
+        explore_ratio (float): the ratio of steps the epsilon decays.
         buffer_size (int): the size of the memory buffer.
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
         target_update_period (int): period to update the target network (unit: step)
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
+        run_step (int): number of run step.
         num_workers: the number of agents in distributed learning
     """
 
@@ -49,12 +50,13 @@ class DQN(BaseAgent):
         epsilon_init=1.0,
         epsilon_min=0.1,
         epsilon_eval=0.0,
-        explore_step=90000,
+        explore_ratio=0.1,
         buffer_size=50000,
         batch_size=64,
         start_train_step=2000,
         target_update_period=500,
         device=None,
+        run_step=1e6,
         num_workers=1,
         **kwargs,
     ):
@@ -78,8 +80,8 @@ class DQN(BaseAgent):
         self.epsilon_init = epsilon_init
         self.epsilon_min = epsilon_min
         self.epsilon_eval = epsilon_eval
-        self.explore_step = explore_step
-        self.epsilon_delta = (epsilon_init - epsilon_min) / explore_step
+        self.explore_step = run_step * explore_ratio
+        self.epsilon_delta = (epsilon_init - epsilon_min) / self.explore_step
         self.buffer_size = buffer_size
         self.memory = ReplayBuffer(buffer_size)
         self.batch_size = batch_size
