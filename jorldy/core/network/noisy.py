@@ -61,6 +61,8 @@ def init_weights(shape, noise_type):
 
 class Noisy(BaseNetwork):
     def __init__(self, D_in, D_out, noise_type="factorized", D_hidden=512, head="mlp"):
+        assert noise_type in ["independent", "factorized"]
+
         D_head_out = super(Noisy, self).__init__(D_in, D_hidden, head)
         self.noise_type = noise_type
 

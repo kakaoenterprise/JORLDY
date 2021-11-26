@@ -6,11 +6,11 @@ from .base import BaseNetwork
 from .noisy import noisy_l, init_weights
 
 
-class Rainbow_IQN(BaseNetwork):
+class RainbowIQN(BaseNetwork):
     def __init__(
         self, D_in, D_out, D_em, N_sample, noise_type, D_hidden=512, head="mlp"
     ):
-        D_head_out = super(Rainbow_IQN, self).__init__(D_in, D_hidden, head)
+        D_head_out = super(RainbowIQN, self).__init__(D_in, D_hidden, head)
         self.D_out = D_out
         self.noise_type = noise_type
 
@@ -38,7 +38,7 @@ class Rainbow_IQN(BaseNetwork):
         )
 
     def forward(self, x, is_train, tau_min=0, tau_max=1):
-        x = super(Rainbow_IQN, self).forward(x)
+        x = super(RainbowIQN, self).forward(x)
         state_embed = F.relu(self.state_embed(x))
 
         cos_term, tau = self.make_embed(x, tau_min, tau_max)

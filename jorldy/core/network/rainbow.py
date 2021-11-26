@@ -7,7 +7,9 @@ from .noisy import noisy_l, init_weights
 
 
 class Rainbow(BaseNetwork):
-    def __init__(self, D_in, D_out, N_atom, noise_type, D_hidden=512, head="mlp"):
+    def __init__(
+        self, D_in, D_out, N_atom, noise_type="factorized", D_hidden=512, head="mlp"
+    ):
         D_head_out = super(Rainbow, self).__init__(D_in, D_hidden, head)
         self.D_out = D_out
         self.N_atom = N_atom
