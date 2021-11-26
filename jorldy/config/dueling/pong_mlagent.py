@@ -8,7 +8,7 @@ agent = {
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,
-    "explore_step": 450000,
+    "explore_ratio": 0.1,
     "buffer_size": 50000,
     "batch_size": 32,
     "start_train_step": 25000,
