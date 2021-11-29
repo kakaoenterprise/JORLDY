@@ -2,6 +2,7 @@
 
 env = {
     "name": "cartpole",
+    "action_type": "discrete",
     "render": False,
 }
 
@@ -11,16 +12,16 @@ agent = {
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
-    "explore_ratio": 0.1,
+    "explore_ratio": 0.2,
     "buffer_size": 50000,
     "batch_size": 32,
     "start_train_step": 2000,
-    "target_update_period": 1000,
+    "target_update_period": 500,
 }
 
 optim = {
     "name": "adam",
-    "lr": 0.0005,
+    "lr": 0.0001,
 }
 
 train = {

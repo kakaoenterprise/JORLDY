@@ -12,20 +12,20 @@ agent = {
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
-    "explore_ratio": 0.1,
+    "explore_ratio": 0.2,
     "buffer_size": 50000,
     "batch_size": 32,
     "start_train_step": 2000,
-    "target_update_period": 1000,
+    "target_update_period": 500,
     "alpha": 0.6,
     "beta": 0.4,
-    "learn_period": 16,
+    "learn_period": 2,
     "uniform_sample_prob": 1e-3,
 }
 
 optim = {
     "name": "adam",
-    "lr": 2.5e-4 / 4,
+    "lr": 0.0001,
 }
 
 train = {
