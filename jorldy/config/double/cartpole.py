@@ -11,17 +11,17 @@ agent = {
     "network": "dqn",
     "gamma": 0.99,
     "epsilon_init": 1.0,
-    "epsilon_min": 0.1,
-    "explore_ratio": 0.1,
-    "buffer_size": 10000,
+    "epsilon_min": 0.01,
+    "explore_ratio": 0.2,
+    "buffer_size": 50000,
     "batch_size": 32,
-    "start_train_step": 10000,
-    "target_update_period": 200,
+    "start_train_step": 2000,
+    "target_update_period": 500,
 }
 
 optim = {
     "name": "adam",
-    "lr": 5e-4,
+    "lr": 0.0001,
 }
 
 train = {

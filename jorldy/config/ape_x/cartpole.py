@@ -26,7 +26,7 @@ agent = {
 optim = {
     "name": "rmsprop",
     "eps": 1.5e-7,
-    "lr": 2.5e-4 / 4,
+    "lr": 0.0001,
     "centered": True,
 }
 

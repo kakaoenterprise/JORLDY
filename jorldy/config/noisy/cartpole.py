@@ -11,12 +11,12 @@ agent = {
     "network": "noisy",
     "gamma": 0.99,
     "explore_ratio": 0.1,
-    "buffer_size": 10000,
+    "buffer_size": 50000,
     "batch_size": 32,
-    "start_train_step": 10000,
-    "target_update_period": 200,
+    "start_train_step": 2000,
+    "target_update_period": 500,
     # noisy
-    "noise_type": "independent",  # [independent, factorized]
+    "noise_type": "factorized",  # [independent, factorized]
 }
 
 optim = {
