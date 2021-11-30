@@ -9,7 +9,7 @@ Hello Wo**RL**d!!:hand:  **Join Our Reinforcement Learning framework for Develop
 
 - 20+ RL Algorithms and various RL environment are provided
 - Algorithms and environment are customizable
-- New algorithms are environment can be added 
+- New algorithms and environment can be added 
 - Distributed RL algorithms are provided using [ray](https://github.com/ray-project/ray)
 - Benchmark of the algorithms is conducted in many RL environment
 
