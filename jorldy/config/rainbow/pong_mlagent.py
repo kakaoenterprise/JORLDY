@@ -6,7 +6,6 @@ agent = {
     "name": "rainbow",
     "network": "rainbow",
     "gamma": 0.99,
-    "explore_ratio": 0.1,
     "buffer_size": 50000,
     "batch_size": 32,
     "start_train_step": 25000,

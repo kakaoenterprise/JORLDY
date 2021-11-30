@@ -27,12 +27,11 @@ class MPO(BaseAgent):
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
         n_epoch (int): Number of epoch when optimizing the surrogate.
-        n_step (int): The number of steps to run for each environment per update.
+        n_step (int): number of steps in multi-step Q learning.
         clip_grad_norm (float): gradient clipping threshold.
         gamma (float): discount factor.
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
-        num_workers: the number of agents in distributed learning.
         critic_loss_type (str): type of critic loss. One of ['1step_TD', 'retrace'].
         num_sample (int): the number of samples.
         min_eta (float): minimum value of eta.
@@ -63,7 +62,6 @@ class MPO(BaseAgent):
         clip_grad_norm=1.0,
         gamma=0.99,
         device=None,
-        num_workers=1,
         # parameters unique to MPO
         critic_loss_type="retrace",  # one of ['1step_TD', 'retrace']
         num_sample=30,

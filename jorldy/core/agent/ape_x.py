@@ -37,6 +37,7 @@ class ApeX(DQN):
         uniform_sample_prob=1e-3,
         # MultiStep
         n_step=4,
+        run_step=1e6,
         **kwargs
     ):
         super(ApeX, self).__init__(**kwargs)
@@ -51,7 +52,7 @@ class ApeX(DQN):
         self.learn_period = learn_period
         self.learn_period_stamp = 0
         self.uniform_sample_prob = uniform_sample_prob
-        self.beta_add = 1 / self.explore_step
+        self.beta_add = (1 - beta) / run_step
 
         # MultiStep
         self.n_step = n_step
@@ -109,9 +110,6 @@ class ApeX(DQN):
         for i, p in zip(indices, p_j):
             self.memory.update_priority(p.item(), i)
 
-        # Annealing beta
-        self.beta = min(1.0, self.beta + self.beta_add)
-
         weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
 
         loss = (weights * (td_error ** 2)).mean()
@@ -142,6 +140,9 @@ class ApeX(DQN):
         self.target_update_stamp += delta_t
         self.learn_period_stamp += delta_t
 
+        # Annealing beta
+        self.beta = min(1.0, self.beta + (self.beta_add * delta_t))
+
         if (
             self.learn_period_stamp >= self.learn_period
             and self.memory.buffer_counter >= self.batch_size
@@ -158,6 +159,8 @@ class ApeX(DQN):
         return result
 
     def set_distributed(self, id):
+        assert self.num_workers > 1
+
         self.epsilon = self.epsilon ** (
             1 + (id / (self.num_workers - 1)) * self.epsilon_alpha
         )

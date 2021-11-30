@@ -23,7 +23,6 @@ class RainbowIQN(Rainbow):
         optim_config (dict): dictionary of the optimizer info.
             (key: 'name', value: name of optimizer)
         gamma (float): discount factor.
-        explore_ratio (float): the ratio of steps the epsilon decays.
         buffer_size (int): the size of the memory buffer.
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
