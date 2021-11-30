@@ -23,13 +23,11 @@ class Rainbow(DQN):
         optim_config (dict): dictionary of the optimizer info.
             (key: 'name', value: name of optimizer)
         gamma (float): discount factor.
-        explore_ratio (float): the ratio of steps the epsilon decays.
         buffer_size (int): the size of the memory buffer.
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
         target_update_period (int): period to update the target network. (unit: step)
         n_step: number of steps in multi-step Q learning.
-        num_workers: the number of agents in distributed learning
         alpha (float): prioritization exponent.
         beta (float): initial value of degree to use importance sampling.
         learn_period (int): period to train (unit: step)
@@ -53,14 +51,12 @@ class Rainbow(DQN):
         head="mlp",
         optim_config={"name": "adam"},
         gamma=0.99,
-        explore_ratio=0.1,
         buffer_size=50000,
         batch_size=64,
         start_train_step=2000,
         target_update_period=500,
         # MultiStep
         n_step=4,
-        num_workers=1,
         # PER
         alpha=0.6,
         beta=0.4,
@@ -103,7 +99,6 @@ class Rainbow(DQN):
         self.target_network.load_state_dict(self.network.state_dict())
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
         self.gamma = gamma
-        self.explore_step = run_step * explore_ratio
         self.batch_size = batch_size
         self.start_train_step = start_train_step
         self.target_update_stamp = 0
@@ -113,7 +108,6 @@ class Rainbow(DQN):
 
         # MultiStep
         self.n_step = n_step
-        self.num_workers = num_workers
         self.tmp_buffer = deque(maxlen=n_step)
 
         # PER

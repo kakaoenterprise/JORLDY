@@ -39,7 +39,7 @@ class ICM_PPO(PPO):
         lamb=1.0,
         eta=0.01,
         extrinsic_coeff=1.0,
-        intrinsic_coeff=0.01,
+        intrinsic_coeff=1.0,
         obs_normalize=True,
         ri_normalize=True,
         batch_norm=True,
