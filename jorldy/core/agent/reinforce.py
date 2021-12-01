@@ -133,5 +133,3 @@ class REINFORCE(BaseAgent):
         self.network.load_state_dict(checkpoint["network"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
 
-    def set_distributed(self, id):
-        raise Exception("REINFORCE does not support distributed training.")
