@@ -1,8 +1,8 @@
-from core.agent.rainbow import Rainbow
-from utils import MockEnv, check_interact, check_save_load, check_sync_in_out
+from core.agent.rainbow_iqn import RainbowIQN
+from .utils import MockEnv, check_interact, check_save_load, check_sync_in_out
 
 
-def test_rainbow():
+def test_rainbow_iqn():
     state_size, action_size, action_type = 2, 3, "discrete"
     episode_len = 10
     env = MockEnv(state_size, action_size, action_type, episode_len)
@@ -17,9 +17,9 @@ def test_rainbow():
     learn_period, uniform_sample_prob = 4, 1e-3
     # Noisy
     noise_type = "factorized"  # [independent, factorized]
-    # C51
-    v_min, v_max, num_support = -5, 5, 5
-    agent = Rainbow(
+    # IQN
+    num_sample, embedding_dim, sample_min, sample_max = 8, 16, 0.0, 1.0
+    agent = RainbowIQN(
         state_size=state_size,
         action_size=action_size,
         hidden_size=hidden_size,
@@ -34,25 +34,24 @@ def test_rainbow():
         learn_period=learn_period,
         uniform_sample_prob=uniform_sample_prob,
         noise_type=noise_type,
-        v_min=v_min,
-        v_max=v_max,
-        num_support=num_support,
+        num_sample=num_sample,
+        embedding_dim=embedding_dim,
+        sample_min=sample_min,
+        sample_max=sample_max,
     )
 
     # test after initialize
     assert agent.action_type == action_type
-    assert agent.z.shape == (1, num_support)
 
     # test inteact
-    action_branch = 1 if action_type == "discrete" else action_size
-    check_interact(env, agent, run_step, action_branch)
+    check_interact(env, agent, run_step)
 
     # test after inteact
     assert agent.time_t == run_step
     assert agent.beta == 1.0
 
     # test save and load
-    check_save_load(agent, "./tmp_test_rainbow")
+    check_save_load(agent, "./tmp_test_rainbow_iqn")
 
-    # sync in and out
+    # test sync in and out
     check_sync_in_out(agent)

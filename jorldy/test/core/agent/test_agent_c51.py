@@ -1,5 +1,5 @@
 from core.agent.c51 import C51
-from utils import MockEnv, check_interact, check_save_load, check_sync_in_out
+from .utils import MockEnv, check_interact, check_save_load, check_sync_in_out
 
 
 def test_c51():
@@ -35,8 +35,7 @@ def test_c51():
     assert agent.z.shape == (1, num_support)
 
     # test inteact
-    action_branch = 1 if action_type == "discrete" else action_size
-    check_interact(env, agent, run_step, action_branch)
+    check_interact(env, agent, run_step)
 
     # test after inteact
     assert agent.epsilon == epsilon_min
@@ -45,5 +44,5 @@ def test_c51():
     # test save and load
     check_save_load(agent, "./tmp_test_c51")
 
-    # sync in and out
+    # test sync in and out
     check_sync_in_out(agent)

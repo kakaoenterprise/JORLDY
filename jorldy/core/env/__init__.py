@@ -2,8 +2,6 @@ import os, sys, inspect, re, traceback
 from collections import OrderedDict
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))  # for import mlagents
-sys.path.append(os.path.abspath("../../"))
-
 
 working_path = os.path.dirname(os.path.realpath(__file__))
 file_list = os.listdir(working_path)

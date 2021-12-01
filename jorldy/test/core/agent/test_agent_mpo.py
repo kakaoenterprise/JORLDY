@@ -1,5 +1,5 @@
 from core.agent.mpo import MPO
-from utils import MockEnv, check_interact, check_save_load, check_sync_in_out
+from .utils import MockEnv, check_interact, check_save_load, check_sync_in_out
 
 
 def test_discrete_retrace_mpo():
@@ -48,15 +48,14 @@ def test_discrete_retrace_mpo():
     assert agent.action_type == action_type
 
     # test inteact
-    action_branch = 1 if action_type == "discrete" else action_size
-    check_interact(env, agent, run_step, action_branch)
+    check_interact(env, agent, run_step)
 
     # test after inteact
 
     # test save and load
     check_save_load(agent, "./tmp_test_discrete_retrace_mpo")
 
-    # sync in and out
+    # test sync in and out
     check_sync_in_out(agent)
 
 
@@ -106,15 +105,14 @@ def test_discrete_1step_TD_mpo():
     assert agent.action_type == action_type
 
     # test inteact
-    action_branch = 1 if action_type == "discrete" else action_size
-    check_interact(env, agent, run_step, action_branch)
+    check_interact(env, agent, run_step)
 
     # test after inteact
 
     # test save and load
     check_save_load(agent, "./tmp_test_discrete_1step_TD_mpo")
 
-    # sync in and out
+    # test sync in and out
     check_sync_in_out(agent)
 
 
@@ -164,15 +162,14 @@ def test_continuous_retrace_mpo():
     assert agent.action_type == action_type
 
     # test inteact
-    action_branch = 1 if action_type == "discrete" else action_size
-    check_interact(env, agent, run_step, action_branch)
+    check_interact(env, agent, run_step)
 
     # test after inteact
 
     # test save and load
     check_save_load(agent, "./tmp_test_continuous_retrace_mpo")
 
-    # sync in and out
+    # test sync in and out
     check_sync_in_out(agent)
 
 
@@ -222,13 +219,12 @@ def test_continuous_1step_TD_mpo():
     assert agent.action_type == action_type
 
     # test inteact
-    action_branch = 1 if action_type == "discrete" else action_size
-    check_interact(env, agent, run_step, action_branch)
+    check_interact(env, agent, run_step)
 
     # test after inteact
 
     # test save and load
     check_save_load(agent, "./tmp_test_continuous_1step_TD_mpo")
 
-    # sync in and out
+    # test sync in and out
     check_sync_in_out(agent)

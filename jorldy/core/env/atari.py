@@ -95,7 +95,7 @@ class _Atari(BaseEnv):
         if self.render:
             self.env.render()
 
-        next_state, reward, done, info = self.env.step(np.asscalar(action))
+        next_state, reward, done, info = self.env.step(action.item())
         self.score += reward
 
         dead = False

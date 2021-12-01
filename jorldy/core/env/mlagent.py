@@ -137,13 +137,3 @@ class DroneDeliveryMLAgent(_MLAgent):
         vis_obs = (vis_obs * 255).astype(np.uint8)
 
         return [vis_obs, vec_obs]
-
-
-class WormMLAgent(_MLAgent):
-    def __init__(self, **kwargs):
-        env_name = "Worm"
-        super(WormMLAgent, self).__init__(env_name, **kwargs)
-
-        self.state_size = 64 * 1
-        self.action_size = 9
-        self.action_type = "discrete"

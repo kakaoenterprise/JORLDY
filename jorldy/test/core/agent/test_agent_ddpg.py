@@ -1,5 +1,5 @@
 from core.agent.ddpg import DDPG
-from utils import MockEnv, check_interact, check_save_load, check_sync_in_out
+from .utils import MockEnv, check_interact, check_save_load, check_sync_in_out
 
 
 def test_ddpg():
@@ -30,8 +30,7 @@ def test_ddpg():
     assert agent.action_type == action_type
 
     # test inteact
-    action_branch = 1 if action_type == "discrete" else action_size
-    check_interact(env, agent, run_step, action_branch)
+    check_interact(env, agent, run_step)
 
     # test after inteact
     assert agent.num_learn == (run_step - start_train_step + 1)
@@ -39,5 +38,5 @@ def test_ddpg():
     # test save and load
     check_save_load(agent, "./tmp_test_ddpg")
 
-    # sync in and out
+    # test sync in and out
     check_sync_in_out(agent)

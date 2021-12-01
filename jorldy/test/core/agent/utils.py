@@ -25,10 +25,11 @@ class MockEnv:
         return next_state, reward, done
 
 
-def check_interact(env, agent, run_step, action_branch):
+def check_interact(env, agent, run_step):
     state = env.reset()
     for step in range(1, run_step + 1):
         action_dict = agent.act(state)
+        action_branch = 1 if agent.action_type == "discrete" else env.action_size
         assert action_dict["action"].shape == (1, action_branch)
 
         next_state, reward, done = env.step(action_dict["action"])

@@ -1,5 +1,5 @@
 from core.agent.sac import SAC
-from utils import MockEnv, check_interact, check_save_load, check_sync_in_out
+from .utils import MockEnv, check_interact, check_save_load, check_sync_in_out
 
 
 def test_dynamic_alpha_sac():
@@ -28,8 +28,7 @@ def test_dynamic_alpha_sac():
     assert agent.action_type == action_type
 
     # test inteact
-    action_branch = 1 if action_type == "discrete" else action_size
-    check_interact(env, agent, run_step, action_branch)
+    check_interact(env, agent, run_step)
 
     # test after inteact
     assert agent.num_learn == (run_step - start_train_step + 1)
@@ -37,7 +36,7 @@ def test_dynamic_alpha_sac():
     # test save and load
     check_save_load(agent, "./tmp_test_dynamic_alpha_sac")
 
-    # sync in and out
+    # test sync in and out
     check_sync_in_out(agent)
 
 
@@ -69,8 +68,7 @@ def test_static_alpha_sac():
     assert agent.action_type == action_type
 
     # test inteact
-    action_branch = 1 if action_type == "discrete" else action_size
-    check_interact(env, agent, run_step, action_branch)
+    check_interact(env, agent, run_step)
 
     # test after inteact
     assert agent.num_learn == (run_step - start_train_step + 1)
@@ -78,5 +76,5 @@ def test_static_alpha_sac():
     # test save and load
     check_save_load(agent, "./tmp_test_static_alpha_sac")
 
-    # sync in and out
+    # test sync in and out
     check_sync_in_out(agent)
