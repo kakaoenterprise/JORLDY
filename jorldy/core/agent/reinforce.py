@@ -132,4 +132,3 @@ class REINFORCE(BaseAgent):
         checkpoint = torch.load(os.path.join(path, "ckpt"), map_location=self.device)
         self.network.load_state_dict(checkpoint["network"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
-
