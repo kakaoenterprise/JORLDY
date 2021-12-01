@@ -44,7 +44,7 @@ class _Gym(BaseEnv):
             ) + self.env.action_space.low
             action = np.reshape(action, self.env.action_space.shape)
         else:
-            action = np.asscalar(action)
+            action = action.item()
 
         next_state, reward, done, info = self.env.step(action)
         self.score += reward
@@ -70,7 +70,7 @@ class Cartpole(_Gym):
     def step(self, action):
         if self.render:
             self.env.render()
-        action = np.asscalar(action)
+        action = action.item()
         if self.action_type == "continuous":
             action = 0 if action < 0 else 1
         next_state, reward, done, info = self.env.step(action)
