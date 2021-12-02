@@ -1,5 +1,7 @@
 import numpy as np
+
 from core.buffer.per_buffer import PERBuffer
+from .utils import mock_transition
 
 
 def test_per_buffer():
@@ -13,18 +15,6 @@ def test_per_buffer():
     assert memory.buffer_index == 0
     assert memory.tree_index == buffer_size - 1
     assert memory.size == 0
-
-    mock_transition = [
-        {
-            "state": np.random.random((1, 4)),
-            "action": np.random.random((1, 3)),
-            "reward": np.random.random((1, 1)),
-            "next_state": np.random.random((1, 4)),
-            "done": np.random.random((1, 1)) < 0.5,
-            "multi_modal": [np.random.random((1, 3, 8, 8)), np.random.random((1, 4))],
-            "seq": np.random.random((1, 3, 4)),
-        },
-    ]
 
     # test store
     store_iteration = 15
