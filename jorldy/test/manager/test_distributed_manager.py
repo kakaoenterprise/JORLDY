@@ -15,9 +15,9 @@ def test_sync_distributed_manager(MockEnv, env_config, MockAgent, agent_config):
 
     # test after init
     assert len(distributed_manager.actors) == num_workers
-    
+
     # can not test run
-    
+
     distributed_manager.terminate()
 
 
