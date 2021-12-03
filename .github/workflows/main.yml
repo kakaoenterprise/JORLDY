@@ -23,10 +23,10 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{matrix.python}}
-        
+    
     - name: Install dependencies
       run: |
-        if: [runner.os == 'Linux']; then
+        if [runner.os == 'Linux']; then
           sudo apt-get update
           sudo apt-get -y install libgl1-mesa-glx
           sudo apt-get -y install libglib2.0-0
