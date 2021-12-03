@@ -26,7 +26,7 @@ jobs:
         
     - name: Install dependencies
       run: |
-        if: ["$RUNNER_OS" == "Linux"]; then
+        if: [runner.os == 'Linux']; then
           sudo apt-get update
           sudo apt-get -y install libgl1-mesa-glx
           sudo apt-get -y install libglib2.0-0
