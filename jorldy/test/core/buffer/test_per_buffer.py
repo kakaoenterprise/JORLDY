@@ -1,10 +1,9 @@
 import numpy as np
 
 from core.buffer.per_buffer import PERBuffer
-from .utils import mock_transition
 
 
-def test_per_buffer():
+def test_per_buffer(mock_transition):
     buffer_size = 10
     uniform_sample_prob = 1e-3
     memory = PERBuffer(buffer_size=buffer_size, uniform_sample_prob=uniform_sample_prob)

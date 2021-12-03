@@ -1,10 +1,10 @@
-from .utils import MockAgent, check_interact, check_close, check_record
+from .utils import check_interact, check_close, check_record
 from core import Env
 from core.env import env_dict
 
 
-def test_atari():
-    for name in [key for key, val in env_dict.items() if "atari" in str(val)]:
+def test_nes(MockAgent):
+    for name in [key for key, val in env_dict.items() if "nes" in str(val)]:
         env = Env(name)
 
         agent = MockAgent(env.state_size, env.action_size, env.action_type)

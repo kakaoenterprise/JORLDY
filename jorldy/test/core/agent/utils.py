@@ -1,28 +1,5 @@
 import os, shutil
-import numpy as np
 import torch
-
-
-class MockEnv:
-    def __init__(self, state_size, action_size, action_type, episode_len):
-        self.state_size = state_size
-        self.action_size = action_size
-        self.action_type = action_type
-        self.episode_len = episode_len
-        self.time_t = 0
-
-    def reset(self):
-        state = np.random.random((1, self.state_size))
-        return state
-
-    def step(self, action):
-        self.time_t += 1
-        next_state = np.random.random((1, self.state_size))
-        reward = np.random.random((1, 1))
-        done = np.array([[self.time_t == self.episode_len]])
-        if done:
-            self.time_t = 0
-        return next_state, reward, done
 
 
 def check_interact(env, agent, run_step):
