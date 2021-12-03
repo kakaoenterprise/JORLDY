@@ -145,4 +145,3 @@ if __name__ == "__main__":
         result_queue.close()
         manage_sync_queue.close()
         path_queue.close()
-        env.close()
