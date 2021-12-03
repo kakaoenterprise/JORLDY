@@ -68,7 +68,7 @@ def manage_process(
                 metric_manager.append({"score": score})
                 statistics = metric_manager.get_statistics()
                 print(f"Step : {step} / {statistics}")
-                log_manager.write(statistics, frames, score, step)
+                log_manager.write(statistics, frames, step)
                 print_stamp = 0
     except Exception as e:
         traceback.print_exc()

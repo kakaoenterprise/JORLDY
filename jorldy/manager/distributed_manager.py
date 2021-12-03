@@ -2,7 +2,6 @@ import os
 from functools import reduce
 
 import ray
-import numpy as np
 
 
 class DistributedManager:

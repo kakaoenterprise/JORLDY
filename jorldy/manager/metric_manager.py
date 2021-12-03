@@ -13,6 +13,6 @@ class MetricManager:
         ret = dict()
         if mode == "mean":
             for key, value in self.metrics.items():
-                ret[key] = 0 if len(value) == 0 else round(sum(value) / len(value), 4)
-                self.metrics[key].clear()
+                ret[key] = round(sum(value) / len(value), 4)
+        self.metrics.clear()
         return ret
