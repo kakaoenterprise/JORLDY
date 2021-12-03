@@ -1,8 +1,8 @@
-from .utils import MockAgent, check_interact, check_close, check_record
+from .utils import check_interact, check_close, check_record
 from core import Env
 
 
-def test_discrete_cartpole():
+def test_discrete_cartpole(MockAgent):
     name = "cartpole"
     action_type = "discrete"
     env = Env(name, action_type)
@@ -20,7 +20,7 @@ def test_discrete_cartpole():
     check_record(env)
 
 
-def test_continuous_cartpole():
+def test_continuous_cartpole(MockAgent):
     name = "cartpole"
     action_type = "continuous"
     env = Env(name, action_type)
@@ -38,7 +38,7 @@ def test_continuous_cartpole():
     check_record(env)
 
 
-def test_pendulum():
+def test_pendulum(MockAgent):
     name = "pendulum"
     env = Env(name)
 
@@ -55,7 +55,7 @@ def test_pendulum():
     check_record(env)
 
 
-def test_mountain_car():
+def test_mountain_car(MockAgent):
     name = "pendulum"
     env = Env(name)
 

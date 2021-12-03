@@ -1,8 +1,8 @@
 from core.agent.double import Double
-from .utils import MockEnv, check_interact, check_save_load, check_sync_in_out
+from .utils import check_interact, check_save_load, check_sync_in_out
 
 
-def test_double():
+def test_double(MockEnv):
     state_size, action_size, action_type = 2, 3, "discrete"
     episode_len = 10
     env = MockEnv(state_size, action_size, action_type, episode_len)

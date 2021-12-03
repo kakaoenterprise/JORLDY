@@ -1,10 +1,12 @@
-from .utils import MockAgent, check_interact, check_close, check_record
+from .utils import check_interact, check_close, check_record
 from core import Env
 from core.env import env_dict
 
 
-def test_nes():
-    for name in [key for key, val in env_dict.items() if "procgen" in str(val)]:
+def test_atari(MockAgent):
+    for name in [key for key, val in env_dict.items() if "mlagent" in str(val)]:
+        if "drone" in name:
+            continue
         env = Env(name)
 
         agent = MockAgent(env.state_size, env.action_size, env.action_type)

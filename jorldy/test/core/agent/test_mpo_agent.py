@@ -1,8 +1,8 @@
 from core.agent.mpo import MPO
-from .utils import MockEnv, check_interact, check_save_load, check_sync_in_out
+from .utils import check_interact, check_save_load, check_sync_in_out
 
 
-def test_discrete_retrace_mpo():
+def test_discrete_retrace_mpo(MockEnv):
     state_size, action_size, action_type = 2, 3, "discrete"
     episode_len = 10
     env = MockEnv(state_size, action_size, action_type, episode_len)
@@ -59,7 +59,7 @@ def test_discrete_retrace_mpo():
     check_sync_in_out(agent)
 
 
-def test_discrete_1step_TD_mpo():
+def test_discrete_1step_TD_mpo(MockEnv):
     state_size, action_size, action_type = 2, 3, "discrete"
     episode_len = 10
     env = MockEnv(state_size, action_size, action_type, episode_len)
@@ -116,7 +116,7 @@ def test_discrete_1step_TD_mpo():
     check_sync_in_out(agent)
 
 
-def test_continuous_retrace_mpo():
+def test_continuous_retrace_mpo(MockEnv):
     state_size, action_size, action_type = 2, 3, "continuous"
     episode_len = 10
     env = MockEnv(state_size, action_size, action_type, episode_len)
@@ -173,7 +173,7 @@ def test_continuous_retrace_mpo():
     check_sync_in_out(agent)
 
 
-def test_continuous_1step_TD_mpo():
+def test_continuous_1step_TD_mpo(MockEnv):
     state_size, action_size, action_type = 2, 3, "continuous"
     episode_len = 10
     env = MockEnv(state_size, action_size, action_type, episode_len)

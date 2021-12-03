@@ -1,10 +1,9 @@
 import numpy as np
 
 from core.buffer.rollout_buffer import RolloutBuffer
-from .utils import mock_transition
 
 
-def test_rollout_buffer():
+def test_rollout_buffer(mock_transition):
     memory = RolloutBuffer()
 
     # test after init

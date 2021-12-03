@@ -1,10 +1,9 @@
 import numpy as np
 
 from core.buffer.replay_buffer import ReplayBuffer
-from .utils import mock_transition
 
 
-def test_replay_buffer():
+def test_replay_buffer(mock_transition):
     buffer_size = 10
     memory = ReplayBuffer(buffer_size=buffer_size)
 

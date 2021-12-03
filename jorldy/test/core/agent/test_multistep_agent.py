@@ -1,21 +1,21 @@
-from core.agent.dueling import Dueling
-from .utils import MockEnv, check_interact, check_save_load, check_sync_in_out
+from core.agent.multistep import Multistep
+from .utils import check_interact, check_save_load, check_sync_in_out
 
 
-def test_dueling():
+def test_multistep(MockEnv):
     state_size, action_size, action_type = 2, 3, "discrete"
     episode_len = 10
     env = MockEnv(state_size, action_size, action_type, episode_len)
 
-    hidden_size, network = 4, "dueling"
+    hidden_size = 4
     epsilon_init, epsilon_min, explore_ratio = 1.0, 0.1, 0.2
     buffer_size, batch_size, start_train_step, target_update_period = 100, 4, 8, 5
     run_step = 20
-    agent = Dueling(
+    n_step = 3
+    agent = Multistep(
         state_size=state_size,
         action_size=action_size,
         hidden_size=hidden_size,
-        network=network,
         epsilon_init=epsilon_init,
         epsilon_min=epsilon_min,
         explore_ratio=explore_ratio,
@@ -24,6 +24,7 @@ def test_dueling():
         start_train_step=start_train_step,
         target_update_period=target_update_period,
         run_step=run_step,
+        n_step=n_step,
     )
 
     # test after initialize
@@ -36,9 +37,10 @@ def test_dueling():
     # test after inteact
     assert agent.epsilon == epsilon_min
     assert agent.time_t == run_step
+    assert agent.memory.size == (run_step - n_step + 1)
 
     # test save and load
-    check_save_load(agent, "./tmp_test_dueling")
+    check_save_load(agent, "./tmp_test_multistep")
 
     # test sync in and out
     check_sync_in_out(agent)
