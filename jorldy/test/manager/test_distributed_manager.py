@@ -1,4 +1,5 @@
 from manager.distributed_manager import DistributedManager
+import time
 
 
 def test_sync_distributed_manager(MockEnv, env_config, MockAgent, agent_config):
@@ -19,6 +20,7 @@ def test_sync_distributed_manager(MockEnv, env_config, MockAgent, agent_config):
     # can not test run
 
     distributed_manager.terminate()
+    time.sleep(1)
 
 
 def test_async_distributed_manager(MockEnv, env_config, MockAgent, agent_config):
@@ -39,3 +41,4 @@ def test_async_distributed_manager(MockEnv, env_config, MockAgent, agent_config)
     # can not test run
 
     distributed_manager.terminate()
+    time.sleep(1)
