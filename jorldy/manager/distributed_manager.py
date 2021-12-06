@@ -6,6 +6,7 @@ import ray
 
 class DistributedManager:
     def __init__(self, Env, env_config, Agent, agent_config, num_workers, mode):
+        assert ray.is_initialized() == False
         try:
             ray.init(address="auto")
         except:

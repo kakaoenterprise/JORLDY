@@ -1,0 +1,51 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: pytest
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+          os: [ubuntu-18.04, ubuntu-20.04, macos-10.15, macos-11, windows-2022]
+          python: ["3.7", "3.8"]
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{matrix.python}}
+    
+    - name: Install linux dependencies
+      if: runner.os == 'Linux'
+      run: |
+          sudo apt-get update
+          sudo apt-get -y install libgl1-mesa-glx
+          sudo apt-get -y install libglib2.0-0
+          sudo apt-get -y install gifsicle
+
+    - name: Install windows dependencies
+      if: runner.os == 'Windows'
+      run: |
+          choco install gifsicle
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest
+        pip install -r requirements.txt
+        pip install --upgrade gym[atari,accept-rom-license]
+        pip install gym-super-mario-bros
+
+    - name: Test with pytest
+      run: |
+        cd jorldy
+        pytest
