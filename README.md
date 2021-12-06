@@ -17,8 +17,8 @@ Hello Wo**RL**d!!:hand:  **Join Our Reinforcement Learning framework for Develop
 
 | Python |   Windows   |   Mac   |   Linux  |
 | :----: | :---------: | :-----: | :------: |
-|  3.8  | Windows Server 2022 | macOS Big Sur 11<br />macOS Catalina 10.15 | ubuntu 18.04<br />ubuntu 20.04 |
-|  3.7  | Windows Server 2022 | macOS Big Sur 11<br />macOS Catalina 10.15 | ubuntu 18.04<br />ubuntu 20.04 |
+|  3.8  | Windows Server 2022 | macOS Big Sur 11<br />macOS Catalina 10.15 | Ubuntu 18.04<br />Ubuntu 20.04 |
+|  3.7  | Windows Server 2022 | macOS Big Sur 11<br />macOS Catalina 10.15 | Ubuntu 18.04<br />Ubuntu 20.04 |
 
 ## :arrow_down: Installation
 
