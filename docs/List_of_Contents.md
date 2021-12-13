@@ -8,6 +8,7 @@
 - [Double DQN](https://arxiv.org/abs/1509.06461)
 - [Dueling DQN](https://arxiv.org/abs/1511.06581)
 - Multistep DQN
+- [M-DQN, M-IQN](https://arxiv.org/abs/2007.14430)
 
 **Replay Buffer**
 
