@@ -15,7 +15,7 @@ agent = {
     "target_update_period": 1000,
     # M-DQN Parameters
     "alpha": 0.9,
-    "tau": 0.03, 
+    "tau": 0.03,
     "l_0": -1,
 }
 
