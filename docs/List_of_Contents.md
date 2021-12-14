@@ -8,6 +8,7 @@
 - [Double DQN](https://arxiv.org/abs/1509.06461)
 - [Dueling DQN](https://arxiv.org/abs/1511.06581)
 - Multistep DQN
+- [Munchausen RL (M-DQN, M-IQN)](https://arxiv.org/abs/2007.14430)
 
 **Replay Buffer**
 
@@ -21,7 +22,7 @@
 
 **Exploration**
 
-- [Noisy Network](https://arxiv.org/abs/1706.10295)
+- [Noisy Networks for Exploration](https://arxiv.org/abs/1706.10295)
 - [Curiousity-driven Exploration (ICM)](https://arxiv.org/abs/1705.05363)
 - [Random Network Distillation (RND)](https://arxiv.org/abs/1810.12894)
 
@@ -31,8 +32,8 @@
 
 **Distributed**
 
-- [APE-X](https://arxiv.org/pdf/1803.00933.pdf)
-- [R2D2](https://openreview.net/pdf?id=r1lyTjAqYX)(🚧 implementing…)
+- [Distributed Prioritized Experience Replay (APE-X)](https://arxiv.org/pdf/1803.00933.pdf)
+- [Recurrent Experience Replay in Distributed RL (R2D2)](https://openreview.net/pdf?id=r1lyTjAqYX)(🚧 implementing…)
 
 **Policy Optimization, Actor-Critic**
 

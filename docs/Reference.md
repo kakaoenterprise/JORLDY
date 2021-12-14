@@ -15,3 +15,4 @@
 - [chagmgang distributed_reinforcement_learning](https://github.com/chagmgang/distributed_reinforcement_learning)
 - [chagmgang tf2.0_reinforcement_learning](https://github.com/chagmgang/tf2.0_reinforcement_learning)
 - [chagmgang torch_distributed_reinforcement_learning](https://github.com/chagmgang/torch_distributed_reinforcement_learning)
+- [google-research munchausen_rl](https://github.com/google-research/google-research/tree/master/munchausen_rl)
