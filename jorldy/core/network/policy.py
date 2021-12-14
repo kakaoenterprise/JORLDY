@@ -13,7 +13,7 @@ class DiscretePolicy(BaseNetwork):
     def forward(self, x):
         x = super(DiscretePolicy, self).forward(x)
         x = F.relu(self.l(x))
-        return F.softmax(self.pi(x), dim=-1)
+        return torch.exp(F.log_softmax(self.pi(x), dim=-1))
 
 
 class ContinuousPolicy(BaseNetwork):

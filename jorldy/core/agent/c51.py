@@ -127,7 +127,7 @@ class C51(DQN):
     def logits2Q(self, logits):
         _logits = logits.view(logits.shape[0], self.action_size, self.num_support)
         _logits_max = torch.max(_logits, -1, keepdim=True).values
-        p_logit = F.softmax(_logits - _logits_max, dim=-1)
+        p_logit = torch.exp(F.log_softmax(_logits - _logits_max, dim=-1))
 
         z_action = self.z.expand(p_logit.shape[0], self.action_size, self.num_support)
         q_action = torch.sum(z_action * p_logit, dim=-1)
