@@ -35,4 +35,4 @@ def stable_scaled_log_softmax(x, tau):
 def stable_softmax(x, tau):
     max_x, max_indices = torch.max(x, -1, keepdim=True)
     y = x - max_x
-    return F.softmax(y / tau, -1)
+    return torch.exp(F.log_softmax(y / tau, -1))

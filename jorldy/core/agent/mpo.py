@@ -264,7 +264,7 @@ class MPO(BaseAgent):
             At = At_add
 
             """ variational distribution q uses exp(At / eta) instead of exp(Qt / eta), for stable learning"""
-            q = torch.softmax(At_add / self.eta, axis=0)
+            q = torch.exp(F.log_softmax(At_add / self.eta, dim=0))
             actor_loss = -torch.mean(torch.sum(q.detach() * log_prob_add, axis=0))
 
             eta_loss = self.eta * self.eps_eta + self.eta * torch.mean(
@@ -358,7 +358,7 @@ class MPO(BaseAgent):
             At = Qt - Vt
 
             """ variational distribution q uses exp(At / eta) instead of exp(Qt / eta), for stable learning"""
-            q = torch.softmax(At / self.eta, axis=-1)
+            q = torch.exp(F.log_softmax(At / self.eta, dim=-1))
             actor_loss = -torch.mean(torch.sum(q.detach() * torch.log(pi), axis=-1))
 
             eta_loss = self.eta * self.eps_eta + self.eta * torch.mean(
