@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-
+from .utils import orthogonal_init
 
 class MLP(torch.nn.Module):
     def __init__(self, D_in, D_hidden=512):
@@ -8,7 +8,10 @@ class MLP(torch.nn.Module):
 
         self.l = torch.nn.Linear(D_in, D_hidden)
         self.D_head_out = D_hidden
-
+        
+        for layer in self.__dict__['_modules'].values():
+            orthogonal_init(layer)
+            
     def forward(self, x):
         x = F.relu(self.l(x))
         return x
@@ -34,6 +37,9 @@ class CNN(torch.nn.Module):
         dim3 = ((dim2[0] - 3) // 1 + 1, (dim2[1] - 3) // 1 + 1)
 
         self.D_head_out = 64 * dim3[0] * dim3[1]
+        
+        for layer in self.__dict__['_modules'].values():
+            orthogonal_init(layer)
 
     def forward(self, x):
         x = x / 255.0
@@ -85,6 +91,10 @@ class Multi(torch.nn.Module):
 
         self.D_head_out = self.D_conv_out + self.D_mlp_out
 
+        for layer in self.__dict__['_modules'].values():
+            orthogonal_init(layer)
+
+            
     def forward(self, x):
         x_img = x[0] / 255.0
         x_vec = x[1]
@@ -120,6 +130,7 @@ class MLP_LSTM(torch.nn.Module):
             input_size=D_hidden, hidden_size=D_hidden, batch_first=True
         )
         self.D_head_out = D_hidden
+
 
     def forward(self, x, hidden_in=None):
         if hidden_in is None:
@@ -160,6 +171,8 @@ class CNN_LSTM(torch.nn.Module):
         )
 
         self.D_head_out = D_hidden
+
+        
 
     def forward(self, x, hidden_in=None):
         x = x / 255.0

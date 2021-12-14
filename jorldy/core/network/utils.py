@@ -49,3 +49,14 @@ class RunningMeanStd(torch.nn.Module):
         self.mean.data = new_mean
         self.var.data = new_var
         self.count.data = new_count
+        
+def orthogonal_init(layer, gain=torch.nn.init.calculate_gain("relu")):
+    if isinstance(layer, list):
+        for l in layer:
+            torch.nn.init.orthogonal_(l.weight.data, gain)
+            torch.nn.init.zeros_(l.bias.data)
+    else:
+        torch.nn.init.orthogonal_(layer.weight.data, gain)
+        torch.nn.init.zeros_(layer.bias.data)
+        
+        
