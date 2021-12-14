@@ -43,5 +43,5 @@ train = {
     # distributed setting
     "update_period": 32,
     "num_workers": 16,
-    "comment": "orthogonal init; wandb"
+    "comment": "orthogonal init; wandb",
 }

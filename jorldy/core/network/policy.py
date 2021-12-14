@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 
 from .base import BaseNetwork
+from .utils import orthogonal_init
 
 
 class DiscretePolicy(BaseNetwork):
@@ -10,6 +11,9 @@ class DiscretePolicy(BaseNetwork):
         self.l = torch.nn.Linear(D_head_out, D_hidden)
         self.pi = torch.nn.Linear(D_hidden, D_out)
 
+        orthogonal_init(self.l)
+        orthogonal_init(self.pi, "policy")
+        
     def forward(self, x):
         x = super(DiscretePolicy, self).forward(x)
         x = F.relu(self.l(x))
@@ -23,6 +27,10 @@ class ContinuousPolicy(BaseNetwork):
         self.mu = torch.nn.Linear(D_hidden, D_out)
         self.log_std = torch.nn.Linear(D_hidden, D_out)
 
+        orthogonal_init(self.l)
+        orthogonal_init(self.mu, "linear")
+        orthogonal_init(self.log_std, "tanh")
+        
     def forward(self, x):
         x = super(ContinuousPolicy, self).forward(x)
         x = F.relu(self.l(x))

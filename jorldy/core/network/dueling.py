@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 
 from .base import BaseNetwork
+from .utils import orthogonal_init
 
 
 class Dueling(BaseNetwork):
@@ -13,6 +14,9 @@ class Dueling(BaseNetwork):
 
         self.l2_a = torch.nn.Linear(D_hidden, D_out)
         self.l2_v = torch.nn.Linear(D_hidden, 1)
+        
+        orthogonal_init([self.l1_a, self.l1_v])
+        orthogonal_init([self.l2_a, self.l2_v], "linear")        
 
     def forward(self, x):
         x = super(Dueling, self).forward(x)

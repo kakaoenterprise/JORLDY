@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import numpy as np
 
 from .base import BaseNetwork
-from .noisy import noisy_l, init_weights
+from .utils import noisy_l, init_weights, orthogonal_init
 
 
 class RainbowIQN(BaseNetwork):
@@ -36,6 +36,8 @@ class RainbowIQN(BaseNetwork):
         self.mu_w_v2, self.sig_w_v2, self.mu_b_v2, self.sig_b_v2 = init_weights(
             (D_hidden, 1), noise_type
         )
+        
+        orthogonal_init([self.sample_embed, self.sample_embed, self.l1, self.l2])
 
     def forward(self, x, is_train, tau_min=0, tau_max=1):
         x = super(RainbowIQN, self).forward(x)

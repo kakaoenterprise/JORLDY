@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 
 from .base import BaseNetwork
+from .utils import orthogonal_init
 
 
 class DDPG_Critic(BaseNetwork):
@@ -10,6 +11,9 @@ class DDPG_Critic(BaseNetwork):
         self.l = torch.nn.Linear(D_head_out + D_in2, D_hidden)
         self.q = torch.nn.Linear(D_hidden, 1)
 
+        orthogonal_init(self.l)
+        orthogonal_init(self.q, "linear")
+        
     def forward(self, x1, x2):
         x1 = super(DDPG_Critic, self).forward(x1)
         x = torch.cat([x1, x2], dim=-1)
@@ -22,6 +26,8 @@ class DDPG_Actor(BaseNetwork):
         D_head_out = super(DDPG_Actor, self).__init__(D_in, D_hidden, head)
         self.mu = torch.nn.Linear(D_head_out, D_out)
 
+        orthogonal_init(self.mu, "tanh")
+        
     def forward(self, x):
         x = super(DDPG_Actor, self).forward(x)
         return torch.tanh(self.mu(x))
