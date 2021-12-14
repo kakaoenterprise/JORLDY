@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import numpy as np
 
 from .base import BaseNetwork
+from .utils import orthogonal_init
 
 
 class IQN(BaseNetwork):
@@ -18,6 +19,9 @@ class IQN(BaseNetwork):
         self.l1 = torch.nn.Linear(D_hidden, D_hidden)
         self.l2 = torch.nn.Linear(D_hidden, D_hidden)
         self.q = torch.nn.Linear(D_hidden, D_out)
+
+        orthogonal_init([self.sample_embed, self.sample_embed, self.l1, self.l2])
+        orthogonal_init(self.q, "linear")
 
     def forward(self, x, tau_min=0, tau_max=1):
         assert 0 <= tau_min <= tau_max <= 1

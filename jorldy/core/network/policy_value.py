@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 
 from .base import BaseNetwork
+from .utils import orthogonal_init
 
 
 class DiscretePolicyValue(BaseNetwork):
@@ -10,6 +11,10 @@ class DiscretePolicyValue(BaseNetwork):
         self.l = torch.nn.Linear(D_head_out, D_hidden)
         self.pi = torch.nn.Linear(D_hidden, D_out)
         self.v = torch.nn.Linear(D_hidden, 1)
+
+        orthogonal_init(self.l)
+        orthogonal_init(self.pi, "policy")
+        orthogonal_init(self.v, "linear")
 
     def forward(self, x):
         x = super(DiscretePolicyValue, self).forward(x)
@@ -21,6 +26,8 @@ class DiscretePolicySeparateValue(DiscretePolicyValue):
     def __init__(self, D_in, D_out, D_hidden=512, head="mlp"):
         super(DiscretePolicySeparateValue, self).__init__(D_in, D_out, D_hidden, head)
         self.v_i = torch.nn.Linear(D_hidden, 1)
+
+        orthogonal_init(self.v_i, "linear")
 
     def get_vi(self, x):
         x = super(DiscretePolicyValue, self).forward(x)
@@ -36,6 +43,11 @@ class ContinuousPolicyValue(BaseNetwork):
         self.log_std = torch.nn.Linear(D_hidden, D_out)
         self.v = torch.nn.Linear(D_hidden, 1)
 
+        orthogonal_init(self.l)
+        orthogonal_init(self.mu, "linear")
+        orthogonal_init(self.log_std, "tanh")
+        orthogonal_init(self.v, "linear")
+
     def forward(self, x):
         x = super(ContinuousPolicyValue, self).forward(x)
         x = F.relu(self.l(x))
@@ -49,6 +61,8 @@ class ContinuousPolicySeparateValue(ContinuousPolicyValue):
     def __init__(self, D_in, D_out, D_hidden=512, head="mlp"):
         super(ContinuousPolicySeparateValue, self).__init__(D_in, D_out, D_hidden, head)
         self.v_i = torch.nn.Linear(D_hidden, 1)
+
+        orthogonal_init(self.v_i, "linear")
 
     def get_vi(self, x):
         x = super(ContinuousPolicyValue, self).forward(x)
