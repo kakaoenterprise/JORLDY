@@ -14,10 +14,9 @@ class SAC_Critic(BaseNetwork):
 
         self.l_ = torch.nn.Linear(D_head_out + D_in2, D_hidden)
         self.q2 = torch.nn.Linear(D_hidden, 1)
-        
+
         orthogonal_init([self.l, self.l_])
         orthogonal_init([self.q1, self.q2], "linear")
-        
 
     def forward(self, x1, x2):
         x1 = super(SAC_Critic, self).forward(x1)

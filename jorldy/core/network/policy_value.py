@@ -15,7 +15,7 @@ class DiscretePolicyValue(BaseNetwork):
         orthogonal_init(self.l)
         orthogonal_init(self.pi, "policy")
         orthogonal_init(self.v, "linear")
-        
+
     def forward(self, x):
         x = super(DiscretePolicyValue, self).forward(x)
         x = F.relu(self.l(x))
@@ -26,7 +26,7 @@ class DiscretePolicySeparateValue(DiscretePolicyValue):
     def __init__(self, D_in, D_out, D_hidden=512, head="mlp"):
         super(DiscretePolicySeparateValue, self).__init__(D_in, D_out, D_hidden, head)
         self.v_i = torch.nn.Linear(D_hidden, 1)
-        
+
         orthogonal_init(self.v_i, "linear")
 
     def get_vi(self, x):
@@ -63,7 +63,7 @@ class ContinuousPolicySeparateValue(ContinuousPolicyValue):
         self.v_i = torch.nn.Linear(D_hidden, 1)
 
         orthogonal_init(self.v_i, "linear")
-        
+
     def get_vi(self, x):
         x = super(ContinuousPolicyValue, self).forward(x)
         x = F.relu(self.l(x))

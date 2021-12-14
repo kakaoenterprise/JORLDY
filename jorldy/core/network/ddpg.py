@@ -13,7 +13,7 @@ class DDPG_Critic(BaseNetwork):
 
         orthogonal_init(self.l)
         orthogonal_init(self.q, "linear")
-        
+
     def forward(self, x1, x2):
         x1 = super(DDPG_Critic, self).forward(x1)
         x = torch.cat([x1, x2], dim=-1)
@@ -27,7 +27,7 @@ class DDPG_Actor(BaseNetwork):
         self.mu = torch.nn.Linear(D_head_out, D_out)
 
         orthogonal_init(self.mu, "tanh")
-        
+
     def forward(self, x):
         x = super(DDPG_Actor, self).forward(x)
         return torch.tanh(self.mu(x))

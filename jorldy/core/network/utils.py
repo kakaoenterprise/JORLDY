@@ -50,6 +50,7 @@ class RunningMeanStd(torch.nn.Module):
         self.var.data = new_var
         self.count.data = new_count
 
+
 def noisy_l(x, mu_w, sig_w, mu_b, sig_b, noise_type, is_train):
     if noise_type == "factorized":
         # Factorized Gaussian Noise
@@ -104,9 +105,12 @@ def init_weights(shape, noise_type):
 
     return mu_w, sig_w, mu_b, sig_b
 
+
 def orthogonal_init(layer, nonlinearity="relu"):
-    gain= 0.01 if nonlinearity == "policy" else torch.nn.init.calculate_gain(nonlinearity)
-    
+    gain = (
+        0.01 if nonlinearity == "policy" else torch.nn.init.calculate_gain(nonlinearity)
+    )
+
     if isinstance(layer, list):
         for l in layer:
             torch.nn.init.orthogonal_(l.weight.data, gain)

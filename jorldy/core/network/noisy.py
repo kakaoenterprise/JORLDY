@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from .base import BaseNetwork
 from .utils import noisy_l, init_weights
 
+
 class Noisy(BaseNetwork):
     def __init__(self, D_in, D_out, noise_type="factorized", D_hidden=512, head="mlp"):
         assert noise_type in ["independent", "factorized"]

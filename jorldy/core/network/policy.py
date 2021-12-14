@@ -13,7 +13,7 @@ class DiscretePolicy(BaseNetwork):
 
         orthogonal_init(self.l)
         orthogonal_init(self.pi, "policy")
-        
+
     def forward(self, x):
         x = super(DiscretePolicy, self).forward(x)
         x = F.relu(self.l(x))
@@ -30,7 +30,7 @@ class ContinuousPolicy(BaseNetwork):
         orthogonal_init(self.l)
         orthogonal_init(self.mu, "linear")
         orthogonal_init(self.log_std, "tanh")
-        
+
     def forward(self, x):
         x = super(ContinuousPolicy, self).forward(x)
         x = F.relu(self.l(x))
