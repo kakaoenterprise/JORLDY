@@ -4,7 +4,7 @@ torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 
 from .dqn import DQN
-
+from .utils import stable_scaled_log_softmax, stable_softmax
 
 class M_DQN(DQN):
     def __init__(self, alpha=0.9, tau=0.03, l_0=-1, **kwargs):
@@ -36,12 +36,12 @@ class M_DQN(DQN):
             ############################################ M-DQN ############################################
             target_q = self.target_network(state)
             log_policy = (
-                self.stable_scaled_log_softmax(target_q) * one_hot_action
+                stable_scaled_log_softmax(target_q, self.tau) * one_hot_action
             ).sum(-1, keepdims=True)
             clipped_log_policy = torch.clip(log_policy, min=self.l_0, max=0)
 
-            next_log_policy = self.stable_scaled_log_softmax(next_target_q)
-            next_policy = self.stable_softmax(next_target_q)
+            next_log_policy = stable_scaled_log_softmax(next_target_q, self.tau)
+            next_policy = stable_softmax(next_target_q, self.tau)
 
             munchausen_term = self.alpha * clipped_log_policy
             maximum_entropy_term = (
@@ -70,17 +70,3 @@ class M_DQN(DQN):
         }
         return result
 
-    # Reference: m-rl official repository
-    # https://github.com/google-research/google-research/blob/master/munchausen_rl/common/utils.py
-    def stable_scaled_log_softmax(self, x):
-        max_x, max_indices = torch.max(x, -1, keepdim=True)
-        y = x - max_x
-        tau_lse = max_x + self.tau * torch.log(
-            torch.sum(torch.exp(y / self.tau), -1, keepdim=True)
-        )
-        return x - tau_lse
-
-    def stable_softmax(self, x):
-        max_x, max_indices = torch.max(x, -1, keepdim=True)
-        y = x - max_x
-        return F.softmax(y / self.tau, -1)

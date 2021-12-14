@@ -4,7 +4,7 @@ torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 
 from .iqn import IQN
-
+from .utils import stable_scaled_log_softmax, stable_softmax
 
 class M_IQN(IQN):
     def __init__(self, alpha=0.9, tau=0.03, l_0=-1, **kwargs):
@@ -50,19 +50,19 @@ class M_IQN(IQN):
             _, target_q = self.logits2Q(logit)
 
             log_policy = (
-                self.stable_scaled_log_softmax(target_q) * action_onehot.squeeze()
+                stable_scaled_log_softmax(target_q, self.tau) * action_onehot.squeeze()
             ).sum(-1, keepdims=True)
             clipped_log_policy = torch.clip(log_policy, min=self.l_0, max=0)
 
             munchausen_term = self.alpha * clipped_log_policy
 
             next_log_policy = (
-                self.stable_scaled_log_softmax(next_target_q)
+                stable_scaled_log_softmax(next_target_q, self.tau)
                 .unsqueeze(2)
                 .repeat(1, 1, self.num_support)
             )
             next_policy = (
-                self.stable_softmax(next_target_q)
+                stable_softmax(next_target_q, self.tau)
                 .unsqueeze(2)
                 .repeat(1, 1, self.num_support)
             )
@@ -108,17 +108,3 @@ class M_IQN(IQN):
         }
         return result
 
-    # Reference: m-rl official repository
-    # https://github.com/google-research/google-research/blob/master/munchausen_rl/common/utils.py
-    def stable_scaled_log_softmax(self, x):
-        max_x, max_indices = torch.max(x, -1, keepdim=True)
-        y = x - max_x
-        tau_lse = max_x + self.tau * torch.log(
-            torch.sum(torch.exp(y / self.tau), -1, keepdim=True)
-        )
-        return x - tau_lse
-
-    def stable_softmax(self, x):
-        max_x, max_indices = torch.max(x, -1, keepdim=True)
-        y = x - max_x
-        return F.softmax(y / self.tau, -1)
