@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from .iqn import IQN
 from .utils import stable_scaled_log_softmax, stable_softmax
 
+
 class M_IQN(IQN):
     def __init__(self, alpha=0.9, tau=0.03, l_0=-1, **kwargs):
         super(M_IQN, self).__init__(**kwargs)
@@ -107,4 +108,3 @@ class M_IQN(IQN):
             "min_logit": min_logit,
         }
         return result
-

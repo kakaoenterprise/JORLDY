@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from .dqn import DQN
 from .utils import stable_scaled_log_softmax, stable_softmax
 
+
 class M_DQN(DQN):
     def __init__(self, alpha=0.9, tau=0.03, l_0=-1, **kwargs):
         super(M_DQN, self).__init__(**kwargs)
@@ -69,4 +70,3 @@ class M_DQN(DQN):
             "max_Q": max_Q,
         }
         return result
-

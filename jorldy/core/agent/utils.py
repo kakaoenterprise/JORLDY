@@ -22,15 +22,15 @@ class OU_Noise:
         self.X = self.X + dx
         return self.X
 
+
 # Reference: m-rl official repository (stable_scaled_log_softmax, stable_softmax)
 # https://github.com/google-research/google-research/blob/master/munchausen_rl/common/utils.py
 def stable_scaled_log_softmax(x, tau):
     max_x, max_indices = torch.max(x, -1, keepdim=True)
     y = x - max_x
-    tau_lse = max_x + tau * torch.log(
-        torch.sum(torch.exp(y / tau), -1, keepdim=True)
-    )
+    tau_lse = max_x + tau * torch.log(torch.sum(torch.exp(y / tau), -1, keepdim=True))
     return x - tau_lse
+
 
 def stable_softmax(x, tau):
     max_x, max_indices = torch.max(x, -1, keepdim=True)
