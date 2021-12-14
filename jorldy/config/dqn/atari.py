@@ -7,9 +7,9 @@ env = {
     "img_width": 84,
     "img_height": 84,
     "stack_frame": 4,
-    "no_op": True,
-    "reward_clip": False,
-    "dead_penalty": False,
+    "no_op": False,
+    "reward_clip": True,
+    "dead_penalty": True,
 }
 
 agent = {
@@ -27,14 +27,14 @@ agent = {
 }
 
 optim = {
-    "name": "adam",
-    "lr": 1e-4,
+    "name": "rmsprop",
+    "lr": 2.5e-4,
 }
 
 train = {
     "training": True,
     "load_path": None,
-    "run_step": 10000000,
+    "run_step": 30000000,
     "print_period": 10000,
     "save_period": 100000,
     "eval_iteration": 5,
@@ -43,5 +43,4 @@ train = {
     # distributed setting
     "update_period": 32,
     "num_workers": 16,
-    "comment": "orthogonal init; wandb",
 }
