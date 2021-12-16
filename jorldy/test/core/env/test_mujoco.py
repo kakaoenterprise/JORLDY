@@ -3,8 +3,8 @@ from core import Env
 from core.env import env_dict
 
 
-def test_nes(MockAgent):
-    for name in [key for key, val in env_dict.items() if "nes" in str(val)]:
+def test_mujoco(MockAgent):
+    for name in [key for key, val in env_dict.items() if "mujoco" in str(val)]:
         env = Env(name)
 
         agent = MockAgent(env.state_size, env.action_size, env.action_type)
