@@ -53,3 +53,4 @@
 - [ML-Agents](https://github.com/Unity-Technologies/ml-agents) 
 - [Procgen](https://github.com/openai/procgen)
 - [Super Mario Bros](https://pypi.org/project/gym-super-mario-bros/)
+- [Mujoco-py](https://github.com/openai/mujoco-py)

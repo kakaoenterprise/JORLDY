@@ -59,6 +59,9 @@ pip install --upgrade gym[atari,accept-rom-license]
 pip install gym-super-mario-bros
 ```
 
+To use mujoco-py, several subprocesses should be done.
+Please refer to the [mujoco-py github installation](https://github.com/openai/mujoco-py#install-mujoco)
+
 ## :rocket: Getting started
 
 ```
