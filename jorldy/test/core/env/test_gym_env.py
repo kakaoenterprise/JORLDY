@@ -13,11 +13,11 @@ def test_discrete_cartpole(MockAgent):
     # test interact
     check_interact(env, agent, run_step)
 
-    # test close
-    check_close(env)
-
     # test record
     check_record(env)
+
+    # test close
+    check_close(env)
 
 
 def test_continuous_cartpole(MockAgent):
@@ -31,11 +31,11 @@ def test_continuous_cartpole(MockAgent):
     # test interact
     check_interact(env, agent, run_step)
 
-    # test close
-    check_close(env)
-
     # test record
     check_record(env)
+
+    # test close
+    check_close(env)
 
 
 def test_pendulum(MockAgent):
@@ -48,11 +48,11 @@ def test_pendulum(MockAgent):
     # test interact
     check_interact(env, agent, run_step)
 
-    # test close
-    check_close(env)
-
     # test record
     check_record(env)
+
+    # test close
+    check_close(env)
 
 
 def test_mountain_car(MockAgent):
@@ -65,8 +65,8 @@ def test_mountain_car(MockAgent):
     # test interact
     check_interact(env, agent, run_step)
 
-    # test close
-    check_close(env)
-
     # test record
     check_record(env)
+
+    # test close
+    check_close(env)

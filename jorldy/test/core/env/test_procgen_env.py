@@ -13,8 +13,8 @@ def test_nes(MockAgent):
         # test interact
         check_interact(env, agent, run_step)
 
-        # test close
-        check_close(env)
-
         # test record
         check_record(env)
+
+        # test close
+        check_close(env)
