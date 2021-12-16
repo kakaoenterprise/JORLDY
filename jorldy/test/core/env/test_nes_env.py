@@ -1,20 +1,9 @@
-from .utils import check_interact, check_close, check_record
-from core import Env
-from core.env import env_dict
+from .utils import check_env
+from core.env.nes import SuperMarioBros
 
 
-def test_nes(MockAgent):
-    for name in [key for key, val in env_dict.items() if "nes" in str(val)]:
-        env = Env(name)
+def test_super_mario_bros(MockAgent):
+    env = SuperMarioBros()
+    agent = MockAgent(env.state_size, env.action_size, env.action_type)
 
-        agent = MockAgent(env.state_size, env.action_size, env.action_type)
-        run_step = 10
-
-        # test interact
-        check_interact(env, agent, run_step)
-
-        # test record
-        check_record(env)
-
-        # test close
-        check_close(env)
+    check_env(env, agent)

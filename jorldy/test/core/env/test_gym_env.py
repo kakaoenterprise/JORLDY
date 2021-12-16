@@ -1,72 +1,32 @@
-from .utils import check_interact, check_close, check_record
-from core import Env
+from .utils import check_env
+from core.env.gym_env import Cartpole, Pendulum, MountainCar
 
 
 def test_discrete_cartpole(MockAgent):
-    name = "cartpole"
     action_type = "discrete"
-    env = Env(name, action_type)
-
+    env = Cartpole(action_type=action_type)
     agent = MockAgent(env.state_size, env.action_size, env.action_type)
-    run_step = 10
 
-    # test interact
-    check_interact(env, agent, run_step)
-
-    # test record
-    check_record(env)
-
-    # test close
-    check_close(env)
+    check_env(env, agent)
 
 
 def test_continuous_cartpole(MockAgent):
-    name = "cartpole"
-    action_type = "continuous"
-    env = Env(name, action_type)
-
+    action_type = "discrete"
+    env = Cartpole(action_type=action_type)
     agent = MockAgent(env.state_size, env.action_size, env.action_type)
-    run_step = 10
 
-    # test interact
-    check_interact(env, agent, run_step)
-
-    # test record
-    check_record(env)
-
-    # test close
-    check_close(env)
+    check_env(env, agent)
 
 
 def test_pendulum(MockAgent):
-    name = "pendulum"
-    env = Env(name)
-
+    env = Pendulum()
     agent = MockAgent(env.state_size, env.action_size, env.action_type)
-    run_step = 10
 
-    # test interact
-    check_interact(env, agent, run_step)
-
-    # test record
-    check_record(env)
-
-    # test close
-    check_close(env)
+    check_env(env, agent)
 
 
 def test_mountain_car(MockAgent):
-    name = "pendulum"
-    env = Env(name)
-
+    env = MountainCar()
     agent = MockAgent(env.state_size, env.action_size, env.action_type)
-    run_step = 10
 
-    # test interact
-    check_interact(env, agent, run_step)
-
-    # test record
-    check_record(env)
-
-    # test close
-    check_close(env)
+    check_env(env, agent)
