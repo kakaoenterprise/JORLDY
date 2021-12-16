@@ -119,4 +119,4 @@ python sync_distributed_train.py --config config.ppo.cartpole --train.num_worker
 
 ## :no_entry_sign: Disclaimer
 
-Installing in JORDY and/or utilizing algorithms or environments not provided KEP may involve a use of third party’s intellectual property. It is advisable that a user obtain licenses or permissions from the right holder(s), if necessary, or take any other necessary measures to avoid infringement or misappropriation of third party’s intellectual property rights.
+Installing in JORLDY and/or utilizing algorithms or environments not provided KEP may involve a use of third party’s intellectual property. It is advisable that a user obtain licenses or permissions from the right holder(s), if necessary, or take any other necessary measures to avoid infringement or misappropriation of third party’s intellectual property rights.
