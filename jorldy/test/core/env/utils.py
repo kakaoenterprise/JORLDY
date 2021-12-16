@@ -21,3 +21,15 @@ def check_close(env):
 def check_record(env):
     if env.recordable():
         env.get_frame()
+
+
+def check_env(env, agent, run_step=10):
+
+    # test interact
+    check_interact(env, agent, run_step)
+
+    # test record
+    check_record(env)
+
+    # test close
+    check_close(env)

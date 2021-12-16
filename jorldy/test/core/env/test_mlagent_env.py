@@ -1,22 +1,23 @@
-from .utils import check_interact, check_close, check_record
-from core import Env
-from core.env import env_dict
+from .utils import check_env
+from core.env.mlagent import HopperMLAgent, PongMLAgent, DroneDeliveryMLAgent
 
 
-def test_atari(MockAgent):
-    for name in [key for key, val in env_dict.items() if "mlagent" in str(val)]:
-        if "drone" in name:
-            continue
-        env = Env(name)
+def test_hopper_mlagent(MockAgent):
+    env = HopperMLAgent()
+    agent = MockAgent(env.state_size, env.action_size, env.action_type)
 
-        agent = MockAgent(env.state_size, env.action_size, env.action_type)
-        run_step = 10
+    check_env(env, agent)
 
-        # test interact
-        check_interact(env, agent, run_step)
 
-        # test record
-        check_record(env)
+def test_pong_mlagent(MockAgent):
+    env = PongMLAgent()
+    agent = MockAgent(env.state_size, env.action_size, env.action_type)
 
-        # test close
-        check_close(env)
+    check_env(env, agent)
+
+
+# def test_drone_delivery_mlagent(MockAgent):
+#     env = DroneDeliveryMLAgent()
+#     agent = MockAgent(env.state_size, env.action_size, env.action_type)
+
+#     check_env(env, agent)
