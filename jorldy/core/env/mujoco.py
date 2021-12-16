@@ -5,6 +5,7 @@ import cv2
 
 from .base import BaseEnv
 
+
 class _Mujoco(BaseEnv):
     """Mujoco environment.
 
@@ -22,7 +23,7 @@ class _Mujoco(BaseEnv):
         self.render = render
 
         self.env = gym.make(name)
-        
+
         self.state_size = self.env.observation_space.shape[0]
         self.action_size = self.env.action_space.shape[0]
         self.action_type = "continuous"
@@ -52,50 +53,62 @@ class _Mujoco(BaseEnv):
 
     def close(self):
         self.env.close()
-    
+
     def recordable(self):
         return True
 
     def get_frame(self):
         raw_image = self.env.render(mode="rgb_array")
         return cv2.resize(raw_image, dsize=(256, 256))
-    
+
+
 class HalfCheetah(_Mujoco):
     def __init__(self, **kwargs):
         super(HalfCheetah, self).__init__(f"HalfCheetah-v2", **kwargs)
 
+
 class Ant(_Mujoco):
     def __init__(self, **kwargs):
         super(Ant, self).__init__(f"Ant-v2", **kwargs)
-        
+
+
 class Hopper(_Mujoco):
     def __init__(self, **kwargs):
         super(Hopper, self).__init__(f"Hopper-v2", **kwargs)
-        
+
+
 class Humanoid(_Mujoco):
     def __init__(self, **kwargs):
         super(Humanoid, self).__init__(f"Humanoid-v2", **kwargs)
-        
+
+
 class HumanoidStandup(_Mujoco):
     def __init__(self, **kwargs):
         super(HumanoidStandup, self).__init__(f"HumanoidStandup-v2", **kwargs)
 
+
 class InvertedDoublePendulum(_Mujoco):
     def __init__(self, **kwargs):
-        super(InvertedDoublePendulum, self).__init__(f"InvertedDoublePendulum-v2", **kwargs)
-        
+        super(InvertedDoublePendulum, self).__init__(
+            f"InvertedDoublePendulum-v2", **kwargs
+        )
+
+
 class InvertedPendulum(_Mujoco):
     def __init__(self, **kwargs):
         super(InvertedPendulum, self).__init__(f"InvertedPendulum-v2", **kwargs)
-        
+
+
 class Reacher(_Mujoco):
     def __init__(self, **kwargs):
         super(Reacher, self).__init__(f"Reacher-v2", **kwargs)
-        
+
+
 class Swimmer(_Mujoco):
     def __init__(self, **kwargs):
         super(Swimmer, self).__init__(f"Swimmer-v2", **kwargs)
-        
+
+
 class Walker(_Mujoco):
     def __init__(self, **kwargs):
         super(Walker, self).__init__(f"Walker2d-v2", **kwargs)

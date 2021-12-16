@@ -19,6 +19,7 @@ def test_discrete_cartpole(MockAgent):
     # test close
     check_close(env)
 
+
 def test_continuous_cartpole(MockAgent):
     name = "cartpole"
     action_type = "continuous"
@@ -36,6 +37,7 @@ def test_continuous_cartpole(MockAgent):
     # test close
     check_close(env)
 
+
 def test_pendulum(MockAgent):
     name = "pendulum"
     env = Env(name)
@@ -51,6 +53,7 @@ def test_pendulum(MockAgent):
 
     # test close
     check_close(env)
+
 
 def test_mountain_car(MockAgent):
     name = "pendulum"
