@@ -32,6 +32,26 @@ jobs:
           sudo apt-get -y install libglib2.0-0
           sudo apt-get -y install gifsicle
 
+          wget https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz 
+          mkdir ~/.mujoco 
+          mv mujoco210-linux-x86_64.tar.gz ~/.mujoco/
+          tar -xvzf ~/.mujoco/mujoco210-linux-x86_64.tar.gz -C ~/.mujoco/
+          sudo apt install libosmesa6-dev libgl1-mesa-glx libglfw3
+          sudo ln -s /usr/lib/x86_64-linux-gnu/libGL.so.1 /usr/lib/x86_64-linux-gnu/libGL.so
+          echo "LD_LIBRARY_PATH=$HOME/.mujoco/mujoco210/bin" >> ~/.bashrc
+          source ~/.bashrc
+          pip install 'mujoco-py<2.2,>=2.1'
+
+    - name: Install macos dependencies
+      if: runner.os == 'macOS'
+      run: |
+          wget https://mujoco.org/download/mujoco210-macos-x86_64.tar.gz 
+          mkdir ~/.mujoco 
+          mv mujoco210-macos-x86_64.tar.gz ~/.mujoco/
+          tar -xvzf ~/.mujoco/mujoco210-macos-x86_64.tar.gz -C ~/.mujoco/
+          brew install gcc@9
+          pip install 'mujoco-py<2.2,>=2.1'
+
     - name: Install windows dependencies
       if: runner.os == 'Windows'
       run: |
