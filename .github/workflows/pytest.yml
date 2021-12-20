@@ -37,10 +37,7 @@ jobs:
           mv mujoco210-linux-x86_64.tar.gz ~/.mujoco/
           tar -xvzf ~/.mujoco/mujoco210-linux-x86_64.tar.gz -C ~/.mujoco/
 
-          sudo apt-get update
-          sudo apt-get upgrade
           sudo apt install libosmesa6-dev libgl1-mesa-glx libglfw3
-          sudo ln -s /usr/lib/x86_64-linux-gnu/libGL.so.1 /usr/lib/x86_64-linux-gnu/libGL.so
           echo "LD_LIBRARY_PATH=$HOME/.mujoco/mujoco210/bin" >> ~/.bashrc
           source ~/.bashrc
           pip install 'mujoco-py<2.2,>=2.1'
