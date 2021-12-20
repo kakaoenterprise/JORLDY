@@ -5,8 +5,10 @@ if sys.platform.startswith("win"):
     pytest.skip("mujoco is not supported in windows", allow_module_level=True)
 
 import os 
-cmd = 'echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> /home/runner/.bashrc'
-os.system(cmd)
+
+if sys.platform() == "Linux":
+    os.system('echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> /home/runner/.bashrc')
+    os.system('source /home/runner/.bashrc')
 
 from .utils import check_env
 from core.env.mujoco import (
