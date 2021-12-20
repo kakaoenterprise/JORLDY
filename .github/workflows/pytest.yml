@@ -33,12 +33,12 @@ jobs:
           sudo apt-get -y install gifsicle
 
           wget https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz 
-          mkdir ~/.mujoco 
-          mv mujoco210-linux-x86_64.tar.gz ~/.mujoco/
-          tar -xvzf ~/.mujoco/mujoco210-linux-x86_64.tar.gz -C ~/.mujoco/
+          mkdir /home/runner/.mujoco
+          mv mujoco210-linux-x86_64.tar.gz /home/runner/.mujoco/
+          tar -xvzf /home/runner/.mujoco/mujoco210-linux-x86_64.tar.gz -C /home/runner/.mujoco/
           
           sudo apt-get -y install libosmesa6-dev libglfw3
-          echo "LD_LIBRARY_PATH=$HOME/.mujoco/mujoco210/bin" >> ~/.bashrc
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ~/.bashrc
           source ~/.bashrc
           pip install 'mujoco-py<2.2,>=2.1'
 
