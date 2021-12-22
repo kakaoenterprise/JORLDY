@@ -33,7 +33,7 @@ apt-get -y install libglib2.0-0    # for opencv
 apt-get -y install gifsicle        # for gif optimize
 ```
 
-__:whale: To use docker__
+### :whale: To use docker
 
 (customize if necessary)
 ```
@@ -48,9 +48,12 @@ docker build -t jorldy -f .\docker\Dockerfile .
 docker run -it --rm --name jorldy -v %cd%:/JORLDY jorldy /bin/bash
 ```
 
-__:heavy_plus_sign: To use additional environments__
+### :heavy_plus_sign: To use additional environments
 
-(atari and super-mario-bros need to be installed manually due to licensing issues)
+__- Atari and Super Mario Bros__
+
+atari and super-mario-bros need to be installed manually due to licensing issues
+
 ```
 # To use atari
 pip install --upgrade gym[atari,accept-rom-license]
@@ -59,8 +62,11 @@ pip install --upgrade gym[atari,accept-rom-license]
 pip install gym-super-mario-bros
 ```
 
+__- Mujoco__ (Mac and Linux only)
+
 To use mujoco-py, several subprocesses should be done.
 Please refer to the [mujoco-py github installation](https://github.com/openai/mujoco-py#install-mujoco)
+
 
 ## :rocket: Getting started
 
