@@ -42,7 +42,7 @@ jobs:
           ls -a 
           echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ./.bashrc
           ls -a
-          sed -i sed -i '1 i\#!/bin/bash' ~/.bashrc
+          sed -i '1 i\#!/bin/bash' ~/.bashrc
           source ~/.bashrc
           tail ~/.bashrc
           . ~/.bashrc
