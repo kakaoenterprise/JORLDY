@@ -7,8 +7,8 @@ if sys.platform.startswith("win"):
 import os
 import platform
 
-# if platform.system() == "Linux":
-#     os.environ["LD_LIBRARY_PATH"] = "/home/runner/.mujoco/mujoco210/bin"
+if platform.system() == "Linux":
+    os.environ["LD_LIBRARY_PATH"] = "/home/runner/.mujoco/mujoco210/bin"
 
 from .utils import check_env
 from core.env.mujoco import (

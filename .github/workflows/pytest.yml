@@ -45,9 +45,9 @@ jobs:
 
           sudo cp -r ~/.mujoco/mujoco210/bin/* /usr/lib/
 
-          echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ~/.profile
-          echo "source ~/.bashrc" >> ~/.profile
-          echo ". ~/.bashrc" >> ~/.profile
+          # echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ~/.profile
+          # echo "source ~/.bashrc" >> ~/.profile
+          # echo ". ~/.bashrc" >> ~/.profile
           
           # sudo rm /usr/lib/libGL.so
           # sudo ln -s /usr/lib/x86_64-linux-gnu/libGL.so.1 /usr/lib/x86_64-linux-gnu/libGL.so
@@ -55,10 +55,10 @@ jobs:
           # tail ~/.bashrc
           # tail ~/.profile
           
-          source ~/.bashrc
-          . ~/.bashrc
-          . ~/.profile
-          echo $LD_LIBRARY_PATH
+          # source ~/.bashrc
+          # . ~/.bashrc
+          # . ~/.profile
+          # echo $LD_LIBRARY_PATH
 
           pip install 'mujoco-py<2.2,>=2.1'
 
