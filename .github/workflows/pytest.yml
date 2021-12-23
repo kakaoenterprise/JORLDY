@@ -48,7 +48,7 @@ jobs:
           source ~/.bashrc
           . ~/.bashrc
 
-          pip install mujoco-py==2.1
+          pip install 'mujoco-py<2.2,>=2.1'
 
     - name: Install macos dependencies
       if: runner.os == 'macOS'
