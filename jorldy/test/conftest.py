@@ -7,7 +7,7 @@ import pytest
 
 
 class _MockEnv:
-    def __init__(self, state_size, action_size, action_type, episode_len):
+    def __init__(self, state_size, action_size, action_type, episode_len, **kwargs):
         self.state_size = state_size
         self.action_size = action_size
         self.action_type = action_type
@@ -46,7 +46,7 @@ class _MockEnv:
 
 
 class _MockAgent:
-    def __init__(self, state_size, action_size, action_type):
+    def __init__(self, state_size, action_size, action_type, **kwargs):
         self.state_size = state_size
         self.action_size = action_size
         self.action_type = action_type
