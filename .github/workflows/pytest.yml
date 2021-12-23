@@ -44,10 +44,11 @@ jobs:
 
           tail ~/.bashrc
           tail ~/.profile
+          
+          source ~/.bashrc
           . ~/.bashrc
-          cd ~
-          ls -a
-          pip3 install 'mujoco-py<2.2,>=2.1'
+
+          pip install mujoco-py==2.1
 
     - name: Install macos dependencies
       if: runner.os == 'macOS'
