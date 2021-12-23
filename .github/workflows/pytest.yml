@@ -39,6 +39,8 @@ jobs:
           
           sudo apt-get -y install libosmesa6-dev libglfw3
           echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ~/.bashrc
+          
+          echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ~/.profile
           echo "source ~/.bashrc" >> ~/.profile
           echo ". ~/.bashrc" >> ~/.profile
 
@@ -47,6 +49,8 @@ jobs:
           
           source ~/.bashrc
           . ~/.bashrc
+          . ~/.profile
+          echo $LD_LIBRARY_PATH
 
           pip install 'mujoco-py<2.2,>=2.1'
 
