@@ -42,9 +42,10 @@ jobs:
           ls -a 
           echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ./.bashrc
           ls -a
+          sed -i -e '#!/bin/bash\' ./.bashrc
           source ./.bashrc
+          tail ~/.bashrc
           ls -a
-          . ./.bachrc
           tail ~/.bashrc
           pip install 'mujoco-py<2.2,>=2.1'
 
