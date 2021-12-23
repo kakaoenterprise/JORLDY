@@ -38,11 +38,13 @@ jobs:
           tar -xvzf /home/runner/.mujoco/mujoco210-linux-x86_64.tar.gz -C /home/runner/.mujoco/
           
           sudo apt-get -y install libosmesa6-dev libglfw3
-          cd /home/runner
+          cd ~
           ls -a 
-          echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ~/.bashrc
-          source ~/.bashrc
-          . ~/.bachrc
+          echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ./.bashrc
+          ls -a
+          source ./.bashrc
+          ls -a
+          . ./.bachrc
           tail ~/.bashrc
           pip install 'mujoco-py<2.2,>=2.1'
 
