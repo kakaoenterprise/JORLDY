@@ -29,7 +29,4 @@ class _Nes(_Atari):
 
 class SuperMarioBros(_Nes):
     def __init__(self, **kwargs):
-        reward_scale = 15.0
-        super(SuperMarioBros, self).__init__(
-            "SuperMarioBros-v0", reward_scale=reward_scale, **kwargs
-        )
+        super(SuperMarioBros, self).__init__("SuperMarioBros-v0", **kwargs)
