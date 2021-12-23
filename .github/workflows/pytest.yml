@@ -40,6 +40,9 @@ jobs:
           sudo apt-get -y install libosmesa6-dev libglfw3 libgl1-mesa-dev
           echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ~/.bashrc
           
+          sudo apt-get update
+          sudo apt-get -y upgrade
+
           echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ~/.profile
           echo "source ~/.bashrc" >> ~/.profile
           echo ". ~/.bashrc" >> ~/.profile
