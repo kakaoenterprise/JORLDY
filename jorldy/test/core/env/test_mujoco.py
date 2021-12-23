@@ -9,9 +9,11 @@ import platform
 
 if platform.system() == "Linux":
     os.system(
-        'echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> /home/runner/.bashrc'
+        'echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ~/.bashrc'
     )
-    os.system("source /home/runner/.bashrc")
+    os.system("source ~/.bashrc")
+    os.system(". ~/.bashrc")
+    os.system("tail ~/.bashrc")
 
 from .utils import check_env
 from core.env.mujoco import (
