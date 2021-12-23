@@ -33,9 +33,9 @@ jobs:
           sudo apt-get -y install gifsicle
 
           wget https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz 
-          mkdir /home/runner/.mujoco
-          mv mujoco210-linux-x86_64.tar.gz /home/runner/.mujoco/
-          tar -xvzf /home/runner/.mujoco/mujoco210-linux-x86_64.tar.gz -C /home/runner/.mujoco/
+          mkdir ~/.mujoco
+          mv mujoco210-linux-x86_64.tar.gz ~/.mujoco/
+          tar -xvzf ~/.mujoco/mujoco210-linux-x86_64.tar.gz -C ~/.mujoco/
           
           sudo apt-get -y install libosmesa6-dev libglfw3 libgl1-mesa-dev
           sudo cp -r ~/.mujoco/mujoco210/bin/* /usr/lib/
