@@ -45,8 +45,8 @@ jobs:
           tail ~/.bashrc
           tail ~/.profile
           
-          source ~/.bashrc
-          . ~/.bashrc
+          sudo source ~/.bashrc
+          sudo . ~/.bashrc
 
           pip install 'mujoco-py<2.2,>=2.1'
 
