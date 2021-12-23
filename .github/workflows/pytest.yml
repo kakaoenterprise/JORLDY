@@ -72,12 +72,7 @@ jobs:
           brew install gcc@9
           pip install 'mujoco-py<2.2,>=2.1'
 
-          brew install Caskroom/cask/cscreen
-          cscreen -d 32 -x 640 -y 480 -r 60
-
-          # sudo apt-get install xvfb
-          # export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so 
-          # xvfb-run -a -s "-screen 0 1400x900x24" bash
+          brea install glfw
 
     - name: Install windows dependencies
       if: runner.os == 'Windows'
