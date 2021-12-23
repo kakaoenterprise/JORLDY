@@ -18,11 +18,11 @@ class _MLAgent(BaseEnv):
 
     Args:
         env_name (str): name of environment in ML-Agents.
-        train_mode (bool): parameter that determine whether to use low-resource training rendering mode.
         render (bool): parameter that determine whether to render.
+        time_scale (bool): parameter that determine frame time_scale.
     """
 
-    def __init__(self, env_name, train_mode=True, render=False, id=None, **kwargs):
+    def __init__(self, env_name, render=False, time_scale=12.0, id=None, **kwargs):
         env_path = f"./core/env/mlagents/{env_name}/{match_build()}/{env_name}"
         id = (
             np.random.randint(65534 - UnityEnvironment.BASE_ENVIRONMENT_PORT)
@@ -43,7 +43,6 @@ class _MLAgent(BaseEnv):
 
         self.env.reset()
 
-        self.train_mode = train_mode
         self.score = 0
 
         self.behavior_name = list(self.env.behavior_specs.keys())[0]
@@ -51,7 +50,7 @@ class _MLAgent(BaseEnv):
 
         self.is_continuous_action = self.spec.action_spec.is_continuous()
 
-        engine_configuration_channel.set_configuration_parameters(time_scale=12.0)
+        engine_configuration_channel.set_configuration_parameters(time_scale=time_scale)
         dec, term = self.env.get_steps(self.behavior_name)
 
     def reset(self):

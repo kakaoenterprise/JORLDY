@@ -3,7 +3,7 @@ import numpy as np
 
 class EvalManager:
     def __init__(self, Env, env_config, iteration=10, record=None, record_period=None):
-        self.env = Env(**env_config)
+        self.env = Env(**env_config, train_mode=False)
         self.iteration = iteration if iteration else 10
         assert iteration > 0
         self.record = record and self.env.recordable()
