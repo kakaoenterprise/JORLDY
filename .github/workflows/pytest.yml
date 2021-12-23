@@ -44,7 +44,7 @@ jobs:
           echo "source ~/.bashrc" >> ~/.profile
           echo ". ~/.bashrc" >> ~/.profile
           
-          # sudo rm /usr/lib/libGL.so
+          sudo rm /usr/lib/libGL.so
           sudo ln -s /usr/lib/x86_64-linux-gnu/libGL.so.1 /usr/lib/x86_64-linux-gnu/libGL.so
 
           tail ~/.bashrc
