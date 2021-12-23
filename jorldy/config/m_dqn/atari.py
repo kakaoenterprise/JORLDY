@@ -8,8 +8,9 @@ env = {
     "img_height": 84,
     "stack_frame": 4,
     "no_op": True,
-    "reward_clip": False,
-    "dead_penalty": False,
+    "skip_frame": 4,
+    "reward_clip": True,
+    "episodic_life": True,
 }
 
 agent = {

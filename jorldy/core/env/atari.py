@@ -35,10 +35,10 @@ class _Atari(BaseEnv):
         img_height=84,
         stack_frame=4,
         life_key="lives",
-        no_op=False,
+        no_op=True,
         skip_frame=4,
-        reward_clip=False,
-        episodic_life=False,
+        reward_clip=True,
+        episodic_life=True,
         train_mode=True,
         **kwargs,
     ):
