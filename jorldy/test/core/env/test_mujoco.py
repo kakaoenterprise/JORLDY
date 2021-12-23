@@ -4,8 +4,8 @@ import pytest
 if sys.platform.startswith("win"):
     pytest.skip("mujoco is not supported in windows", allow_module_level=True)
 
-import os
-import platform
+# import os
+# import platform
 
 # if platform.system() == "Linux":
 #     os.environ["LD_LIBRARY_PATH"] = "~/.mujoco/mujoco210/bin"
