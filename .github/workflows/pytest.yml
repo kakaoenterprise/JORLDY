@@ -43,6 +43,8 @@ jobs:
           sudo apt-get update
           sudo apt-get -y upgrade
 
+          cp -r ~/.mujoco/mujoco210/bin/* /usr/lib/
+
           echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ~/.profile
           echo "source ~/.bashrc" >> ~/.profile
           echo ". ~/.bashrc" >> ~/.profile
