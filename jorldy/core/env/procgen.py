@@ -78,7 +78,7 @@ class _Procgen(BaseEnv):
             num_no_op = np.random.randint(1, self.no_op_max)
             for i in range(num_no_op):
                 for j in range(self.skip_frame):
-                    obs, reward, done, info = self.env.step(np.zeros(0))
+                    obs, reward, done, info = self.env.step(np.zeros(1))
                     state = obs["rgb"][0]
                     total_reward += reward[0]
                     if i == num_no_op - 1:
