@@ -1,6 +1,6 @@
 ### V-MPO Drone Delivery Config ###
 
-env = {"name": "drone_delivery_mlagent", "train_mode": True}
+env = {"name": "drone_delivery_mlagent", "time_scale": 12.0}
 
 agent = {
     "name": "vmpo",

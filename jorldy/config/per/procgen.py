@@ -5,7 +5,8 @@ env = {
     "render": False,
     "gray_img": True,
     "stack_frame": 4,
-    "no_op": False,
+    "no_op": True,
+    "skip_frame": 4,
     "reward_clip": True,
 }
 

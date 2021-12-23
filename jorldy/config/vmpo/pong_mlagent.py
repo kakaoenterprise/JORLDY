@@ -1,6 +1,6 @@
 ### V-MPO Pong_ML-Agents Config ###
 
-env = {"name": "pong_mlagent", "train_mode": True}
+env = {"name": "pong_mlagent", "time_scale": 12.0}
 
 agent = {
     "name": "vmpo",
