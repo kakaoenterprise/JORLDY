@@ -38,12 +38,9 @@ jobs:
           tar -xvzf /home/runner/.mujoco/mujoco210-linux-x86_64.tar.gz -C /home/runner/.mujoco/
           
           sudo apt-get -y install libosmesa6-dev libglfw3 libgl1-mesa-dev
-          echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ~/.bashrc
-          
-          # sudo apt-get update
-          # sudo apt-get -y upgrade
+          # echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ~/.bashrc
 
-          sudo cp -r ~/.mujoco/mujoco210/bin/* /usr/lib/
+          # sudo cp -r ~/.mujoco/mujoco210/bin/* /usr/lib/
 
           pip install 'mujoco-py<2.2,>=2.1'
 
