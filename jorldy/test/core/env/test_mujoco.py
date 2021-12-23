@@ -8,18 +8,18 @@ import os
 import platform
 
 if platform.system() == "Linux":
-    os.system(
-        'echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ~/.bashrc'
-    )
+    # os.system(
+    #     'echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ~/.bashrc'
+    # )
 
-    os.environ["LD_LIBRARY_PATH"] = "$LD_LIBRARY_PATH:/root/.mujoco/mujoco210/bin"
-    os.environ[
-        "LD_LIBRARY_PATH"
-    ] = "$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin"
-    os.environ["LD_LIBRARY_PATH"] = "$LD_LIBRARY_PATH:~/.mujoco/mujoco210/bin"
-    os.environ["LD_LIBRARY_PATH"] = "~/.mujoco/mujoco210/bin"
+    # os.environ["LD_LIBRARY_PATH"] = "$LD_LIBRARY_PATH:/root/.mujoco/mujoco210/bin"
+    # os.environ[
+    #     "LD_LIBRARY_PATH"
+    # ] = "$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin"
+    # os.environ["LD_LIBRARY_PATH"] = "$LD_LIBRARY_PATH:~/.mujoco/mujoco210/bin"
+    # os.environ["LD_LIBRARY_PATH"] = "~/.mujoco/mujoco210/bin"
     os.environ["LD_LIBRARY_PATH"] = "/home/runner/.mujoco/mujoco210/bin"
-    os.system(". ~/.bashrc")
+    # os.system(". ~/.bashrc")
 
 from .utils import check_env
 from core.env.mujoco import (
