@@ -29,9 +29,9 @@ class _Procgen(BaseEnv):
         img_width=64,
         img_height=64,
         stack_frame=4,
-        no_op=False,
+        no_op=True,
         skip_frame=4,
-        reward_clip=False,
+        reward_clip=True,
         **kwargs,
     ):
         self.render = render
