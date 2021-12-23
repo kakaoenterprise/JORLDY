@@ -42,11 +42,11 @@ jobs:
           ls -a 
           echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/runner/.mujoco/mujoco210/bin" >> ./.bashrc
           ls -a
-          sed -i -e '#!/bin/bash\' ./.bashrc
-          source ./.bashrc
+          sed -i '1s/^/#!/bin/bash\\n/' ~/.bashrc
+          source ~/.bashrc
           tail ~/.bashrc
+          . ~/.bashrc
           ls -a
-          tail ~/.bashrc
           pip install 'mujoco-py<2.2,>=2.1'
 
     - name: Install macos dependencies
