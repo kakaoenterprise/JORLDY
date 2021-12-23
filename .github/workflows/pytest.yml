@@ -40,6 +40,8 @@ jobs:
           sudo apt-get -y install libosmesa6-dev libglfw3 libgl1-mesa-dev
           sudo cp -r ~/.mujoco/mujoco210/bin/* /usr/lib/
 
+          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/.mujoco/mujoco210/bin
+
           pip install 'mujoco-py<2.2,>=2.1'
 
     - name: Install macos dependencies
