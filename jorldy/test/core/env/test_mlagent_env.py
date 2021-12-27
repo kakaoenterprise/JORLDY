@@ -16,8 +16,8 @@ def test_pong_mlagent(MockAgent):
     check_env(env, agent)
 
 
-# def test_drone_delivery_mlagent(MockAgent):
-#     env = DroneDeliveryMLAgent()
-#     agent = MockAgent(env.state_size, env.action_size, env.action_type)
+def test_drone_delivery_mlagent(MockAgent):
+    env = DroneDeliveryMLAgent()
+    agent = MockAgent(env.state_size, env.action_size, env.action_type)
 
-#     check_env(env, agent)
+    check_env(env, agent)

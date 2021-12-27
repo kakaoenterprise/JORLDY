@@ -7,7 +7,11 @@ def check_interact(env, agent, run_step):
         if isinstance(env.state_size, int):
             assert next_state.shape == (1, env.state_size)
         elif isinstance(env.state_size, list):
-            assert next_state.shape == (1, *env.state_size)
+            if isinstance(env.state_size[0], list):
+                assert next_state[0].shape == (1, *env.state_size[0])
+                assert next_state[1].shape == (1, env.state_size[1])
+            else:
+                assert next_state.shape == (1, *env.state_size)
         assert reward.shape == (1, 1)
         assert done.shape == (1, 1)
 
