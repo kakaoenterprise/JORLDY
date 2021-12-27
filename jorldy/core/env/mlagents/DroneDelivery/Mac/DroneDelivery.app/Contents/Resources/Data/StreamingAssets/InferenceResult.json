@@ -1,0 +1,15 @@
+{
+  "inferenceResults": [
+    {
+      "episodeNum": 1,
+      "deliveryCompleteCount": 3,
+      "DurationOfTime": 2.90823483,
+      "rawScore": 215.252747,
+      "goalTimeList": [
+        2.52081943,
+        3.19380331,
+        3.01008177
+      ]
+    }
+  ]
+}

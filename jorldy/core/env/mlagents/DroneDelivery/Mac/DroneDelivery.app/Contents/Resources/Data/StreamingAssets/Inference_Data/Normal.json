@@ -3,8 +3,8 @@
 	[
 		{
 			"ID" : 0,
-			"houseNums":[0, 3, 5],
-			"randomSeed": 1245
+			"houseNums":[1, 3, 5],
+			"randomSeed": 124325
 		},
 		{
 			"ID" : 1,
@@ -13,17 +13,17 @@
 		},
 		{
 			"ID" : 2,
-			"houseNums":[1, 5, 9],
+			"houseNums":[3, 5, 9],
 			"randomSeed": 1874
 		},
 		{
 			"ID" : 3,
-			"houseNums":[5, 7, 3],
+			"houseNums":[0, 7, 3],
 			"randomSeed": 788154
 		},
 		{
 			"ID" : 4,
-			"houseNums":[8, 0, 9],
+			"houseNums":[4, 0, 9],
 			"randomSeed": 548788
 		},
 		{
@@ -33,7 +33,7 @@
 		},
 		{
 			"ID" : 6,
-			"houseNums":[7, 2, 9],
+			"houseNums":[6, 2, 9],
 			"randomSeed": 58
 		},
 		{
@@ -43,7 +43,7 @@
 		},
 		{
 			"ID" : 8,
-			"houseNums":[2, 6, 4],
+			"houseNums":[8, 6, 4],
 			"randomSeed": 2458
 		},
 		{
