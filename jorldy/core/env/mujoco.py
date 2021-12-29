@@ -55,7 +55,11 @@ class _Mujoco(BaseEnv):
         self.env.close()
 
     def recordable(self):
-        return True
+        try:
+            self.get_frame()
+            return True
+        except Exception as e:
+            return False
 
     def get_frame(self):
         raw_image = self.env.render(mode="rgb_array")
