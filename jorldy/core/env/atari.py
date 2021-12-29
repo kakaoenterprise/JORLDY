@@ -68,10 +68,9 @@ class _Atari(BaseEnv):
         self.no_op_max = 30
         assert isinstance(skip_frame, int) and skip_frame > 0
         self.skip_frame = skip_frame
-        if skip_frame > 1:
-            self.skip_frame_buffer = np.zeros(
-                (2,) + self.env.observation_space.shape, dtype=np.uint8
-            )
+        self.skip_frame_buffer = np.zeros(
+            (2,) + self.env.observation_space.shape, dtype=np.uint8
+        )
         self.reward_clip = reward_clip
         self.episodic_life = episodic_life
         self.was_real_done = True
