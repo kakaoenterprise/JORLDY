@@ -106,7 +106,7 @@ class _Atari(BaseEnv):
             else:
                 state, reward, _, info = self.env.step(0)
             self.life = info[self.life_key]
-            total_reward += reward            
+            total_reward += reward
         self.score = total_reward
 
         state = self.img_processor.convert_img(state)
