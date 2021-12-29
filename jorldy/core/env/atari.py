@@ -22,6 +22,7 @@ class _Atari(BaseEnv):
         skip_frame (int) : the number of skipped frame.
         reward_clip (bool): parameter that determine whether to use reward clipping.
         episodic_life (bool): parameter that determine done is True when dead is True.
+        fire_reset (bool): parameter that determine take action on reset for environments that are fixed until firing.
         train_mode (bool): parameter that determine whether train mode or not.
 
     """
@@ -39,6 +40,7 @@ class _Atari(BaseEnv):
         skip_frame=4,
         reward_clip=True,
         episodic_life=True,
+        fire_reset=True,
         train_mode=True,
         **kwargs,
     ):
@@ -72,6 +74,10 @@ class _Atari(BaseEnv):
             )
         self.reward_clip = reward_clip
         self.episodic_life = episodic_life
+        self.was_real_done = True
+        self.fire_reset = fire_reset
+        if fire_reset:
+            assert self.env.unwrapped.get_action_meanings()[1] == "FIRE"
         self.train_mode = train_mode
 
         print(f"{name} Start!")
@@ -79,34 +85,28 @@ class _Atari(BaseEnv):
         print(f"action size: {self.action_size}")
 
     def reset(self):
-        self.env.reset()
-        state, reward, _, info = self.env.step(1)
-
-        total_reward = reward
-        self.life = info[self.life_key]
-
-        if self.no_op:
-            num_no_op = np.random.randint(1, self.no_op_max)
-            for i in range(num_no_op):
-                for j in range(self.skip_frame):
+        total_reward = 0
+        if self.was_real_done:
+            state = self.env.reset()
+            self.was_real_done = False
+            if self.no_op:
+                num_no_op = np.random.randint(1, self.no_op_max)
+                for i in range(num_no_op):
                     state, reward, done, info = self.env.step(0)
                     total_reward += reward
-                    if self.life != info[self.life_key]:
-                        if self.life > info[self.life_key]:
-                            state, reward, done, _ = self.env.step(1)
-                            total_reward += reward
-                        self.life = info[self.life_key]
-                    if i == num_no_op - 1:
-                        if j == self.skip_frame - 2:
-                            self.skip_frame_buffer[0] = state
-                        if j == self.skip_frame - 1:
-                            self.skip_frame_buffer[1] = state
                     if done:
-                        break
-                if done:
-                    break
-            state = self.skip_frame_buffer.max(axis=0)
-
+                        self.env.reset()
+            if self.fire_reset:
+                state, reward, done, info = self.env.step(1)
+                self.life = info[self.life_key]
+                total_reward += reward
+        else:
+            if self.fire_reset:
+                state, reward, _, info = self.env.step(1)
+            else:
+                state, reward, _, info = self.env.step(0)
+            self.life = info[self.life_key]
+            total_reward += reward            
         self.score = total_reward
 
         state = self.img_processor.convert_img(state)
@@ -125,8 +125,9 @@ class _Atari(BaseEnv):
             _dead = False
             if self.life != info[self.life_key] and not done:
                 if self.life > info[self.life_key]:
-                    next_state, reward, _, _ = self.env.step(1)
-                    total_reward += reward
+                    if self.fire_reset:
+                        next_state, reward, _, _ = self.env.step(1)
+                        total_reward += reward
                     _dead = True
                 self.life = info[self.life_key]
 
@@ -137,6 +138,7 @@ class _Atari(BaseEnv):
                 self.skip_frame_buffer[1] = next_state
 
             if done:
+                self.was_real_done = True
                 break
 
         self.score += total_reward
