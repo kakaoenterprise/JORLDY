@@ -68,30 +68,19 @@ class _Procgen(BaseEnv):
         print(f"action size: {self.action_size}")
 
     def reset(self):
-        state = self.env.reset()["rgb"][0]
-
-        obs, reward, _, info = self.env.step(np.ones(1))
-        state = obs["rgb"][0]
-        total_reward = reward[0]
+        self.env.reset()
+        total_reward = 0
+        obs = self.env.reset()
 
         if self.no_op:
             num_no_op = np.random.randint(1, self.no_op_max)
             for i in range(num_no_op):
-                for j in range(self.skip_frame):
-                    obs, reward, done, info = self.env.step(np.zeros(1))
-                    state = obs["rgb"][0]
-                    total_reward += reward[0]
-                    if i == num_no_op - 1:
-                        if j == self.skip_frame - 2:
-                            self.skip_frame_buffer[0] = state
-                        if j == self.skip_frame - 1:
-                            self.skip_frame_buffer[1] = state
-                    if done:
-                        break
+                obs, reward, done, info = self.env.step(np.zeros(1))
+                total_reward += reward[0]
                 if done:
-                    break
-            state = self.skip_frame_buffer.max(axis=0)
+                    obs = self.env.reset()
 
+        state = obs["rgb"][0]
         self.score = total_reward
 
         state = self.img_processor.convert_img(state)
