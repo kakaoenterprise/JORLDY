@@ -28,19 +28,19 @@ agent = {
 }
 
 optim = {
-    "name": "rmsprop",
-    "lr": 2.5e-4,
+    "name": "adam",
+    "lr": 1e-4,
 }
 
 train = {
     "training": True,
     "load_path": None,
-    "run_step": 30000000,
+    "run_step": 10000000,
     "print_period": 10000,
     "save_period": 100000,
     "eval_iteration": 5,
     "record": True,
-    "record_period": 300000,
+    "record_period": 500000,
     # distributed setting
     "update_period": 32,
     "num_workers": 16,

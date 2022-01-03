@@ -26,6 +26,7 @@ agent = {
     "vf_coef": 1.0,
     "ent_coef": 0.01,
     "clip_grad_norm": 1.0,
+    "use_standardization": True,
 }
 
 optim = {
@@ -36,12 +37,12 @@ optim = {
 train = {
     "training": True,
     "load_path": None,
-    "run_step": 30000000,
+    "run_step": 10000000,
     "print_period": 10000,
     "save_period": 100000,
     "eval_iteration": 5,
     "record": True,
-    "record_period": 300000,
+    "record_period": 500000,
     # distributed setting
     "distributed_batch_size": 256,
     "update_period": agent["n_step"],
