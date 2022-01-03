@@ -101,7 +101,7 @@ class PPO(REINFORCE):
                 )
             if self.use_standardization:
                 adv = (adv - adv.mean(dim=1, keepdim=True)) / (
-                    adv.std(dim=1, keepdim=True) + 1e-7
+                    adv.std(dim=1, keepdim=True) + 1e-6
                 )
             adv = adv.view(-1, 1)
             ret = adv + value
