@@ -9,7 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 class LogManager:
     def __init__(self, env, id, experiment=None):
         self.id = id
-        now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        now = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
         self.path = (
             f"./logs/{experiment}/{env}/{id}/{now}/"
             if experiment

@@ -1,6 +1,6 @@
 ### DDPG Hopper Config ###
 
-env = {"name": "hopper_mlagent", "train_mode": True}
+env = {"name": "hopper_mlagent", "time_scale": 12.0}
 
 agent = {
     "name": "ddpg",

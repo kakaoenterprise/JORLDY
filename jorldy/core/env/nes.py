@@ -17,7 +17,9 @@ class _Nes(_Atari):
     """
 
     def __init__(self, name, **kwargs):
-        super(_Nes, self).__init__(name=name, life_key="life", **kwargs)
+        super(_Nes, self).__init__(
+            name=name, life_key="life", fire_reset=False, **kwargs
+        )
         self.env = JoypadSpace(self.env, RIGHT_ONLY)
         print(f"action size changed: {self.action_size} -> {self.env.action_space.n}")
         self.action_size = self.env.action_space.n
@@ -29,7 +31,4 @@ class _Nes(_Atari):
 
 class SuperMarioBros(_Nes):
     def __init__(self, **kwargs):
-        reward_scale = 15.0
-        super(SuperMarioBros, self).__init__(
-            "SuperMarioBros-v0", reward_scale=reward_scale, **kwargs
-        )
+        super(SuperMarioBros, self).__init__("SuperMarioBros-v0", **kwargs)

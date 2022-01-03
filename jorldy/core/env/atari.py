@@ -4,7 +4,7 @@ import numpy as np
 from .utils import ImgProcessor
 from .base import BaseEnv
 
-COMMON_VERSION = "Deterministic-v4"
+COMMON_VERSION = "NoFrameskip-v4"
 
 
 class _Atari(BaseEnv):
@@ -19,9 +19,12 @@ class _Atari(BaseEnv):
         stack_frame (int): the number of stacked frame in one single state.
         life_key (str): key of life query function in emulator.
         no_op (bool): parameter that determine whether or not to operate during the first 30(no_op_max) steps.
+        skip_frame (int) : the number of skipped frame.
         reward_clip (bool): parameter that determine whether to use reward clipping.
-        reward_scale (float): reward normalization denominator.
-        dead_penatly (bool): parameter that determine whether to use penalty when the agent dies.
+        episodic_life (bool): parameter that determine done is True when dead is True.
+        fire_reset (bool): parameter that determine take action on reset for environments that are fixed until firing.
+        train_mode (bool): parameter that determine whether train mode or not.
+
     """
 
     def __init__(
@@ -33,10 +36,12 @@ class _Atari(BaseEnv):
         img_height=84,
         stack_frame=4,
         life_key="lives",
-        no_op=False,
-        reward_clip=False,
-        reward_scale=None,
-        dead_penalty=False,
+        no_op=True,
+        skip_frame=4,
+        reward_clip=True,
+        episodic_life=True,
+        fire_reset=True,
+        train_mode=True,
         **kwargs,
     ):
         self.render = render
@@ -61,30 +66,47 @@ class _Atari(BaseEnv):
         self.life_key = life_key
         self.no_op = no_op
         self.no_op_max = 30
+        assert isinstance(skip_frame, int) and skip_frame > 0
+        self.skip_frame = skip_frame
+        self.skip_frame_buffer = np.zeros(
+            (2,) + self.env.observation_space.shape, dtype=np.uint8
+        )
         self.reward_clip = reward_clip
-        self.reward_scale = reward_scale
-        self.dead_penalty = dead_penalty
+        self.episodic_life = episodic_life
+        self.was_real_done = True
+        self.fire_reset = fire_reset and (
+            self.env.unwrapped.get_action_meanings()[1] == "FIRE"
+        )
+        self.train_mode = train_mode
 
         print(f"{name} Start!")
         print(f"state size: {self.state_size}")
         print(f"action size: {self.action_size}")
 
     def reset(self):
-        self.env.reset()
-        state, reward, _, info = self.env.step(1)
-
-        self.score = reward
-        self.life = info[self.life_key]
-
-        if self.no_op:
-            for _ in range(np.random.randint(0, self.no_op_max)):
+        total_reward = 0
+        if self.was_real_done:
+            state = self.env.reset()
+            self.was_real_done = False
+            if self.no_op:
+                num_no_op = np.random.randint(1, self.no_op_max)
+                for i in range(num_no_op):
+                    state, reward, done, info = self.env.step(0)
+                    total_reward += reward
+                    if done:
+                        self.env.reset()
+            if self.fire_reset:
+                state, reward, done, info = self.env.step(1)
+                self.life = info[self.life_key]
+                total_reward += reward
+        else:
+            if self.fire_reset:
+                state, reward, _, info = self.env.step(1)
+            else:
                 state, reward, _, info = self.env.step(0)
-                self.score += reward
-                if self.life != info[self.life_key]:
-                    if self.life > info[self.life_key]:
-                        state, reward, _, _ = self.env.step(1)
-                        self.score += reward
-                    self.life = info[self.life_key]
+            self.life = info[self.life_key]
+            total_reward += reward
+        self.score = total_reward
 
         state = self.img_processor.convert_img(state)
         self.stacked_state = np.tile(state, (self.stack_frame, 1, 1))
@@ -95,33 +117,47 @@ class _Atari(BaseEnv):
         if self.render:
             self.env.render()
 
-        next_state, reward, done, info = self.env.step(action.item())
-        self.score += reward
+        dead, total_reward = False, 0
+        for i in range(self.skip_frame):
+            next_state, reward, done, info = self.env.step(action.item())
+            total_reward += reward
+            _dead = False
+            if self.life != info[self.life_key] and not done:
+                if self.life > info[self.life_key]:
+                    if self.fire_reset:
+                        next_state, reward, _, _ = self.env.step(1)
+                        total_reward += reward
+                    _dead = True
+                self.life = info[self.life_key]
 
-        dead = False
-        if self.life != info[self.life_key] and not done:
-            if self.life > info[self.life_key]:
-                state, _reward, _, _ = self.env.step(1)
-                self.score += _reward
-                dead = True
-            self.life = info[self.life_key]
+            dead = dead or _dead
+            if i == self.skip_frame - 2:
+                self.skip_frame_buffer[0] = next_state
+            if i == self.skip_frame - 1:
+                self.skip_frame_buffer[1] = next_state
+
+            if done:
+                self.was_real_done = True
+                break
+
+        self.score += total_reward
+
+        next_state = self.skip_frame_buffer.max(axis=0)
         next_state = self.img_processor.convert_img(next_state)
         self.stacked_state = np.concatenate(
             (self.stacked_state[self.num_channel :], next_state), axis=0
         )
 
         if self.reward_clip:
-            reward = (
-                reward / self.reward_scale if self.reward_scale else np.tanh(reward)
-            )
+            total_reward = np.sign(total_reward)
 
-        if dead and self.dead_penalty:
-            reward = -1
+        if self.episodic_life and self.train_mode:
+            done = dead or done
 
-        next_state, reward, done = map(
-            lambda x: np.expand_dims(x, 0), [self.stacked_state, [reward], [done]]
+        next_state, total_reward, done = map(
+            lambda x: np.expand_dims(x, 0), [self.stacked_state, [total_reward], [done]]
         )
-        return (next_state, reward, done)
+        return (next_state, total_reward, done)
 
     def close(self):
         self.env.close()
