@@ -64,7 +64,9 @@ pip install gym-super-mario-bros
 
 __- Mujoco__ (Mac and Linux only)
 
-To use mujoco-py, several subprocesses should be done.
+__Mujoco is supported in docker.__
+
+But if you don't use docker, several subprocesses should be done.
 Please refer to the [mujoco-py github installation](https://github.com/openai/mujoco-py#install-mujoco)
 
 
