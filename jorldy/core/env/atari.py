@@ -74,9 +74,7 @@ class _Atari(BaseEnv):
         self.reward_clip = reward_clip
         self.episodic_life = episodic_life
         self.was_real_done = True
-        self.fire_reset = fire_reset
-        if fire_reset:
-            assert self.env.unwrapped.get_action_meanings()[1] == "FIRE"
+        self.fire_reset = fire_reset and (self.env.unwrapped.get_action_meanings()[1] == "FIRE")
         self.train_mode = train_mode
 
         print(f"{name} Start!")
