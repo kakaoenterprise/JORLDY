@@ -10,7 +10,7 @@ nohup.out
 # https://github.com/github/gitignore/blob/master/Python.gitignore
 
 # mlagents
-*_timers.json
+Timers/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
