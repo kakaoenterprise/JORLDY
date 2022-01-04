@@ -66,7 +66,7 @@ __- Mujoco__ (Mac and Linux only)
 
 __Mujoco is supported in docker.__
 
-But if you don't use docker, several subprocesses should be done.
+If you don't use docker, several subprocesses should be done.
 Please refer to the [mujoco-py github installation](https://github.com/openai/mujoco-py#install-mujoco)
 
 
