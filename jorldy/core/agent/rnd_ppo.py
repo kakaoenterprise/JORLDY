@@ -161,7 +161,7 @@ class RND_PPO(PPO):
         mean_adv_i = adv_i.mean().item()
         mean_ret = ret.mean().item()
         mean_ret_i = ret_i.mean().item()
-        
+
         # start train iteration
         actor_losses, critic_losses, entropy_losses, rnd_losses, ratios, probs = (
             [],
@@ -177,11 +177,31 @@ class RND_PPO(PPO):
             for offset in range(0, len(reward), self.batch_size):
                 idx = idxs[offset : offset + self.batch_size]
 
-                _state, _action, _value, _ret, _ret_i, _next_state, _adv, _adv_i, _log_prob_old = map(
+                (
+                    _state,
+                    _action,
+                    _value,
+                    _ret,
+                    _ret_i,
+                    _next_state,
+                    _adv,
+                    _adv_i,
+                    _log_prob_old,
+                ) = map(
                     lambda x: [_x[idx] for _x in x] if isinstance(x, list) else x[idx],
-                    [state, action, value, ret, ret_i, next_state, adv, adv_i, log_prob_old],
+                    [
+                        state,
+                        action,
+                        value,
+                        ret,
+                        ret_i,
+                        next_state,
+                        adv,
+                        adv_i,
+                        log_prob_old,
+                    ],
                 )
-                
+
                 _r_i = self.rnd.forward(_next_state) * self.intrinsic_coeff
 
                 if self.action_type == "continuous":
@@ -201,18 +221,20 @@ class RND_PPO(PPO):
                     ratio, min=1 - self.epsilon_clip, max=1 + self.epsilon_clip
                 ) * (_adv + _adv_i)
                 actor_loss = -torch.min(surr1, surr2).mean()
-                
+
                 value_pred_clipped = _value + torch.clamp(
                     value_pred - _value, -self.epsilon_clip, self.epsilon_clip
                 )
 
                 critic_loss1 = F.mse_loss(value_pred, _ret)
                 critic_loss2 = F.mse_loss(value_pred_clipped, _ret)
-                
+
                 # clip is not applied to v_i
                 critic_i_loss = F.mse_loss(v_i, _ret_i).mean()
 
-                critic_loss = torch.max(critic_loss1, critic_loss2).mean() + critic_i_loss
+                critic_loss = (
+                    torch.max(critic_loss1, critic_loss2).mean() + critic_i_loss
+                )
 
                 entropy_loss = -m.entropy().mean()
                 ppo_loss = (

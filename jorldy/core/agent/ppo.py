@@ -172,7 +172,7 @@ class PPO(REINFORCE):
                 actor_losses.append(actor_loss.item())
                 critic_losses.append(critic_loss.item())
                 entropy_losses.append(entropy_loss.item())
-                
+
         result = {
             "actor_loss": np.mean(actor_losses),
             "critic_loss": np.mean(critic_losses),

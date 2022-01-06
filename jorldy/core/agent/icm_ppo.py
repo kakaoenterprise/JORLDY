@@ -120,10 +120,10 @@ class ICM_PPO(PPO):
                 )
             adv = adv.view(-1, 1)
             ret = adv + value
-            
+
         mean_adv = adv.mean().item()
         mean_ret = ret.mean().item()
-        
+
         # start train iteration
         actor_losses, critic_losses, entropy_losses, ratios, probs = [], [], [], [], []
         idxs = np.arange(len(reward))

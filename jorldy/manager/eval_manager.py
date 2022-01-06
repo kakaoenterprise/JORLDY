@@ -18,7 +18,7 @@ class EvalManager:
         self.record = record and self.env.recordable()
         self.record_period = record_period
         self.record_stamp = 0
-        self.time_limit = 300. if time_limit is None else time_limit
+        self.time_limit = 300.0 if time_limit is None else time_limit
         self.time_t = 0
 
     def evaluate(self, agent, step):
