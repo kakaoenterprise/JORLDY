@@ -25,7 +25,7 @@ class R2D2(ApeX):
                  **kwargs
                  ):
         super(R2D2, self).__init__(**kwargs)
-        assert 0 < n_burn_in < seq_len
+        # assert 0 < n_burn_in < seq_len
         # R2D2
         self.seq_len = seq_len
         self.n_burn_in = n_burn_in
@@ -87,7 +87,7 @@ class R2D2(ApeX):
         next_hidden_c = transitions['next_hidden_c'].transpose(0,1).contiguous()
         hidden = (hidden_h, hidden_c)
         next_hidden = (next_hidden_h, next_hidden_c)
-        
+                
         eye = torch.eye(self.action_size).to(self.device)
         one_hot_action = eye[action.view(-1,self.seq_len).long()]
         q_pred = self.get_q(state, prev_action_onehot, hidden, self.network)
@@ -102,7 +102,7 @@ class R2D2(ApeX):
             target_q = (next_target_q * max_one_hot_action).sum(-1, keepdims=True)
             target_q = self.inv_val_rescale(target_q)
             
-            for i in reversed(range(self.n_step)):
+            for i in reversed(range(self.n_step)):                             
                 target_q = reward[:, i:i+self.seq_len] + (1 - done[:, i:i+self.seq_len]) * self.gamma * target_q
             
             target_q = self.val_rescale(target_q)
@@ -117,9 +117,12 @@ class R2D2(ApeX):
         # Annealing beta
         self.beta = min(1.0, self.beta + self.beta_add)
 
-        weights = torch.FloatTensor(weights[..., np.newaxis, np.newaxis]).to(self.device)
-                
-        loss = (weights * (td_error**2)).mean()        
+        # weights = torch.FloatTensor(weights[..., np.newaxis, np.newaxis]).to(self.device)
+        # loss = (weights * (td_error**2)).mean()  
+        
+        weights = torch.FloatTensor(weights[..., np.newaxis]).to(self.device)
+        loss = (weights * (td_error[:,-1]**2)).mean()        
+        
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(self.network.parameters(), self.clip_grad_norm)

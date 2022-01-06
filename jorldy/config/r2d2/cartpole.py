@@ -19,7 +19,7 @@ agent = {
     # MultiStep
     "n_step": 3,
     # PER
-    "alpha": 0.9,
+    "alpha": 0.6,
     "beta": 0.6,
     "uniform_sample_prob": 1e-3,
     # R2D2

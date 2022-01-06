@@ -30,8 +30,8 @@ agent = {
     "beta": 0.6,
     "uniform_sample_prob": 1e-3,
     # R2D2
-    "seq_len": 6,
-    "n_burn_in": 3,
+    "seq_len": 2,
+    "n_burn_in": 1,
     "zero_padding": True,
 }
 
@@ -52,5 +52,5 @@ train = {
     # distributed setting
     "distributed_batch_size" : 512,
     "update_period" : 16,
-    "num_workers" : 8,
+    "num_workers" : 4,
 }
