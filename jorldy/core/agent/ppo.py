@@ -85,11 +85,11 @@ class PPO(REINFORCE):
                 mu, std, value = self.network(state)
                 m = Normal(mu, std)
                 z = torch.atanh(torch.clamp(action, -1 + 1e-7, 1 - 1e-7))
-                prob = m.log_prob(z).exp()
+                log_prob = m.log_prob(z)
             else:
                 pi, value = self.network(state)
-                prob = pi.gather(1, action.long())
-            prob_old = prob
+                log_prob = pi.gather(1, action.long()).log()
+            log_prob_old = log_prob
 
             next_value = self.network(next_state)[-1]
             delta = reward + (1 - done) * self.gamma * next_value - value
@@ -101,10 +101,14 @@ class PPO(REINFORCE):
                 )
             if self.use_standardization:
                 adv = (adv - adv.mean(dim=1, keepdim=True)) / (
-                    adv.std(dim=1, keepdim=True) + 1e-6
+                    adv.std(dim=1, keepdim=True) + 1e-7
                 )
+
             adv = adv.view(-1, 1)
             ret = adv + value
+
+        mean_adv = adv.mean().item()
+        mean_ret = ret.mean().item()
 
         # start train iteration
         actor_losses, critic_losses, entropy_losses, ratios, probs = [], [], [], [], []
@@ -114,22 +118,22 @@ class PPO(REINFORCE):
             for offset in range(0, len(reward), self.batch_size):
                 idx = idxs[offset : offset + self.batch_size]
 
-                _state, _action, _ret, _next_state, _adv, _prob_old = map(
+                _state, _action, _value, _ret, _next_state, _adv, _log_prob_old = map(
                     lambda x: [_x[idx] for _x in x] if isinstance(x, list) else x[idx],
-                    [state, action, ret, next_state, adv, prob_old],
+                    [state, action, value, ret, next_state, adv, log_prob_old],
                 )
 
                 if self.action_type == "continuous":
-                    mu, std, value = self.network(_state)
+                    mu, std, value_pred = self.network(_state)
                     m = Normal(mu, std)
                     z = torch.atanh(torch.clamp(_action, -1 + 1e-7, 1 - 1e-7))
-                    prob = m.log_prob(z).exp()
+                    log_prob = m.log_prob(z)
                 else:
-                    pi, value = self.network(_state)
+                    pi, value_pred = self.network(_state)
                     m = Categorical(pi)
-                    prob = pi.gather(1, _action.long())
+                    log_prob = pi.gather(1, _action.long()).log()
 
-                ratio = (prob / (_prob_old + 1e-7)).prod(1, keepdim=True)
+                ratio = (log_prob - _log_prob_old).sum(1, keepdim=True).exp()
                 surr1 = ratio * _adv
                 surr2 = (
                     torch.clamp(
@@ -139,7 +143,14 @@ class PPO(REINFORCE):
                 )
                 actor_loss = -torch.min(surr1, surr2).mean()
 
-                critic_loss = F.mse_loss(value, _ret).mean()
+                value_pred_clipped = _value + torch.clamp(
+                    value_pred - _value, -self.epsilon_clip, self.epsilon_clip
+                )
+
+                critic_loss1 = F.mse_loss(value_pred, _ret)
+                critic_loss2 = F.mse_loss(value_pred_clipped, _ret)
+
+                critic_loss = torch.max(critic_loss1, critic_loss2).mean()
 
                 entropy_loss = -m.entropy().mean()
 
@@ -156,18 +167,20 @@ class PPO(REINFORCE):
                 )
                 self.optimizer.step()
 
-                probs.append(prob.min().item())
+                probs.append(log_prob.exp().min().item())
                 ratios.append(ratio.max().item())
                 actor_losses.append(actor_loss.item())
                 critic_losses.append(critic_loss.item())
                 entropy_losses.append(entropy_loss.item())
+                
         result = {
             "actor_loss": np.mean(actor_losses),
             "critic_loss": np.mean(critic_losses),
             "entropy_loss": np.mean(entropy_losses),
             "max_ratio": max(ratios),
             "min_prob": min(probs),
-            "min_prob_old": prob_old.min().item(),
+            "mean_adv": mean_adv,
+            "mean_ret": mean_ret,
         }
         return result
 

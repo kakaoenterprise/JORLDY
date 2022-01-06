@@ -119,20 +119,19 @@ class RND_PPO(PPO):
                 mu, std, value = self.network(state)
                 m = Normal(mu, std)
                 z = torch.atanh(torch.clamp(action, -1 + 1e-7, 1 - 1e-7))
-                prob = m.log_prob(z).exp()
+                log_prob = m.log_prob(z)
             else:
                 pi, value = self.network(state)
-                prob = pi.gather(1, action.long())
-            prob_old = prob
-            v_i = self.network.get_vi(state)
+                log_prob = pi.gather(1, action.long()).log()
+            log_prob_old = log_prob
+            v_i = self.network.get_v_i(state)
 
             next_value = self.network(next_state)[-1]
-            next_vi = self.network.get_vi(next_state)
+            next_v_i = self.network.get_v_i(next_state)
             delta = reward + (1 - done) * self.gamma * next_value - value
             # non-episodic intrinsic reward, hence (1-done) not applied
-            delta_i = r_i + self.gamma_i * next_vi - v_i
-            adv = delta.clone()
-            adv_i = delta_i.clone()
+            delta_i = r_i + self.gamma_i * next_v_i - v_i
+            adv, adv_i = delta.clone(), delta_i.clone()
             adv, adv_i, done = (
                 adv.view(-1, self.n_step),
                 adv_i.view(-1, self.n_step),
@@ -158,6 +157,11 @@ class RND_PPO(PPO):
             ret = adv + value
             ret_i = adv_i + v_i
 
+        mean_adv = adv.mean().item()
+        mean_adv_i = adv_i.mean().item()
+        mean_ret = ret.mean().item()
+        mean_ret_i = ret_i.mean().item()
+        
         # start train iteration
         actor_losses, critic_losses, entropy_losses, rnd_losses, ratios, probs = (
             [],
@@ -173,35 +177,42 @@ class RND_PPO(PPO):
             for offset in range(0, len(reward), self.batch_size):
                 idx = idxs[offset : offset + self.batch_size]
 
-                _state, _action, _ret, _next_state, _adv, _prob_old = map(
+                _state, _action, _value, _ret, _ret_i, _next_state, _adv, _adv_i, _log_prob_old = map(
                     lambda x: [_x[idx] for _x in x] if isinstance(x, list) else x[idx],
-                    [state, action, ret, next_state, adv, prob_old],
+                    [state, action, value, ret, ret_i, next_state, adv, adv_i, log_prob_old],
                 )
-                _ret_i, _adv_i = map(lambda x: x[idx], [ret_i, adv_i])
-
+                
                 _r_i = self.rnd.forward(_next_state) * self.intrinsic_coeff
 
                 if self.action_type == "continuous":
-                    mu, std, value = self.network(_state)
+                    mu, std, value_pred = self.network(_state)
                     m = Normal(mu, std)
                     z = torch.atanh(torch.clamp(_action, -1 + 1e-7, 1 - 1e-7))
-                    prob = m.log_prob(z).exp()
+                    log_prob = m.log_prob(z)
                 else:
-                    pi, value = self.network(_state)
+                    pi, value_pred = self.network(_state)
                     m = Categorical(pi)
-                    prob = pi.gather(1, _action.long())
-                _v_i = self.network.get_vi(_state)
+                    log_prob = pi.gather(1, _action.long()).log()
+                v_i = self.network.get_v_i(_state)
 
-                ratio = (prob / (_prob_old + 1e-4)).prod(1, keepdim=True)
+                ratio = (log_prob - _log_prob_old).sum(1, keepdim=True).exp()
                 surr1 = ratio * (_adv + _adv_i)
                 surr2 = torch.clamp(
                     ratio, min=1 - self.epsilon_clip, max=1 + self.epsilon_clip
                 ) * (_adv + _adv_i)
                 actor_loss = -torch.min(surr1, surr2).mean()
-
-                critic_loss = (
-                    F.mse_loss(value, _ret).mean() + F.mse_loss(_v_i, _ret_i).mean()
+                
+                value_pred_clipped = _value + torch.clamp(
+                    value_pred - _value, -self.epsilon_clip, self.epsilon_clip
                 )
+
+                critic_loss1 = F.mse_loss(value_pred, _ret)
+                critic_loss2 = F.mse_loss(value_pred_clipped, _ret)
+                
+                # clip is not applied to v_i
+                critic_i_loss = F.mse_loss(v_i, _ret_i).mean()
+
+                critic_loss = torch.max(critic_loss1, critic_loss2).mean() + critic_i_loss
 
                 entropy_loss = -m.entropy().mean()
                 ppo_loss = (
@@ -223,7 +234,7 @@ class RND_PPO(PPO):
                 )
                 self.optimizer.step()
 
-                probs.append(prob.min().item())
+                probs.append(log_prob.exp().min().item())
                 ratios.append(ratio.max().item())
                 actor_losses.append(actor_loss.item())
                 critic_losses.append(critic_loss.item())
@@ -237,7 +248,10 @@ class RND_PPO(PPO):
             "r_i": np.mean(rnd_losses),
             "max_ratio": max(ratios),
             "min_prob": min(probs),
-            "min_prob_old": prob_old.min().item(),
+            "mean_adv": mean_adv,
+            "mean_adv_i": mean_adv_i,
+            "mean_ret": mean_ret,
+            "mean_ret_i": mean_ret_i,
         }
         return result
 

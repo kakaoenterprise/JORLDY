@@ -29,7 +29,7 @@ class DiscretePolicySeparateValue(DiscretePolicyValue):
 
         orthogonal_init(self.v_i, "linear")
 
-    def get_vi(self, x):
+    def get_v_i(self, x):
         x = super(DiscretePolicyValue, self).forward(x)
         x = F.relu(self.l(x))
         return self.v_i(x)
@@ -64,7 +64,7 @@ class ContinuousPolicySeparateValue(ContinuousPolicyValue):
 
         orthogonal_init(self.v_i, "linear")
 
-    def get_vi(self, x):
+    def get_v_i(self, x):
         x = super(ContinuousPolicyValue, self).forward(x)
         x = F.relu(self.l(x))
         return self.v_i(x)
