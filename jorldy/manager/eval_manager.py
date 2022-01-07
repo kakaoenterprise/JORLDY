@@ -18,7 +18,7 @@ class EvalManager:
         self.record = record and self.env.recordable()
         self.record_period = record_period
         self.record_stamp = 0
-        self.time_limit = 300.0 if time_limit is None else time_limit
+        self.time_limit = time_limit
         self.time_t = 0
 
     def evaluate(self, agent, step):
@@ -47,7 +47,10 @@ class EvalManager:
                 transition.update(action_dict)
                 agent.interact_callback(transition)
                 state = next_state
-                if time.time() - start_time > self.time_limit:
+                if (
+                    self.time_limit is not None
+                    and time.time() - start_time > self.time_limit
+                ):
                     print(
                         f"### The evaluation time for one episode exceeded the limit. {self.time_limit} Sec ###"
                     )

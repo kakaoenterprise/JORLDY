@@ -39,7 +39,7 @@ reference: [dqn/cartpole.py](./dqn/cartpole.py), [dqn/atari.py](./dqn/atari.py)
       - distributed_batch_size: In distributed script, uses distributed_batch_size instead of agent.batch_size.
       - update_period: It means the cycle(unit=step) in which actors pass transition data to learner.
       - num_workers: Total number of distributed actors which interact with env.
-      - eval_time_limit: Time limit(unit=seconds) given per episode when evaluating the model. (default: 300 seconds).
+      - eval_time_limit: Time limit(unit=seconds) given per episode when evaluating the model. (default: No limit).
 
 
       __distributed_batch_size, update_period and num_workers are only used in distributed  scripts.__
