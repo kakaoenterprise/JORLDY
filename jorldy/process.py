@@ -64,7 +64,11 @@ def manage_process(
             print_stamp += _step - step
             step = _step
             if print_stamp >= print_period or step >= run_step:
-                if eval_thread is None or not eval_thread.is_alive() or step >= run_step:
+                if (
+                    eval_thread is None
+                    or not eval_thread.is_alive()
+                    or step >= run_step
+                ):
                     if eval_thread is not None:
                         eval_thread.join()
                     agent.sync_in(**sync_queue.get())
