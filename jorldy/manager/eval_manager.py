@@ -59,4 +59,4 @@ class EvalManager:
 
         if record:
             self.record_stamp = 0
-        return np.mean(scores), frames
+        return round(np.mean(scores), 4), frames

@@ -64,13 +64,14 @@ def manage_process(
             print_stamp += _step - step
             step = _step
             if print_stamp >= print_period or step >= run_step:
-                if eval_thread is None or not eval_thread.is_alive():
+                if eval_thread is None or not eval_thread.is_alive() or step >= run_step:
                     if eval_thread is not None:
                         eval_thread.join()
                     agent.sync_in(**sync_queue.get())
+                    statistics = metric_manager.get_statistics()
                     eval_thread = Thread(
                         target=evaluate_thread,
-                        args=(agent, step, eval_manager, metric_manager, log_manager),
+                        args=(agent, step, statistics, eval_manager, log_manager),
                     )
                     eval_thread.start()
                 print_stamp = 0
@@ -84,9 +85,8 @@ def manage_process(
 
 
 # Evaluate
-def evaluate_thread(agent, step, eval_manager, metric_manager, log_manager):
+def evaluate_thread(agent, step, statistics, eval_manager, log_manager):
     score, frames = eval_manager.evaluate(agent, step)
-    metric_manager.append({"score": score})
-    statistics = metric_manager.get_statistics()
+    statistics["score"] = score
     print(f"Step : {step} / {statistics}")
     log_manager.write(statistics, frames, step)
