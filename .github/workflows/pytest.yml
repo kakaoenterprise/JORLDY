@@ -53,7 +53,7 @@ jobs:
     - name: Install windows dependencies
       if: runner.os == 'Windows'
       run: |
-          choco install gifsicle
+          choco install gifsicle --pre
     
     - name: Install dependencies
       run: |
