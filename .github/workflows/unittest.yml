@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: pytest
+name: unittest
 
 on:
   push:
@@ -14,8 +14,8 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-          os: [ubuntu-18.04, ubuntu-20.04, macos-10.15, macos-11, windows-2022]
-          python: ["3.7", "3.8"]
+        os: [ubuntu-18.04, ubuntu-20.04, macos-10.15, macos-11, windows-2022]
+        python: ["3.7", "3.8"]
     steps:
     - uses: actions/checkout@v2
     
@@ -27,28 +27,28 @@ jobs:
     - name: Install linux dependencies
       if: runner.os == 'Linux'
       run: |
-          sudo apt-get update
-          sudo apt-get -y install libgl1-mesa-glx
-          sudo apt-get -y install libglib2.0-0
-          sudo apt-get -y install gifsicle
+        sudo apt-get update
+        sudo apt-get -y install libgl1-mesa-glx
+        sudo apt-get -y install libglib2.0-0
+        sudo apt-get -y install gifsicle
 
-          wget https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz 
-          mkdir ~/.mujoco
-          mv mujoco210-linux-x86_64.tar.gz ~/.mujoco/
-          tar -xvzf ~/.mujoco/mujoco210-linux-x86_64.tar.gz -C ~/.mujoco/
-          sudo apt-get -y install libosmesa6-dev libglfw3 libgl1-mesa-dev
-          sudo cp -r ~/.mujoco/mujoco210/bin/* /usr/lib/
-          pip install 'mujoco-py<2.2,>=2.1'
+        wget https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz 
+        mkdir ~/.mujoco
+        mv mujoco210-linux-x86_64.tar.gz ~/.mujoco/
+        tar -xvzf ~/.mujoco/mujoco210-linux-x86_64.tar.gz -C ~/.mujoco/
+        sudo apt-get -y install libosmesa6-dev libglfw3 libgl1-mesa-dev
+        sudo cp -r ~/.mujoco/mujoco210/bin/* /usr/lib/
+        pip install 'mujoco-py<2.2,>=2.1'
 
     - name: Install macos dependencies
       if: runner.os == 'macOS'
       run: |
-          wget https://mujoco.org/download/mujoco210-macos-x86_64.tar.gz 
-          mkdir ~/.mujoco 
-          mv mujoco210-macos-x86_64.tar.gz ~/.mujoco/
-          tar -xvzf ~/.mujoco/mujoco210-macos-x86_64.tar.gz -C ~/.mujoco/
-          brew install gcc@9
-          pip install 'mujoco-py<2.2,>=2.1'
+        wget https://mujoco.org/download/mujoco210-macos-x86_64.tar.gz 
+        mkdir ~/.mujoco 
+        mv mujoco210-macos-x86_64.tar.gz ~/.mujoco/
+        tar -xvzf ~/.mujoco/mujoco210-macos-x86_64.tar.gz -C ~/.mujoco/
+        brew install gcc@9
+        pip install 'mujoco-py<2.2,>=2.1'
 
     - name: Install windows dependencies
       if: runner.os == 'Windows'
