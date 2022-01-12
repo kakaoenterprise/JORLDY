@@ -1,7 +1,8 @@
 import traceback
 import time
+from threading import Thread
 
-# Interact (Async)
+# Interact (for async distributed train)
 def interact_process(
     DistributedManager,
     distributed_manager_config,
@@ -52,7 +53,7 @@ def manage_process(
     path_queue.put(log_manager.path)
     config_manager.dump(log_manager.path)
 
-    step, print_stamp = 0, 0
+    step, print_stamp, eval_thread = 0, 0, None
     try:
         while step < run_step:
             wait = True
@@ -63,12 +64,33 @@ def manage_process(
             print_stamp += _step - step
             step = _step
             if print_stamp >= print_period or step >= run_step:
-                agent.sync_in(**sync_queue.get())
-                score, frames = eval_manager.evaluate(agent, step)
-                metric_manager.append({"score": score})
-                statistics = metric_manager.get_statistics()
-                print(f"Step : {step} / {statistics}")
-                log_manager.write(statistics, frames, step)
+                if (
+                    eval_thread is None
+                    or not eval_thread.is_alive()
+                    or step >= run_step
+                ):
+                    if eval_thread is not None:
+                        eval_thread.join()
+                    agent.sync_in(**sync_queue.get())
+                    statistics = metric_manager.get_statistics()
+                    eval_thread = Thread(
+                        target=evaluate_thread,
+                        args=(agent, step, statistics, eval_manager, log_manager),
+                    )
+                    eval_thread.start()
                 print_stamp = 0
     except Exception as e:
         traceback.print_exc()
+        if eval_thread is not None:
+            eval_thread.terminate()
+    finally:
+        if eval_thread is not None:
+            eval_thread.join()
+
+
+# Evaluate
+def evaluate_thread(agent, step, statistics, eval_manager, log_manager):
+    score, frames = eval_manager.evaluate(agent, step)
+    statistics["score"] = score
+    print(f"Step : {step} / {statistics}")
+    log_manager.write(statistics, frames, step)

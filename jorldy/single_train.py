@@ -41,6 +41,7 @@ if __name__ == "__main__":
         config.train.eval_iteration,
         config.train.record,
         record_period,
+        config.train.eval_time_limit,
     )
     log_id = config.train.id if config.train.id else config.agent.name
     log_manager_config = (config.env.name, log_id, config.train.experiment)
