@@ -125,6 +125,7 @@ class RND_PPO(PPO):
                 log_prob = pi.gather(1, action.long()).log()
             log_prob_old = log_prob
             v_i = self.network.get_v_i(state)
+            v_i_old = v_i
 
             next_value = self.network(next_state)[-1]
             next_v_i = self.network.get_v_i(next_state)
@@ -181,6 +182,7 @@ class RND_PPO(PPO):
                     _state,
                     _action,
                     _value,
+                    _v_i_old,
                     _ret,
                     _ret_i,
                     _next_state,
@@ -192,6 +194,7 @@ class RND_PPO(PPO):
                     [
                         state,
                         action,
+                        v_i_old,
                         value,
                         ret,
                         ret_i,
@@ -212,7 +215,7 @@ class RND_PPO(PPO):
                 else:
                     pi, value_pred = self.network(_state)
                     m = Categorical(pi)
-                    log_prob = pi.gather(1, _action.long()).log()
+                    log_prob = m.log_prob(_action.squeeze(-1)).unsqueeze(-1)
                 v_i = self.network.get_v_i(_state)
 
                 ratio = (log_prob - _log_prob_old).sum(1, keepdim=True).exp()
@@ -229,11 +232,16 @@ class RND_PPO(PPO):
                 critic_loss1 = F.mse_loss(value_pred, _ret)
                 critic_loss2 = F.mse_loss(value_pred_clipped, _ret)
 
-                # clip is not applied to v_i
-                critic_i_loss = F.mse_loss(v_i, _ret_i).mean()
+                v_i_clipped = _v_i_old + torch.clamp(
+                    v_i - _v_i_old, -self.epsilon_clip, self.epsilon_clip
+                )
+
+                critic_i_loss1 = F.mse_loss(v_i, _ret_i)
+                critic_i_loss2 = F.mse_loss(v_i_clipped, _ret_i)
 
                 critic_loss = (
-                    torch.max(critic_loss1, critic_loss2).mean() + critic_i_loss
+                    torch.max(critic_loss1, critic_loss2).mean()
+                    + torch.max(critic_i_loss1, critic_i_loss2).mean()
                 )
 
                 entropy_loss = -m.entropy().mean()
