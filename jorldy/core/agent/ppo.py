@@ -118,9 +118,9 @@ class PPO(REINFORCE):
             for offset in range(0, len(reward), self.batch_size):
                 idx = idxs[offset : offset + self.batch_size]
 
-                _state, _action, _value, _ret, _next_state, _adv, _log_prob_old = map(
+                _state, _action, _value, _ret, _adv, _log_prob_old = map(
                     lambda x: [_x[idx] for _x in x] if isinstance(x, list) else x[idx],
-                    [state, action, value, ret, next_state, adv, log_prob_old],
+                    [state, action, value, ret, adv, log_prob_old],
                 )
 
                 if self.action_type == "continuous":
