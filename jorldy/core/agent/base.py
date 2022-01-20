@@ -1,5 +1,6 @@
 from abc import *
 import torch
+import numpy as np
 
 
 class BaseAgent(ABC):
@@ -88,3 +89,14 @@ class BaseAgent(ABC):
 
     def interact_callback(self, transition):
         return transition
+
+    def learning_rate_decay(self, step, mode="cosine"):
+        if mode == "linear":
+            weight = (1 - (step/self.run_step))
+        elif mode == "cosine":
+            weight = np.cos((np.pi/2)*(step/self.run_step))
+        else:
+            raise Exception(f"check learning rate decay mode again! => {mode}")
+        
+        for g in self.optimizer.param_groups:
+            g['lr'] = self.optimizer.defaults['lr'] * weight

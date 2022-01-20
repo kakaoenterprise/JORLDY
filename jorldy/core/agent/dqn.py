@@ -10,7 +10,6 @@ from core.optimizer import Optimizer
 from core.buffer import ReplayBuffer
 from .base import BaseAgent
 
-
 class DQN(BaseAgent):
     action_type = "discrete"
     """DQN agent.
@@ -91,6 +90,7 @@ class DQN(BaseAgent):
         self.num_learn = 0
         self.time_t = 0
         self.num_workers = num_workers
+        self.run_step = run_step
 
     @torch.no_grad()
     def act(self, state, training=True):
@@ -160,6 +160,7 @@ class DQN(BaseAgent):
 
         if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:
             result = self.learn()
+            self.learning_rate_decay(step)
 
         # Process per step if train start
         if self.num_learn > 0:
