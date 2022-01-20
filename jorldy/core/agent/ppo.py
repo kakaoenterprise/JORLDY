@@ -131,7 +131,7 @@ class PPO(REINFORCE):
                 else:
                     pi, value_pred = self.network(_state)
                     m = Categorical(pi)
-                    log_prob = pi.gather(1, _action.long()).log()
+                    log_prob = m.log_prob(_action.squeeze(-1)).unsqueeze(-1)
 
                 ratio = (log_prob - _log_prob_old).sum(1, keepdim=True).exp()
                 surr1 = ratio * _adv
