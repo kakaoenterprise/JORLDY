@@ -92,13 +92,13 @@ class BaseAgent(ABC):
 
     def learning_rate_decay(self, step, mode="cosine"):
         if mode == "linear":
-            weight = (1 - (step/self.run_step))
+            weight = 1 - (step / self.run_step)
         elif mode == "cosine":
-            weight = np.cos((np.pi/2)*(step/self.run_step))
+            weight = np.cos((np.pi / 2) * (step / self.run_step))
         elif mode == "sqrt":
-            weight = (1 - (step/self.run_step))**(1/2)
+            weight = (1 - (step / self.run_step)) ** (1 / 2)
         else:
             raise Exception(f"check learning rate decay mode again! => {mode}")
-        
+
         for g in self.optimizer.param_groups:
-            g['lr'] = self.optimizer.defaults['lr'] * weight
+            g["lr"] = self.optimizer.defaults["lr"] * weight

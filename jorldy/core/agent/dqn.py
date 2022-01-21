@@ -10,6 +10,7 @@ from core.optimizer import Optimizer
 from core.buffer import ReplayBuffer
 from .base import BaseAgent
 
+
 class DQN(BaseAgent):
     action_type = "discrete"
     """DQN agent.
