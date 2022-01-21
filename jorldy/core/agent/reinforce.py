@@ -36,7 +36,7 @@ class REINFORCE(BaseAgent):
         head="mlp",
         optim_config={"name": "adam"},
         gamma=0.99,
-        use_standardization=False,
+        use_standardization=True,
         run_step=1e6,
         device=None,
         **kwargs,
