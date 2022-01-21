@@ -17,12 +17,12 @@ agent = {
     "name": "r2d2",
     "network": "r2d2",
     "head": "cnn",
-    "gamma": 0.99,
+    "gamma": 0.997,
     "buffer_size": 2000000,
-    "batch_size": 32,
+    "batch_size": 64,
     "clip_grad_norm": 40.0,
     "start_train_step": 100000,
-    "target_update_period": 10000,
+    "target_update_period": 2500,
     # MultiStep
     "n_step": 3,
     # PER
@@ -52,5 +52,5 @@ train = {
     # distributed setting
     "distributed_batch_size" : 512,
     "update_period" : 16,
-    "num_workers" : 4,
+    "num_workers" : 32,
 }

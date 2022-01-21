@@ -13,19 +13,18 @@ agent = {
     "start_train_step": 50000,
     "target_update_period": 2500,
     # MultiStep
-    "n_step": 5,
+    "n_step": 3,
     # PER
     "alpha": 0.9,
     "beta": 0.6,
     "uniform_sample_prob": 1e-3,
     # R2D2
-    "seq_len": 7,
-    "n_burn_in": 4,
+    "seq_len": 2,
+    "n_burn_in": 1,
 }
 
 optim = {
     "name": "adam",
-    "eps": 1e-3,
     "lr": 1e-4,
 }
 
