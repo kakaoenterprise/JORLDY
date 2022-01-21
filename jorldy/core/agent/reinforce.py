@@ -37,6 +37,7 @@ class REINFORCE(BaseAgent):
         optim_config={"name": "adam"},
         gamma=0.99,
         use_standardization=False,
+        run_step=1e6,
         device=None,
         **kwargs,
     ):
@@ -56,6 +57,7 @@ class REINFORCE(BaseAgent):
         self.gamma = gamma
         self.use_standardization = use_standardization
         self.memory = RolloutBuffer()
+        self.run_step = run_step
 
     @torch.no_grad()
     def act(self, state, training=True):
