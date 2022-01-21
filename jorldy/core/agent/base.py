@@ -95,6 +95,8 @@ class BaseAgent(ABC):
             weight = (1 - (step/self.run_step))
         elif mode == "cosine":
             weight = np.cos((np.pi/2)*(step/self.run_step))
+        elif mode == "sqrt":
+            weight = (1 - (step/self.run_step))**(1/2)
         else:
             raise Exception(f"check learning rate decay mode again! => {mode}")
         
