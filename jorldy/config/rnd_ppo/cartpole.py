@@ -16,17 +16,18 @@ agent = {
     "_lambda": 0.95,
     "epsilon_clip": 0.1,
     "vf_coef": 0.5,
-    "ent_coef": 0.0,
+    "ent_coef": 0.001,
     "clip_grad_norm": 1.0,
     "use_standardization": True,
     # Parameters for Random Network Distillation
     "rnd_network": "rnd_mlp",  # rnd_mlp, rnd_cnn, rnd_multi
     "gamma_i": 0.99,
-    "extrinsic_coeff": 1.0,
-    "intrinsic_coeff": 0.001,
+    "extrinsic_coeff": 2.0,
+    "intrinsic_coeff": 1.0,
     "obs_normalize": True,
     "ri_normalize": True,
     "batch_norm": True,
+    "non_episodic": False,
 }
 
 optim = {
@@ -38,8 +39,8 @@ train = {
     "training": True,
     "load_path": None,
     "run_step": 100000,
-    "print_period": 1000,
-    "save_period": 10000,
+    "print_period": 2000,
+    "save_period": 20000,
     "eval_iteration": 10,
     # distributed setting
     "distributed_batch_size": 512,
