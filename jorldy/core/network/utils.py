@@ -112,7 +112,7 @@ def orthogonal_init(layer, nonlinearity="relu"):
             gain = 0.01
         else:
             gain = torch.nn.init.calculate_gain(nonlinearity)
-    else: # consider nonlinearity is gain
+    else:  # consider nonlinearity is gain
         gain = nonlinearity
 
     if isinstance(layer, list):

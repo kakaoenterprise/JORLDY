@@ -25,6 +25,7 @@ class RND_PPO(PPO):
         ri_normalize (bool): parameter that determine whether to normalize intrinsic reward.
         batch_norm (bool): parameter that determine whether to use batch normalization.
         non_episodic (bool): parameter that determine whether to use non episodic return(only intrinsic).
+        non_extrinsic (bool): parameter that determine whether to use intrinsic reward only.
     """
 
     def __init__(
@@ -41,6 +42,7 @@ class RND_PPO(PPO):
         ri_normalize=True,
         batch_norm=True,
         non_episodic=True,
+        non_extrinsic=False,
         **kwargs,
     ):
         super(RND_PPO, self).__init__(
@@ -60,6 +62,7 @@ class RND_PPO(PPO):
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
         self.non_episodic = non_episodic
+        self.non_extrinsic = non_extrinsic
 
         self.rnd = Network(
             rnd_network,
@@ -102,6 +105,10 @@ class RND_PPO(PPO):
         next_state = transitions["next_state"]
         done = transitions["done"]
 
+        # use extrinsic check
+        if self.non_extrinsic:
+            reward *= 0.0
+
         # set pi_old and advantage
         with torch.no_grad():
             # RND: calculate exploration reward, update moments of obs and r_i
@@ -123,7 +130,7 @@ class RND_PPO(PPO):
             delta = reward + (1 - done) * self.gamma * next_value - value
 
             next_v_i = self.network.get_v_i(next_state)
-            episodic_factor = 1. if self.non_episodic else (1 - done)
+            episodic_factor = 1.0 if self.non_episodic else (1 - done)
             delta_i = r_i + episodic_factor * self.gamma_i * next_v_i - v_i
 
             adv, adv_i = delta.clone(), delta_i.clone()
@@ -134,8 +141,10 @@ class RND_PPO(PPO):
                 adv[:, t] += (
                     (1 - done[:, t]) * self.gamma * self._lambda * adv[:, t + 1]
                 )
-                episodic_factor = 1. if self.non_episodic else (1 - done[:, t])
-                adv_i[:, t] += episodic_factor * self.gamma_i * self._lambda * adv_i[:, t + 1]
+                episodic_factor = 1.0 if self.non_episodic else (1 - done[:, t])
+                adv_i[:, t] += (
+                    episodic_factor * self.gamma_i * self._lambda * adv_i[:, t + 1]
+                )
 
             ret = adv.view(-1, 1) + value
             ret_i = adv_i.view(-1, 1) + v_i
