@@ -7,9 +7,9 @@ env = {
     "img_width": 84,
     "img_height": 84,
     "stack_frame": 4,
-    "no_op": False,
+    "no_op": True,
     "skip_frame": 4,
-    "reward_clip": True,
+    "reward_clip": False,
     "episodic_life": True,
 }
 
