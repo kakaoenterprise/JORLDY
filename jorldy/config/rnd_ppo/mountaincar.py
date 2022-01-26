@@ -20,8 +20,8 @@ agent = {
     # Parameters for Random Network Distillation
     "rnd_network": "rnd_mlp",  # rnd_mlp, rnd_cnn, rnd_multi
     "gamma_i": 0.99,
-    "extrinsic_coeff": 1.0,
-    "intrinsic_coeff": 0.001,
+    "extrinsic_coeff": 2.0,
+    "intrinsic_coeff": 1.0,
     "obs_normalize": True,
     "ri_normalize": True,
     "batch_norm": True,

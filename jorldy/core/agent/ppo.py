@@ -99,15 +99,16 @@ class PPO(REINFORCE):
                 adv[:, t] += (
                     (1 - done[:, t]) * self.gamma * self._lambda * adv[:, t + 1]
                 )
+
+            ret = adv.view(-1, 1) + value
+
             if self.use_standardization:
                 adv = (adv - adv.mean(dim=1, keepdim=True)) / (
                     adv.std(dim=1, keepdim=True) + 1e-7
                 )
 
             adv = adv.view(-1, 1)
-            ret = adv + value
 
-        mean_adv = adv.mean().item()
         mean_ret = ret.mean().item()
 
         # start train iteration
@@ -118,9 +119,9 @@ class PPO(REINFORCE):
             for offset in range(0, len(reward), self.batch_size):
                 idx = idxs[offset : offset + self.batch_size]
 
-                _state, _action, _value, _ret, _next_state, _adv, _log_prob_old = map(
+                _state, _action, _value, _ret, _adv, _log_prob_old = map(
                     lambda x: [_x[idx] for _x in x] if isinstance(x, list) else x[idx],
-                    [state, action, value, ret, next_state, adv, log_prob_old],
+                    [state, action, value, ret, adv, log_prob_old],
                 )
 
                 if self.action_type == "continuous":
@@ -131,7 +132,7 @@ class PPO(REINFORCE):
                 else:
                     pi, value_pred = self.network(_state)
                     m = Categorical(pi)
-                    log_prob = pi.gather(1, _action.long()).log()
+                    log_prob = m.log_prob(_action.squeeze(-1)).unsqueeze(-1)
 
                 ratio = (log_prob - _log_prob_old).sum(1, keepdim=True).exp()
                 surr1 = ratio * _adv
@@ -179,7 +180,6 @@ class PPO(REINFORCE):
             "entropy_loss": np.mean(entropy_losses),
             "max_ratio": max(ratios),
             "min_prob": min(probs),
-            "mean_adv": mean_adv,
             "mean_ret": mean_ret,
         }
         return result

@@ -114,14 +114,15 @@ class ICM_PPO(PPO):
                 adv[:, t] += (
                     (1 - done[:, t]) * self.gamma * self._lambda * adv[:, t + 1]
                 )
+
+            ret = adv.view(-1, 1) + value
+
             if self.use_standardization:
                 adv = (adv - adv.mean(dim=1, keepdim=True)) / (
                     adv.std(dim=1, keepdim=True) + 1e-7
                 )
             adv = adv.view(-1, 1)
-            ret = adv + value
 
-        mean_adv = adv.mean().item()
         mean_ret = ret.mean().item()
 
         # start train iteration
@@ -145,7 +146,7 @@ class ICM_PPO(PPO):
                 else:
                     pi, value_pred = self.network(_state)
                     m = Categorical(pi)
-                    log_prob = pi.gather(1, _action.long()).log()
+                    log_prob = m.log_prob(_action.squeeze(-1)).unsqueeze(-1)
 
                 ratio = (log_prob - _log_prob_old).sum(1, keepdim=True).exp()
                 surr1 = ratio * _adv
@@ -200,7 +201,6 @@ class ICM_PPO(PPO):
             "entropy_loss": np.mean(entropy_losses),
             "max_ratio": max(ratios),
             "min_prob": min(probs),
-            "mean_adv": mean_adv,
             "mean_ret": mean_ret,
             "r_i": r_i.mean().item(),
             "l_f": l_f.item(),

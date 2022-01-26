@@ -107,9 +107,13 @@ def init_weights(shape, noise_type):
 
 
 def orthogonal_init(layer, nonlinearity="relu"):
-    gain = (
-        0.01 if nonlinearity == "policy" else torch.nn.init.calculate_gain(nonlinearity)
-    )
+    if isinstance(nonlinearity, str):
+        if nonlinearity == "policy":
+            gain = 0.01
+        else:
+            gain = torch.nn.init.calculate_gain(nonlinearity)
+    else:  # consider nonlinearity is gain
+        gain = nonlinearity
 
     if isinstance(layer, list):
         for l in layer:

@@ -24,6 +24,8 @@ class RND_PPO(PPO):
         obs_normalize (bool): parameter that determine whether to normalize observation.
         ri_normalize (bool): parameter that determine whether to normalize intrinsic reward.
         batch_norm (bool): parameter that determine whether to use batch normalization.
+        non_episodic (bool): parameter that determine whether to use non episodic return(only intrinsic).
+        non_extrinsic (bool): parameter that determine whether to use intrinsic reward only.
     """
 
     def __init__(
@@ -34,11 +36,13 @@ class RND_PPO(PPO):
         # Parameters for Random Network Distillation
         rnd_network="rnd_mlp",
         gamma_i=0.99,
-        extrinsic_coeff=1.0,
+        extrinsic_coeff=2.0,
         intrinsic_coeff=1.0,
         obs_normalize=True,
         ri_normalize=True,
         batch_norm=True,
+        non_episodic=True,
+        non_extrinsic=False,
         **kwargs,
     ):
         super(RND_PPO, self).__init__(
@@ -57,6 +61,8 @@ class RND_PPO(PPO):
         self.obs_normalize = obs_normalize
         self.ri_normalize = ri_normalize
         self.batch_norm = batch_norm
+        self.non_episodic = non_episodic
+        self.non_extrinsic = non_extrinsic
 
         self.rnd = Network(
             rnd_network,
@@ -71,11 +77,6 @@ class RND_PPO(PPO):
         ).to(self.device)
 
         self.optimizer.add_param_group({"params": self.rnd.parameters()})
-
-        # Freeze random network
-        for name, param in self.rnd.named_parameters():
-            if "target" in name:
-                param.requires_grad = False
 
     @torch.no_grad()
     def act(self, state, training=True):
@@ -104,16 +105,15 @@ class RND_PPO(PPO):
         next_state = transitions["next_state"]
         done = transitions["done"]
 
+        # use extrinsic check
+        if self.non_extrinsic:
+            reward *= 0.0
+
         # set pi_old and advantage
         with torch.no_grad():
             # RND: calculate exploration reward, update moments of obs and r_i
             self.rnd.update_rms_obs(next_state)
             r_i = self.rnd(next_state, update_ri=True)
-            r_i = r_i.unsqueeze(-1)
-
-            # Scaling extrinsic and intrinsic reward
-            reward *= self.extrinsic_coeff
-            r_i *= self.intrinsic_coeff
 
             if self.action_type == "continuous":
                 mu, std, value = self.network(state)
@@ -127,50 +127,42 @@ class RND_PPO(PPO):
             v_i = self.network.get_v_i(state)
 
             next_value = self.network(next_state)[-1]
-            next_v_i = self.network.get_v_i(next_state)
             delta = reward + (1 - done) * self.gamma * next_value - value
-            # non-episodic intrinsic reward, hence (1-done) not applied
-            delta_i = r_i + self.gamma_i * next_v_i - v_i
+
+            next_v_i = self.network.get_v_i(next_state)
+            episodic_factor = 1.0 if self.non_episodic else (1 - done)
+            delta_i = r_i + episodic_factor * self.gamma_i * next_v_i - v_i
+
             adv, adv_i = delta.clone(), delta_i.clone()
-            adv, adv_i, done = (
-                adv.view(-1, self.n_step),
-                adv_i.view(-1, self.n_step),
-                done.view(-1, self.n_step),
-            )
+            adv, adv_i = adv.view(-1, self.n_step), adv_i.view(-1, self.n_step)
+            done = done.view(-1, self.n_step)
+
             for t in reversed(range(self.n_step - 1)):
                 adv[:, t] += (
                     (1 - done[:, t]) * self.gamma * self._lambda * adv[:, t + 1]
                 )
-                adv_i[:, t] += self.gamma_i * self._lambda * adv_i[:, t + 1]
+                episodic_factor = 1.0 if self.non_episodic else (1 - done[:, t])
+                adv_i[:, t] += (
+                    episodic_factor * self.gamma_i * self._lambda * adv_i[:, t + 1]
+                )
 
+            ret = adv.view(-1, 1) + value
+            ret_i = adv_i.view(-1, 1) + v_i
+
+            adv = self.extrinsic_coeff * adv + self.intrinsic_coeff * adv_i
             if self.use_standardization:
                 adv = (adv - adv.mean(dim=1, keepdim=True)) / (
                     adv.std(dim=1, keepdim=True) + 1e-7
                 )
-                adv_i = (adv_i - adv_i.mean(dim=1, keepdim=True)) / (
-                    adv_i.std(dim=1, keepdim=True) + 1e-7
-                )
-            adv = adv.view(-1, 1)
-            adv_i = adv_i.view(-1, 1)
-            done = done.view(-1, 1)
 
-            ret = adv + value
-            ret_i = adv_i + v_i
+            adv, done = adv.view(-1, 1), done.view(-1, 1)
 
-        mean_adv = adv.mean().item()
-        mean_adv_i = adv_i.mean().item()
         mean_ret = ret.mean().item()
         mean_ret_i = ret_i.mean().item()
 
         # start train iteration
-        actor_losses, critic_losses, entropy_losses, rnd_losses, ratios, probs = (
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-        )
+        actor_losses, critic_e_losses, critic_i_losses = [], [], []
+        entropy_losses, rnd_losses, ratios, probs = [], [], [], []
         idxs = np.arange(len(reward))
         for idx_epoch in range(self.n_epoch):
             np.random.shuffle(idxs)
@@ -185,7 +177,6 @@ class RND_PPO(PPO):
                     _ret_i,
                     _next_state,
                     _adv,
-                    _adv_i,
                     _log_prob_old,
                 ) = map(
                     lambda x: [_x[idx] for _x in x] if isinstance(x, list) else x[idx],
@@ -197,12 +188,9 @@ class RND_PPO(PPO):
                         ret_i,
                         next_state,
                         adv,
-                        adv_i,
                         log_prob_old,
                     ],
                 )
-
-                _r_i = self.rnd.forward(_next_state) * self.intrinsic_coeff
 
                 if self.action_type == "continuous":
                     mu, std, value_pred = self.network(_state)
@@ -212,29 +200,23 @@ class RND_PPO(PPO):
                 else:
                     pi, value_pred = self.network(_state)
                     m = Categorical(pi)
-                    log_prob = pi.gather(1, _action.long()).log()
+                    log_prob = m.log_prob(_action.squeeze(-1)).unsqueeze(-1)
                 v_i = self.network.get_v_i(_state)
 
                 ratio = (log_prob - _log_prob_old).sum(1, keepdim=True).exp()
-                surr1 = ratio * (_adv + _adv_i)
-                surr2 = torch.clamp(
-                    ratio, min=1 - self.epsilon_clip, max=1 + self.epsilon_clip
-                ) * (_adv + _adv_i)
+                surr1 = ratio * _adv
+                surr2 = (
+                    torch.clamp(
+                        ratio, min=1 - self.epsilon_clip, max=1 + self.epsilon_clip
+                    )
+                    * _adv
+                )
                 actor_loss = -torch.min(surr1, surr2).mean()
 
-                value_pred_clipped = _value + torch.clamp(
-                    value_pred - _value, -self.epsilon_clip, self.epsilon_clip
-                )
-
-                critic_loss1 = F.mse_loss(value_pred, _ret)
-                critic_loss2 = F.mse_loss(value_pred_clipped, _ret)
-
-                # clip is not applied to v_i
+                critic_e_loss = F.mse_loss(value_pred, _ret).mean()
                 critic_i_loss = F.mse_loss(v_i, _ret_i).mean()
 
-                critic_loss = (
-                    torch.max(critic_loss1, critic_loss2).mean() + critic_i_loss
-                )
+                critic_loss = critic_e_loss + critic_i_loss
 
                 entropy_loss = -m.entropy().mean()
                 ppo_loss = (
@@ -242,7 +224,8 @@ class RND_PPO(PPO):
                     + self.vf_coef * critic_loss
                     + self.ent_coef * entropy_loss
                 )
-                rnd_loss = _r_i.mean()
+
+                rnd_loss = self.rnd.forward(_next_state).mean()
 
                 loss = ppo_loss + rnd_loss
 
@@ -259,19 +242,19 @@ class RND_PPO(PPO):
                 probs.append(log_prob.exp().min().item())
                 ratios.append(ratio.max().item())
                 actor_losses.append(actor_loss.item())
-                critic_losses.append(critic_loss.item())
+                critic_e_losses.append(critic_e_loss.item())
+                critic_i_losses.append(critic_i_loss.item())
                 entropy_losses.append(entropy_loss.item())
                 rnd_losses.append(rnd_loss.item())
 
         result = {
             "actor_loss": np.mean(actor_losses),
-            "critic_loss": np.mean(critic_losses),
+            "critic_e_loss": np.mean(critic_e_losses),
+            "critic_i_loss": np.mean(critic_i_losses),
             "entropy_loss": np.mean(entropy_losses),
             "r_i": np.mean(rnd_losses),
             "max_ratio": max(ratios),
             "min_prob": min(probs),
-            "mean_adv": mean_adv,
-            "mean_adv_i": mean_adv_i,
             "mean_ret": mean_ret,
             "mean_ret_i": mean_ret_i,
         }

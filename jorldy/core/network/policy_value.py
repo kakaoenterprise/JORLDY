@@ -27,7 +27,7 @@ class DiscretePolicySeparateValue(DiscretePolicyValue):
         super(DiscretePolicySeparateValue, self).__init__(D_in, D_out, D_hidden, head)
         self.v_i = torch.nn.Linear(D_hidden, 1)
 
-        orthogonal_init(self.v_i, "linear")
+        orthogonal_init([self.v, self.v_i], 0.01)
 
     def get_v_i(self, x):
         x = super(DiscretePolicyValue, self).forward(x)
@@ -62,7 +62,7 @@ class ContinuousPolicySeparateValue(ContinuousPolicyValue):
         super(ContinuousPolicySeparateValue, self).__init__(D_in, D_out, D_hidden, head)
         self.v_i = torch.nn.Linear(D_hidden, 1)
 
-        orthogonal_init(self.v_i, "linear")
+        orthogonal_init([self.v, self.v_i], 0.01)
 
     def get_v_i(self, x):
         x = super(ContinuousPolicyValue, self).forward(x)

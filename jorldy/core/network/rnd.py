@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-from .utils import RewardForwardFilter, RunningMeanStd
+from .utils import RewardForwardFilter, RunningMeanStd, orthogonal_init
 
 # normalize observation
 # assumed state shape: (batch_size, dim_state)
@@ -15,6 +15,15 @@ def define_mlp_head_weight(instance, D_in, D_hidden, feature_size):
 
     instance.fc1_target_mlp = torch.nn.Linear(D_in, D_hidden)
     instance.fc2_target_mlp = torch.nn.Linear(D_hidden, feature_size)
+
+    orthogonal_init(
+        [
+            instance.fc1_predict_mlp,
+            instance.fc2_predict_mlp,
+            instance.fc1_target_mlp,
+            instance.fc2_target_mlp,
+        ]
+    )
 
 
 def define_mlp_batch_norm(instance, D_hidden, feature_size):
@@ -71,6 +80,17 @@ def define_conv_head_weight(instance, D_in):
         in_channels=64, out_channels=64, kernel_size=3, stride=1
     )
 
+    orthogonal_init(
+        [
+            instance.conv1_predict,
+            instance.conv2_predict,
+            instance.conv3_predict,
+            instance.conv1_target,
+            instance.conv2_target,
+            instance.conv3_target,
+        ]
+    )
+
     return feature_size
 
 
@@ -94,13 +114,13 @@ def conv_head(instance, s_next):
         t = F.relu(instance.bn2_target_conv(instance.conv2_target(t)))
         t = F.relu(instance.bn3_target_conv(instance.conv3_target(t)))
     else:
-        p = F.relu(instance.conv1_predict(s_next))
-        p = F.relu(instance.conv2_predict(p))
-        p = F.relu(instance.conv3_predict(p))
+        p = F.leaky_relu(instance.conv1_predict(s_next))
+        p = F.leaky_relu(instance.conv2_predict(p))
+        p = F.leaky_relu(instance.conv3_predict(p))
 
-        t = F.relu(instance.conv1_target(s_next))
-        t = F.relu(instance.conv2_target(t))
-        t = F.relu(instance.conv3_target(t))
+        t = F.leaky_relu(instance.conv1_target(s_next))
+        t = F.leaky_relu(instance.conv2_target(t))
+        t = F.leaky_relu(instance.conv3_target(t))
 
     p = p.view(p.size(0), -1)
     t = t.view(t.size(0), -1)
@@ -114,6 +134,15 @@ def define_fc_layers_weight(instance, feature_size, D_hidden):
     instance.fc3_predict = torch.nn.Linear(D_hidden, D_hidden)
 
     instance.fc1_target = torch.nn.Linear(feature_size, D_hidden)
+
+    orthogonal_init(
+        [
+            instance.fc1_predict,
+            instance.fc2_predict,
+            instance.fc3_predict,
+            instance.fc1_target,
+        ]
+    )
 
 
 def fc_layers(instance, p, t):
@@ -132,6 +161,12 @@ def ri_update(r_i, num_workers, rff, update_rms_ri):
         [rff.update(rit.detach()) for rit in ri_T]
     ).ravel()  # (n_batch, n_workers) -> (n_batch * n_workers)
     update_rms_ri(rewems)
+
+
+def freeze_target_param(instance):
+    for name, param in instance.named_parameters():
+        if "target" in name:
+            param.requires_grad = False
 
 
 class RND_MLP(torch.nn.Module):
@@ -164,6 +199,8 @@ class RND_MLP(torch.nn.Module):
         if self.batch_norm:
             define_mlp_batch_norm(self, D_hidden, feature_size)
 
+        freeze_target_param(self)
+
     def update_rms_obs(self, v):
         self.rms_obs.update(v)
 
@@ -176,13 +213,13 @@ class RND_MLP(torch.nn.Module):
 
         p, t = mlp_head(self, s_next)
 
-        r_i = torch.mean(torch.square(p - t), axis=1)
+        r_i = torch.mean(torch.square(p - t), axis=1, keepdim=True)
 
         if update_ri:
             ri_update(r_i, self.num_workers, self.rff, self.update_rms_ri)
 
         if self.ri_normalize:
-            r_i = r_i / (torch.sqrt(self.rms_ri.var) + 1e-7)
+            r_i /= torch.sqrt(self.rms_ri.var) + 1e-7
 
         return r_i
 
@@ -214,6 +251,8 @@ class RND_CNN(torch.nn.Module):
         define_conv_batch_norm(self)
         define_fc_layers_weight(self, feature_size, D_hidden)
 
+        freeze_target_param(self)
+
     def update_rms_obs(self, v):
         self.rms_obs.update(v / 255.0)
 
@@ -228,13 +267,13 @@ class RND_CNN(torch.nn.Module):
         p, t = conv_head(self, s_next)
         p, t = fc_layers(self, p, t)
 
-        r_i = torch.mean(torch.square(p - t), axis=1)
+        r_i = torch.mean(torch.square(p - t), axis=1, keepdim=True)
 
         if update_ri:
             ri_update(r_i, self.num_workers, self.rff, self.update_rms_ri)
 
         if self.ri_normalize:
-            r_i = r_i / (torch.sqrt(self.rms_ri.var) + 1e-7)
+            r_i /= torch.sqrt(self.rms_ri.var) + 1e-7
 
         return r_i
 
@@ -279,6 +318,8 @@ class RND_Multi(torch.nn.Module):
 
         define_fc_layers_weight(self, feature_size, D_hidden)
 
+        freeze_target_param(self)
+
     def update_rms_obs(self, v):
         self.rms_obs_img.update(v[0] / 255.0)
         self.rms_obs_vec.update(v[1])
@@ -308,12 +349,12 @@ class RND_Multi(torch.nn.Module):
 
         p, t = fc_layers(self, p, t)
 
-        r_i = torch.mean(torch.square(p - t), axis=1)
+        r_i = torch.mean(torch.square(p - t), axis=1, keepdim=True)
 
         if update_ri:
             ri_update(r_i, self.num_workers, self.rff, self.update_rms_ri)
 
         if self.ri_normalize:
-            r_i = r_i / (torch.sqrt(self.rms_ri.var) + 1e-7)
+            r_i /= torch.sqrt(self.rms_ri.var) + 1e-7
 
         return r_i
