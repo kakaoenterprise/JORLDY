@@ -20,14 +20,14 @@ def test_rnd_mlp_call():
     ]
     out = net(*mock_input, update_ri=True)
 
-    assert out.shape == (batch_size * num_workers,)
+    assert out.shape == (batch_size * num_workers, 1)
 
     mock_input = [
         torch.rand((batch_size, D_in)),
     ]
     out = net(*mock_input, update_ri=False)
 
-    assert out.shape == (batch_size,)
+    assert out.shape == (batch_size, 1)
 
 
 def test_rnd_cnn_call():
@@ -47,14 +47,14 @@ def test_rnd_cnn_call():
     ]
     out = net(*mock_input, update_ri=True)
 
-    assert out.shape == (batch_size * num_workers,)
+    assert out.shape == (batch_size * num_workers, 1)
 
     mock_input = [
         torch.rand((batch_size, *D_in)),
     ]
     out = net(*mock_input, update_ri=False)
 
-    assert out.shape == (batch_size,)
+    assert out.shape == (batch_size, 1)
 
 
 def test_rnd_multi_call():
@@ -77,11 +77,11 @@ def test_rnd_multi_call():
     ]
     out = net(*mock_input, update_ri=True)
 
-    assert out.shape == (batch_size * num_workers,)
+    assert out.shape == (batch_size * num_workers, 1)
 
     mock_input = [
         [torch.rand((batch_size, *D_in[0])), torch.rand((batch_size, D_in[1]))],
     ]
     out = net(*mock_input, update_ri=False)
 
-    assert out.shape == (batch_size,)
+    assert out.shape == (batch_size, 1)
