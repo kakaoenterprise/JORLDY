@@ -89,7 +89,9 @@ class R2D2(ApeX):
         next_hidden = (next_hidden_h, next_hidden_c)
                 
         eye = torch.eye(self.action_size).to(self.device)
-        one_hot_action = eye[action.view(-1,self.seq_len).long()]
+        # one_hot_action = eye[action.view(-1,self.seq_len).long()]
+        one_hot_action = eye[action.view(-1,self.seq_len).long()][:,self.n_burn_in:]
+        
         q_pred = self.get_q(state, prev_action_onehot, hidden, self.network)
         q = (q_pred * one_hot_action).sum(-1, keepdims=True)
         with torch.no_grad():
@@ -97,16 +99,16 @@ class R2D2(ApeX):
             next_q = self.get_q(next_state, next_prev_action_onehot, next_hidden, self.network)
             max_a = torch.argmax(next_q, axis=-1)
             max_one_hot_action = eye[max_a.long()]
-                
+            
             next_target_q = self.get_q(next_state, next_prev_action_onehot, next_hidden, self.target_network)
             target_q = (next_target_q * max_one_hot_action).sum(-1, keepdims=True)
             target_q = self.inv_val_rescale(target_q)
             
-            for i in reversed(range(self.n_step)):                             
-                target_q = reward[:, i:i+self.seq_len] + (1 - done[:, i:i+self.seq_len]) * self.gamma * target_q
+            for i in reversed(range(self.n_step)):
+                target_q = reward[:, i+self.n_burn_in:i+self.seq_len] + (1 - done[:, i+self.n_burn_in:i+self.seq_len]) * self.gamma * target_q
             
             target_q = self.val_rescale(target_q)
-
+        
         # Update sum tree
         td_error = abs(target_q - q)
         priority = self.eta*torch.max(td_error, axis=1).values + (1-self.eta)*torch.mean(td_error, axis=1)
@@ -117,9 +119,9 @@ class R2D2(ApeX):
         # Annealing beta
         self.beta = min(1.0, self.beta + self.beta_add)
 
-        # weights = torch.FloatTensor(weights[..., np.newaxis, np.newaxis]).to(self.device)
-        # loss = (weights * (td_error**2)).mean()  
-        
+#         weights = torch.FloatTensor(weights[..., np.newaxis, np.newaxis]).to(self.device)
+#         loss = (weights * (td_error**2)).mean()  
+
         weights = torch.FloatTensor(weights[..., np.newaxis]).to(self.device)
         loss = (weights * (td_error[:,-1]**2)).mean()        
         
@@ -213,8 +215,9 @@ class R2D2(ApeX):
         with torch.no_grad(): 
             burn_in_q, hidden_in, hidden_out = network(state[:,:self.n_burn_in], prev_action_onehot[:,:self.n_burn_in], hidden_in)
         q, hidden_in, hidden_out = network(state[:,self.n_burn_in:], prev_action_onehot[:,self.n_burn_in:], hidden_out)
-        
-        return torch.cat((burn_in_q, q), axis=1)
+
+        return q
+        # return torch.cat((burn_in_q, q), axis=1)
     
     def val_rescale(self, val, eps=1e-3):
         return (val/(abs(val)+1e-10)) * ((abs(val)+1)**(1/2)-1) + (eps * val)
