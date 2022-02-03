@@ -33,7 +33,7 @@
 **Distributed**
 
 - [Distributed Prioritized Experience Replay (APE-X)](https://arxiv.org/pdf/1803.00933.pdf)
-- [Recurrent Experience Replay in Distributed RL (R2D2)](https://openreview.net/pdf?id=r1lyTjAqYX)(🚧 implementing…)
+- [Recurrent Experience Replay in Distributed RL (R2D2)](https://openreview.net/pdf?id=r1lyTjAqYX)
 
 **Policy Optimization, Actor-Critic**
 
