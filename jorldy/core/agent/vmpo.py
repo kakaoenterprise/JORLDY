@@ -203,8 +203,8 @@ class VMPO(REINFORCE):
                 # NOTE: assumes that std are in the same shape as mu (hence vectors)
                 #       hence each dimension of Gaussian distribution is independent
                 if self.action_type == "continuous":
-                    ss = 1.0 / (std ** 2)  # (batch_size * action_dim)
-                    ss_old = 1.0 / (_std_old ** 2)  # (batch_size * action_dim)
+                    ss = 1.0 / (std**2)  # (batch_size * action_dim)
+                    ss_old = 1.0 / (_std_old**2)  # (batch_size * action_dim)
 
                     # mu
                     d_mu = mu - _mu_old.detach()  # (batch_size * action_dim)

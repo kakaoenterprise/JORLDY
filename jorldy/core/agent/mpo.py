@@ -271,8 +271,8 @@ class MPO(BaseAgent):
                 torch.log(torch.exp((At_add) / self.eta).mean(axis=0))
             )
 
-            ss = 1.0 / (std ** 2)  # (batch_size * len_tr, action_dim)
-            ss_old = 1.0 / (std_old ** 2)
+            ss = 1.0 / (std**2)  # (batch_size * len_tr, action_dim)
+            ss_old = 1.0 / (std_old**2)
 
             """
             KL-Divergence losses(related to alpha) implemented using methods introduced from V-MPO paper

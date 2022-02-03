@@ -70,7 +70,7 @@ class PER(DQN):
 
         weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
 
-        loss = (weights * (td_error ** 2)).mean()
+        loss = (weights * (td_error**2)).mean()
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
