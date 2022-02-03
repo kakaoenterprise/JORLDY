@@ -1,9 +1,9 @@
 ### R2D2 CartPole Config ###
 
 env = {
-    "name":"cartpole",
+    "name": "cartpole",
     "action_type": "discrete",
-    "render":False,
+    "render": False,
 }
 
 agent = {
@@ -34,14 +34,14 @@ optim = {
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 100000,
-    "print_period" : 1000,
-    "save_period" : 10000,
+    "training": True,
+    "load_path": None,
+    "run_step": 100000,
+    "print_period": 1000,
+    "save_period": 10000,
     "eval_iteration": 10,
     # distributed setting
-    "distributed_batch_size" : 512,
-    "update_period" : 16,
-    "num_workers" : 16,
+    "distributed_batch_size": 512,
+    "update_period": 16,
+    "num_workers": 16,
 }

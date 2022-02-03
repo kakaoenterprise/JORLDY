@@ -29,14 +29,14 @@ optim = {
 }
 
 train = {
-    "training" : True,
-    "load_path" : None,
-    "run_step" : 200000,
-    "print_period" : 5000,
-    "save_period" : 50000,
+    "training": True,
+    "load_path": None,
+    "run_step": 200000,
+    "print_period": 5000,
+    "save_period": 50000,
     "eval_iteration": 10,
     # distributed setting
-    "distributed_batch_size" : 512,
-    "update_period" : 16,
-    "num_workers" : 8,
+    "distributed_batch_size": 512,
+    "update_period": 16,
+    "num_workers": 8,
 }
