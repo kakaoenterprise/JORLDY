@@ -80,7 +80,6 @@ class Noisy(DQN):
             )
         return {"action": action}
 
-    ### check point :: add param ###
     def learn(self, step):
         transitions = self.memory.sample(self.batch_size)
         for key in transitions.keys():
@@ -108,7 +107,6 @@ class Noisy(DQN):
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
-        ### check point :: add function ###
         self.learning_rate_decay(step)
 
         self.num_learn += 1
@@ -134,7 +132,6 @@ class Noisy(DQN):
         self.target_update_stamp += delta_t
 
         if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:
-            ### check point :: add param ###
             result = self.learn(step)
 
         # Process per step if train start
