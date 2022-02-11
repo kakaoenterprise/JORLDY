@@ -37,7 +37,6 @@ class REINFORCE(BaseAgent):
         optim_config={"name": "adam"},
         gamma=0.99,
         use_standardization=True,
-        ### check point :: add param ###
         run_step=1e6,
         device=None,
         **kwargs,
@@ -58,7 +57,6 @@ class REINFORCE(BaseAgent):
         self.gamma = gamma
         self.use_standardization = use_standardization
         self.memory = RolloutBuffer()
-        ### check point :: add param ###
         self.run_step = run_step
 
     @torch.no_grad()
@@ -78,7 +76,6 @@ class REINFORCE(BaseAgent):
             )
         return {"action": action.cpu().numpy()}
 
-    ### check point :: add param ###
     def learn(self, step):
         transitions = self.memory.sample()
 
@@ -107,13 +104,11 @@ class REINFORCE(BaseAgent):
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
-        ### check point :: add function ###
         self.learning_rate_decay(step)
 
         result = {"loss": loss.item()}
         return result
 
-    ### check point :: add param ###
     def process(self, transitions, step):
         result = {}
         # Process per step
@@ -121,7 +116,6 @@ class REINFORCE(BaseAgent):
 
         # Process per epi
         if transitions[0]["done"]:
-            ### check point :: add param ###
             result = self.learn(step)
 
         return result

@@ -107,7 +107,6 @@ class VMPO(REINFORCE):
             )
         return {"action": action.cpu().numpy()}
 
-    ### check point :: add param ###
     def learn(self, step):
         transitions = self.memory.sample()
         for key in transitions.keys():
@@ -250,7 +249,6 @@ class VMPO(REINFORCE):
                     self.network.parameters(), self.clip_grad_norm
                 )
                 self.optimizer.step()
-                ### check point :: add function ###
                 self.learning_rate_decay(step)
                 self.reset_lgr_muls()
 
@@ -286,7 +284,6 @@ class VMPO(REINFORCE):
 
         # Process per n_step
         if self.learn_stamp >= self.n_step:
-            ### check point :: add param ###
             result = self.learn(step)
             self.learn_stamp = 0
 

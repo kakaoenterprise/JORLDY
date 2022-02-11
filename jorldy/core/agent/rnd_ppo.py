@@ -94,7 +94,6 @@ class RND_PPO(PPO):
             )
         return {"action": action.cpu().numpy()}
 
-    ### check point :: add param ###
     def learn(self, step):
         transitions = self.memory.sample()
         for key in transitions.keys():
@@ -239,7 +238,6 @@ class RND_PPO(PPO):
                     self.rnd.parameters(), self.clip_grad_norm
                 )
                 self.optimizer.step()
-                ### check point :: add function ###
                 self.learning_rate_decay(step)
 
                 probs.append(log_prob.exp().min().item())
@@ -276,7 +274,6 @@ class RND_PPO(PPO):
 
         # Process per epi
         if self.learn_stamp >= self.n_step:
-            ### check point :: add param ###
             result = self.learn(step)
             self.learn_stamp = 0
 
