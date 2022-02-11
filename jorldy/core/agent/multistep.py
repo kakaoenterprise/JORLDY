@@ -74,6 +74,7 @@ class Multistep(DQN):
 
         if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:
             result = self.learn()
+            self.learning_rate_decay(step)
 
         # Process per step if train start
         if self.num_learn > 0:

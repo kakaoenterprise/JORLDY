@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
@@ -204,6 +205,7 @@ class SAC(BaseAgent):
 
         if self.memory.size > self.batch_size and step >= self.start_train_step:
             result = self.learn()
+            self.learning_rate_decay(step)
         if self.num_learn > 0:
             self.update_target_soft()
 
@@ -248,3 +250,19 @@ class SAC(BaseAgent):
             "weights": weights,
         }
         return sync_item
+
+    def learning_rate_decay(self, step, mode="cosine"):
+        if mode == "linear":
+            weight = 1 - (step / self.run_step)
+        elif mode == "cosine":
+            weight = np.cos((np.pi / 2) * (step / self.run_step))
+        elif mode == "sqrt":
+            weight = (1 - (step / self.run_step)) ** (1 / 2)
+        else:
+            raise Exception(f"check learning rate decay mode again! => {mode}")
+
+        for g in self.actor_optimizer.param_groups:
+            g["lr"] = self.actor_optimizer.defaults["lr"] * weight
+
+        for g in self.critic_optimizer.param_groups:
+            g["lr"] = self.critic_optimizer.defaults["lr"] * weight
