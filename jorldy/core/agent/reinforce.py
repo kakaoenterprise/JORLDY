@@ -37,7 +37,6 @@ class REINFORCE(BaseAgent):
         optim_config={"name": "adam"},
         gamma=0.99,
         use_standardization=True,
-        ### check point :: add param ###
         run_step=1e6,
         device=None,
         **kwargs,
