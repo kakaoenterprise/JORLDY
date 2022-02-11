@@ -61,7 +61,6 @@ class MPO(BaseAgent):
         n_step=8,
         clip_grad_norm=1.0,
         gamma=0.99,
-        ### check point :: add param ###
         run_step=1e6,
         device=None,
         # parameters unique to MPO
@@ -149,7 +148,6 @@ class MPO(BaseAgent):
         self.gamma = gamma
         self.tmp_buffer = deque(maxlen=n_step)
         self.memory = ReplayBuffer(buffer_size)
-        ### check point :: add param ###
         self.run_step = run_step
 
     @torch.no_grad()
@@ -178,7 +176,6 @@ class MPO(BaseAgent):
             "prob": prob,
         }
 
-    ### check point :: add param ###
     def learn(self, step):
         transitions = self.memory.sample(self.batch_size)
         for key in transitions.keys():
@@ -391,7 +388,6 @@ class MPO(BaseAgent):
         torch.nn.utils.clip_grad_norm_(self.critic.parameters(), self.clip_grad_norm)
         self.actor_optimizer.step()
         self.critic_optimizer.step()
-        ### check point :: add function ###
         self.learning_rate_decay(step)
         self.reset_lgr_muls()
 
@@ -455,7 +451,6 @@ class MPO(BaseAgent):
 
         if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:
             for i in range(self.n_epoch):
-                ### check point :: add param ###
                 result = self.learn(step)
             self.update_target()
 
