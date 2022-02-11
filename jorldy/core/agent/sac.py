@@ -58,6 +58,7 @@ class SAC(BaseAgent):
         batch_size=64,
         start_train_step=2000,
         static_log_alpha=-2.0,
+        run_step=1e6,
         device=None,
         **kwargs,
     ):
@@ -105,6 +106,7 @@ class SAC(BaseAgent):
         self.memory = ReplayBuffer(buffer_size)
         self.batch_size = batch_size
         self.start_train_step = start_train_step
+        self.run_step = run_step
         self.num_learn = 0
 
     @torch.no_grad()
