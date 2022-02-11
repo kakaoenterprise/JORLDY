@@ -3,6 +3,7 @@ import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import os
+import numpy as np
 
 from core.network import Network
 from core.optimizer import Optimizer
@@ -54,6 +55,8 @@ class DDPG(BaseAgent):
         batch_size=128,
         start_train_step=2000,
         tau=1e-3,
+        ### check point :: add param ###
+        run_step=1e6,
         # OU noise
         mu=0,
         theta=1e-3,
@@ -99,6 +102,8 @@ class DDPG(BaseAgent):
         self.batch_size = batch_size
         self.start_train_step = start_train_step
         self.num_learn = 0
+        ### check point :: add param ###
+        self.run_step = run_step
 
     @torch.no_grad()
     def act(self, state, training=True):
@@ -108,7 +113,8 @@ class DDPG(BaseAgent):
         action = mu + self.OU.sample() if training else mu
         return {"action": action}
 
-    def learn(self):
+    ### check point :: add param ###
+    def learn(self, step):
         transitions = self.memory.sample(self.batch_size)
         for key in transitions.keys():
             transitions[key] = self.as_tensor(transitions[key])
@@ -141,6 +147,8 @@ class DDPG(BaseAgent):
         actor_loss.backward()
         self.actor_optimizer.step()
 
+        ### check point :: add function ###
+        self.learning_rate_decay(step)
         self.num_learn += 1
 
         result = {
@@ -160,7 +168,8 @@ class DDPG(BaseAgent):
         self.memory.store(transitions)
 
         if self.memory.size >= self.batch_size and step >= self.start_train_step:
-            result = self.learn()
+            ### check point :: add param ###
+            result = self.learn(step)
         if self.num_learn > 0:
             self.update_target_soft()
 
@@ -197,3 +206,18 @@ class DDPG(BaseAgent):
             "weights": weights,
         }
         return sync_item
+
+    def learning_rate_decay(self, step, mode="cosine"):
+        if mode == "linear":
+            weight = 1 - (step / self.run_step)
+        elif mode == "cosine":
+            weight = np.cos((np.pi / 2) * (step / self.run_step))
+        elif mode == "sqrt":
+            weight = (1 - (step / self.run_step)) ** (1 / 2)
+        else:
+            raise Exception(f"check learning rate decay mode again! => {mode}")
+
+        for g in self.actor_optimizer.param_groups:
+            g["lr"] = self.actor_optimizer.defaults["lr"] * weight
+        for g in self.critic_optimizer.param_groups:
+            g["lr"] = self.critic_optimizer.defaults["lr"] * weight

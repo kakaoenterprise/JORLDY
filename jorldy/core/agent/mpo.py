@@ -61,6 +61,8 @@ class MPO(BaseAgent):
         n_step=8,
         clip_grad_norm=1.0,
         gamma=0.99,
+        ### check point :: add param ###
+        run_step=1e6,
         device=None,
         # parameters unique to MPO
         critic_loss_type="retrace",  # one of ['1step_TD', 'retrace']
@@ -147,6 +149,8 @@ class MPO(BaseAgent):
         self.gamma = gamma
         self.tmp_buffer = deque(maxlen=n_step)
         self.memory = ReplayBuffer(buffer_size)
+        ### check point :: add param ###
+        self.run_step = run_step
 
     @torch.no_grad()
     def act(self, state, training=True):
@@ -174,7 +178,8 @@ class MPO(BaseAgent):
             "prob": prob,
         }
 
-    def learn(self):
+    ### check point :: add param ###
+    def learn(self, step):
         transitions = self.memory.sample(self.batch_size)
         for key in transitions.keys():
             # reshape: (batch_size, len_tr, item_dim)
@@ -386,6 +391,8 @@ class MPO(BaseAgent):
         torch.nn.utils.clip_grad_norm_(self.critic.parameters(), self.clip_grad_norm)
         self.actor_optimizer.step()
         self.critic_optimizer.step()
+        ### check point :: add function ###
+        self.learning_rate_decay(step)
         self.reset_lgr_muls()
 
         self.num_learn += 1
@@ -448,7 +455,8 @@ class MPO(BaseAgent):
 
         if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:
             for i in range(self.n_epoch):
-                result = self.learn()
+                ### check point :: add param ###
+                result = self.learn(step)
             self.update_target()
 
         return result
@@ -473,3 +481,18 @@ class MPO(BaseAgent):
                 _transition[key] = np.stack([t[key] for t in self.tmp_buffer], axis=1)
 
         return _transition
+
+    def learning_rate_decay(self, step, mode="cosine"):
+        if mode == "linear":
+            weight = 1 - (step / self.run_step)
+        elif mode == "cosine":
+            weight = np.cos((np.pi / 2) * (step / self.run_step))
+        elif mode == "sqrt":
+            weight = (1 - (step / self.run_step)) ** (1 / 2)
+        else:
+            raise Exception(f"check learning rate decay mode again! => {mode}")
+
+        for g in self.actor_optimizer.param_groups:
+            g["lr"] = self.actor_optimizer.defaults["lr"] * weight
+        for g in self.critic_optimizer.param_groups:
+            g["lr"] = self.critic_optimizer.defaults["lr"] * weight
