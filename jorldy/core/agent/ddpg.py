@@ -36,6 +36,7 @@ class DDPG(BaseAgent):
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
     """
 
+    
     def __init__(
         self,
         state_size,
