@@ -93,11 +93,7 @@ class RND_PPO(PPO):
                 else torch.argmax(pi, dim=-1, keepdim=True)
             )
         return {"action": action.cpu().numpy()}
-<<<<<<< HEAD
-
-=======
     
->>>>>>> d3c1b36a267684c89e274d9e57ae100814a027d1
     def learn(self, step):
         transitions = self.memory.sample()
         for key in transitions.keys():

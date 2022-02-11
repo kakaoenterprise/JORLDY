@@ -148,11 +148,7 @@ class Rainbow(DQN):
             action = torch.argmax(q_action, -1, keepdim=True).cpu().numpy()
         return {"action": action}
 
-<<<<<<< HEAD
     def learn(self, step):
-=======
-    def learn(self):
->>>>>>> d3c1b36a267684c89e274d9e57ae100814a027d1
         transitions, weights, indices, sampled_p, mean_p = self.memory.sample(
             self.beta, self.batch_size
         )
@@ -238,10 +234,7 @@ class Rainbow(DQN):
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
-<<<<<<< HEAD
         self.learning_rate_decay(step)
-=======
->>>>>>> d3c1b36a267684c89e274d9e57ae100814a027d1
 
         self.num_learn += 1
 
@@ -275,11 +268,7 @@ class Rainbow(DQN):
             and self.memory.buffer_counter >= self.batch_size
             and self.time_t >= self.start_train_step
         ):
-<<<<<<< HEAD
             result = self.learn(step)
-=======
-            result = self.learn()
->>>>>>> d3c1b36a267684c89e274d9e57ae100814a027d1
             self.learn_period_stamp = 0
 
         # Process per step if train start
