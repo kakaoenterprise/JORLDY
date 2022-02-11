@@ -106,6 +106,7 @@ class PER(DQN):
             and self.time_t >= self.start_train_step
         ):
             result = self.learn()
+            self.learning_rate_decay(step)
             self.learn_period_stamp = 0
 
         # Process per step if train start
