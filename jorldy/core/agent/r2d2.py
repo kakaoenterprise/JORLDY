@@ -269,12 +269,15 @@ class R2D2(ApeX):
             self.store_start = False
             self.store_period_stamp = 0
 
-            if self.tmp_buffer[-self.n_step - 1]["done"]:
-                self.store_start = True
-                self.tmp_buffer = deque(
-                    islice(self.tmp_buffer, len(self.tmp_buffer) - self.n_step, None),
-                    maxlen=self.tmp_buffer.maxlen,
-                )
+        if (
+            len(self.tmp_buffer) > self.n_step
+            and self.tmp_buffer[-self.n_step - 1]["done"]
+        ):
+            self.store_start = True
+            self.tmp_buffer = deque(
+                islice(self.tmp_buffer, len(self.tmp_buffer) - self.n_step, None),
+                maxlen=self.tmp_buffer.maxlen,
+            )
 
         self.store_period_stamp += 1
         if transition["done"]:
