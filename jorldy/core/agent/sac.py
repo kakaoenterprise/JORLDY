@@ -207,8 +207,10 @@ class SAC(BaseAgent):
 
         if self.memory.size > self.batch_size and step >= self.start_train_step:
             result = self.learn()
-            self.learning_rate_decay(step, [self.actor_optimizer, self.critic_optimizer])
-            
+            self.learning_rate_decay(
+                step, [self.actor_optimizer, self.critic_optimizer]
+            )
+
         if self.num_learn > 0:
             self.update_target_soft()
 
@@ -253,4 +255,3 @@ class SAC(BaseAgent):
             "weights": weights,
         }
         return sync_item
-

@@ -99,13 +99,13 @@ class BaseAgent(ABC):
             weight = (1 - (step / self.run_step)) ** (1 / 2)
         else:
             raise Exception(f"check learning rate decay mode again! => {mode}")
-        
+
         if optimizers is None:
             optimizers = [self.optimizer]
-        
+
         if not isinstance(optimizers, list):
             optimizers = [optimizers]
-            
+
         for optimizer in optimizers:
             for g in optimizer.param_groups:
                 g["lr"] = optimizer.defaults["lr"] * weight
