@@ -105,6 +105,7 @@ class Rainbow(DQN):
         self.target_update_period = target_update_period
         self.num_learn = 0
         self.time_t = 0
+        self.run_step = run_step
 
         # MultiStep
         self.n_step = n_step
@@ -267,6 +268,7 @@ class Rainbow(DQN):
             and self.time_t >= self.start_train_step
         ):
             result = self.learn()
+            self.learning_rate_decay(step)
             self.learn_period_stamp = 0
 
         # Process per step if train start

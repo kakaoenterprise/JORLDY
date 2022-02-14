@@ -274,6 +274,7 @@ class RND_PPO(PPO):
         # Process per epi
         if self.learn_stamp >= self.n_step:
             result = self.learn()
+            self.learning_rate_decay(step)
             self.learn_stamp = 0
 
         return result

@@ -116,6 +116,7 @@ class REINFORCE(BaseAgent):
         # Process per epi
         if transitions[0]["done"]:
             result = self.learn()
+            self.learning_rate_decay(step)
 
         return result
 

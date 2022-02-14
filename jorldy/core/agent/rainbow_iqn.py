@@ -108,6 +108,7 @@ class RainbowIQN(Rainbow):
         self.start_train_step = start_train_step
         self.target_update_stamp = 0
         self.target_update_period = target_update_period
+        self.run_step = run_step
         self.num_learn = 0
         self.time_t = 0
 

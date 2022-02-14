@@ -1,5 +1,4 @@
 import torch
-import numpy as np
 
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
