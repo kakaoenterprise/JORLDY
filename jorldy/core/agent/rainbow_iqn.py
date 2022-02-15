@@ -56,6 +56,7 @@ class RainbowIQN(Rainbow):
         batch_size=64,
         start_train_step=2000,
         target_update_period=500,
+        run_step=1e6,
         # MultiStep
         n_step=4,
         # PER
@@ -71,7 +72,6 @@ class RainbowIQN(Rainbow):
         sample_min=0.0,
         sample_max=1.0,
         device=None,
-        run_step=1e6,
         **kwargs,
     ):
         self.device = (
@@ -110,6 +110,7 @@ class RainbowIQN(Rainbow):
         self.target_update_period = target_update_period
         self.num_learn = 0
         self.time_t = 0
+        self.run_step = run_step
 
         # MultiStep
         self.n_step = n_step

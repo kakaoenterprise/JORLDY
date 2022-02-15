@@ -61,6 +61,7 @@ class MPO(BaseAgent):
         n_step=8,
         clip_grad_norm=1.0,
         gamma=0.99,
+        run_step=1e6,
         device=None,
         # parameters unique to MPO
         critic_loss_type="retrace",  # one of ['1step_TD', 'retrace']
@@ -147,6 +148,7 @@ class MPO(BaseAgent):
         self.gamma = gamma
         self.tmp_buffer = deque(maxlen=n_step)
         self.memory = ReplayBuffer(buffer_size)
+        self.run_step = run_step
 
     @torch.no_grad()
     def act(self, state, training=True):
@@ -449,6 +451,9 @@ class MPO(BaseAgent):
         if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:
             for i in range(self.n_epoch):
                 result = self.learn()
+                self.learning_rate_decay(
+                    step, [self.actor_optimizer, self.critic_optimizer]
+                )
             self.update_target()
 
         return result
