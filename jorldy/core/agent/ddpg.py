@@ -3,7 +3,6 @@ import torch
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import os
-import numpy as np
 
 from core.network import Network
 from core.optimizer import Optimizer
@@ -164,7 +163,9 @@ class DDPG(BaseAgent):
 
         if self.memory.size >= self.batch_size and step >= self.start_train_step:
             result = self.learn()
-            self.learning_rate_decay(step)
+            self.learning_rate_decay(
+                step, [self.actor_optimizer, self.critic_optimizer]
+            )
         if self.num_learn > 0:
             self.update_target_soft()
 
@@ -201,23 +202,3 @@ class DDPG(BaseAgent):
             "weights": weights,
         }
         return sync_item
-
-    def learning_rate_decay(self, step, optimizers=None, mode="cosine"):
-        if mode == "linear":
-            weight = 1 - (step / self.run_step)
-        elif mode == "cosine":
-            weight = np.cos((np.pi / 2) * (step / self.run_step))
-        elif mode == "sqrt":
-            weight = (1 - (step / self.run_step)) ** (1 / 2)
-        else:
-            raise Exception(f"check learning rate decay mode again! => {mode}")
-
-        if optimizers is None:
-            optimizers = [self.actor_optimizer, self.critic_optimizer]
-
-        if not isinstance(optimizers, list):
-            optimizers = [optimizers]
-
-        for optimizer in optimizers:
-            for g in optimizer.param_groups:
-                g["lr"] = optimizer.defaults["lr"] * weight

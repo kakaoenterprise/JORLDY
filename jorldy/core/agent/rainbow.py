@@ -55,6 +55,7 @@ class Rainbow(DQN):
         batch_size=64,
         start_train_step=2000,
         target_update_period=500,
+        run_step=1e6,
         # MultiStep
         n_step=4,
         # PER
@@ -69,7 +70,6 @@ class Rainbow(DQN):
         v_max=10,
         num_support=51,
         device=None,
-        run_step=1e6,
         **kwargs,
     ):
         self.device = (

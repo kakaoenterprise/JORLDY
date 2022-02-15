@@ -451,7 +451,9 @@ class MPO(BaseAgent):
         if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:
             for i in range(self.n_epoch):
                 result = self.learn()
-                self.learning_rate_decay(step)
+                self.learning_rate_decay(
+                    step, [self.actor_optimizer, self.critic_optimizer]
+                )
             self.update_target()
 
         return result
@@ -476,23 +478,3 @@ class MPO(BaseAgent):
                 _transition[key] = np.stack([t[key] for t in self.tmp_buffer], axis=1)
 
         return _transition
-
-    def learning_rate_decay(self, step, optimizers=None, mode="cosine"):
-        if mode == "linear":
-            weight = 1 - (step / self.run_step)
-        elif mode == "cosine":
-            weight = np.cos((np.pi / 2) * (step / self.run_step))
-        elif mode == "sqrt":
-            weight = (1 - (step / self.run_step)) ** (1 / 2)
-        else:
-            raise Exception(f"check learning rate decay mode again! => {mode}")
-
-        if optimizers is None:
-            optimizers = [self.actor_optimizer, self.critic_optimizer]
-
-        if not isinstance(optimizers, list):
-            optimizers = [optimizers]
-
-        for optimizer in optimizers:
-            for g in optimizer.param_groups:
-                g["lr"] = optimizer.defaults["lr"] * weight
