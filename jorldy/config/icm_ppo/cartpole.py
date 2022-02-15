@@ -16,9 +16,9 @@ agent = {
     "_lambda": 0.95,
     "epsilon_clip": 0.1,
     "vf_coef": 1.0,
-    "ent_coef": 0.1,
+    "ent_coef": 0.01,
     "clip_grad_norm": 1.0,
-    "use_standardization": True,
+    "use_standardization": False,
     # Parameters for Curiosity-driven Exploration
     "icm_network": "icm_mlp",  # icm_mlp, icm_cnn, icm_multi
     "beta": 0.2,
