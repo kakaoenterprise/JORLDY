@@ -155,6 +155,8 @@ class DDPG(BaseAgent):
     def update_target_soft(self):
         for t_p, p in zip(self.target_critic.parameters(), self.critic.parameters()):
             t_p.data.copy_(self.tau * p.data + (1 - self.tau) * t_p.data)
+        for t_p, p in zip(self.target_actor.parameters(), self.actor.parameters()):
+            t_p.data.copy_(self.tau * p.data + (1 - self.tau) * t_p.data)
 
     def process(self, transitions, step):
         result = {}
