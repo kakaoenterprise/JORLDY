@@ -4,11 +4,7 @@ torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import os
 
-from core.network import Network
-from core.optimizer import Optimizer
-from core.buffer import ReplayBuffer
 from .ddpg import DDPG
-from .utils import OU_Noise
 
 
 class TD3(DDPG):
@@ -36,14 +32,15 @@ class TD3(DDPG):
     """
 
     def __init__(
-        self,
+        self, 
         actor="td3_actor",
         critic="td3_critic",
+        actor_period=2,
         **kwargs,
     ):
-        super(TD3, self).__init__(actor="td3_actor", critic="td3_critic", **kwargs)
-        self.period = 2
-        self.result = None
+        super(TD3, self).__init__(actor=actor, critic=critic, **kwargs)
+        self.actor_period = actor_period
+        self.actor_loss = 0.0
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
@@ -59,13 +56,11 @@ class TD3(DDPG):
         # Critic Update
         with torch.no_grad():
             next_actions = self.target_actor(next_state)
-            next_q = self.target_critic(next_state, next_actions)
-            min_next_q = torch.cat([next_q[0], next_q[1]], dim=1).min(1)[0]
-            min_next_q = torch.reshape(min_next_q, (min_next_q.size()[0], 1))
+            next_q1, next_q2 = self.target_critic(next_state, next_actions)
+            min_next_q = torch.min(next_q1, next_q2)
             target_q = reward + (1 - done) * self.gamma * min_next_q
         q = self.critic(state, action)
         critic_loss = F.mse_loss(target_q, q[0]) + F.mse_loss(target_q, q[1])
-
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
@@ -73,7 +68,7 @@ class TD3(DDPG):
         max_Q = torch.max(target_q, axis=0).values.cpu().numpy()[0]
 
         # Actor Update
-        if not self.num_learn % self.period:
+        if not self.num_learn % self.actor_period:
             action_pred = self.actor(state)
             critic_1, _ = self.critic(state, action_pred)
             actor_loss = -critic_1.mean()
@@ -81,14 +76,17 @@ class TD3(DDPG):
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             self.actor_optimizer.step()
+            self.actor_loss = actor_loss.item()
+
             self.update_target_soft()
-            self.result = {
-                "critic_loss": critic_loss.item(),
-                "actor_loss": actor_loss.item(),
-                "max_Q": max_Q,
-            }
 
         self.num_learn += 1
+
+        self.result = {
+            "critic_loss": critic_loss.item(),
+            "actor_loss": self.actor_loss,
+            "max_Q": max_Q,
+        }
 
         return self.result
 
