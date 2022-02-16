@@ -39,13 +39,13 @@ apt-get -y install gifsicle        # for gif optimize
 ```
 cd JORLDY
 
+docker pull jorldy/jorldy
+
 # mac, linux
-docker build -t jorldy -f ./docker/Dockerfile .
-docker run -it --rm --name jorldy -v `pwd`:/JORLDY jorldy /bin/bash
+docker run -it --rm --name jorldy -v `pwd`:/JORLDY jorldy/jorldy /bin/bash
 
 # windows
-docker build -t jorldy -f .\docker\Dockerfile .
-docker run -it --rm --name jorldy -v %cd%:/JORLDY jorldy /bin/bash
+docker run -it --rm --name jorldy -v %cd%:/JORLDY jorldy/jorldy /bin/bash
 ```
 
 ### :heavy_plus_sign: To use additional environments
