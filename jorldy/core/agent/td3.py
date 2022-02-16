@@ -32,7 +32,7 @@ class TD3(DDPG):
     """
 
     def __init__(
-        self, 
+        self,
         actor="td3_actor",
         critic="td3_critic",
         actor_period=2,
