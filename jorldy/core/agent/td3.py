@@ -37,80 +37,13 @@ class TD3(DDPG):
 
     def __init__(
         self,
-        state_size,
-        action_size,
-        hidden_size=512,
         actor="td3_actor",
         critic="td3_critic",
-        head="mlp",
-        optim_config={
-            "actor": "adam",
-            "critic": "adam",
-            "actor_lr": 5e-4,
-            "critic_lr": 1e-3,
-        },
-        gamma=0.99,
-        buffer_size=50000,
-        batch_size=128,
-        start_train_step=2000,
-        tau=1e-3,
-        # OU noise
-        mu=0,
-        theta=1e-3,
-        sigma=2e-3,
-        run_step=1e6,
-        device=None,
         **kwargs,
     ):
-        self.device = (
-            torch.device(device)
-            if device
-            else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        )
-
-        self.actor = Network(
-            actor, state_size, action_size, D_hidden=hidden_size, head=head
-        ).to(self.device)
-        self.critic = Network(
-            critic, state_size, action_size, D_hidden=hidden_size, head=head
-        ).to(self.device)
-        self.target_actor = Network(
-            actor, state_size, action_size, D_hidden=hidden_size, head=head
-        ).to(self.device)
-        self.target_actor.load_state_dict(self.actor.state_dict())
-        self.target_critic = Network(
-            critic, state_size, action_size, D_hidden=hidden_size, head=head
-        ).to(self.device)
-        self.target_critic.load_state_dict(self.critic.state_dict())
-
-        self.actor_optimizer = Optimizer(
-            optim_config["actor"], self.actor.parameters(), lr=optim_config["actor_lr"]
-        )
-        self.critic_optimizer = Optimizer(
-            optim_config["critic"],
-            self.critic.parameters(),
-            lr=optim_config["critic_lr"],
-        )
-
-        self.OU = OU_Noise(action_size, mu, theta, sigma)
-
-        self.gamma = gamma
-        self.tau = tau
-        self.memory = ReplayBuffer(buffer_size)
-        self.batch_size = batch_size
-        self.start_train_step = start_train_step
-        self.num_learn = 0
-        self.run_step = run_step
+        super(TD3, self).__init__(actor="td3_actor", critic="td3_critic", **kwargs)
         self.period = 2
         self.result = None
-
-    @torch.no_grad()
-    def act(self, state, training=True):
-        self.actor.train(training)
-        mu = self.actor(self.as_tensor(state))
-        mu = mu.cpu().numpy()
-        action = mu + self.OU.sample() if training else mu
-        return {"action": action}
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
@@ -159,12 +92,6 @@ class TD3(DDPG):
 
         return self.result
 
-    def update_target_soft(self):
-        for t_p, p in zip(self.target_critic.parameters(), self.critic.parameters()):
-            t_p.data.copy_(self.tau * p.data + (1 - self.tau) * t_p.data)
-        for t_p, p in zip(self.target_actor.parameters(), self.actor.parameters()):
-            t_p.data.copy_(self.tau * p.data + (1 - self.tau) * t_p.data)
-
     def process(self, transitions, step):
         result = {}
         # Process per step
@@ -177,35 +104,3 @@ class TD3(DDPG):
             )
 
         return result
-
-    def save(self, path):
-        print(f"...Save model to {path}...")
-        save_dict = {
-            "actor": self.actor.state_dict(),
-            "actor_optimizer": self.actor_optimizer.state_dict(),
-            "critic": self.critic.state_dict(),
-            "critic_optimizer": self.critic_optimizer.state_dict(),
-        }
-        torch.save(save_dict, os.path.join(path, "ckpt"))
-
-    def load(self, path):
-        print(f"...Load model from {path}...")
-        checkpoint = torch.load(os.path.join(path, "ckpt"), map_location=self.device)
-        self.actor.load_state_dict(checkpoint["actor"])
-        self.actor_optimizer.load_state_dict(checkpoint["actor_optimizer"])
-
-        self.critic.load_state_dict(checkpoint["critic"])
-        self.target_critic.load_state_dict(self.critic.state_dict())
-        self.critic_optimizer.load_state_dict(checkpoint["critic_optimizer"])
-
-    def sync_in(self, weights):
-        self.actor.load_state_dict(weights)
-
-    def sync_out(self, device="cpu"):
-        weights = self.actor.state_dict()
-        for k, v in weights.items():
-            weights[k] = v.to(device)
-        sync_item = {
-            "weights": weights,
-        }
-        return sync_item
