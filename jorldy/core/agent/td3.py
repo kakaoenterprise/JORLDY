@@ -4,7 +4,11 @@ torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
 import os
 
+from core.network import Network
+from core.optimizer import Optimizer
+from core.buffer import ReplayBuffer
 from .ddpg import DDPG
+from .utils import OU_Noise
 
 
 class TD3(DDPG):
@@ -33,12 +37,85 @@ class TD3(DDPG):
 
     def __init__(
         self,
-        actor="td3_actor",
-        critic="td3_critic",
+        state_size,
+        action_size,
+        hidden_size=512,
+        actor="ddpg_actor",
+        critic="ddpg_critic",
+        head="mlp",
+        optim_config={
+            "actor": "adam",
+            "critic": "adam",
+            "actor_lr": 5e-4,
+            "critic_lr": 1e-3,
+        },
+        gamma=0.99,
+        buffer_size=50000,
+        batch_size=128,
+        start_train_step=2000,
+        tau=1e-3,
         actor_period=2,
+        # OU noise
+        mu=0,
+        theta=1e-3,
+        sigma=2e-3,
+        run_step=1e6,
+        device=None,
         **kwargs,
     ):
-        super(TD3, self).__init__(actor=actor, critic=critic, **kwargs)
+        self.device = (
+            torch.device(device)
+            if device
+            else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        )
+
+        self.actor = Network(
+            actor, state_size, action_size, D_hidden=hidden_size, head=head
+        ).to(self.device)
+        self.target_actor = Network(
+            actor, state_size, action_size, D_hidden=hidden_size, head=head
+        ).to(self.device)
+        self.target_actor.load_state_dict(self.actor.state_dict())
+        self.actor_optimizer = Optimizer(
+            optim_config["actor"], self.actor.parameters(), lr=optim_config["actor_lr"]
+        )
+
+        self.critic1 = Network(
+            critic, state_size, action_size, D_hidden=hidden_size, head=head
+        ).to(self.device)
+        self.target_critic1 = Network(
+            critic, state_size, action_size, D_hidden=hidden_size, head=head
+        ).to(self.device)
+        self.target_critic1.load_state_dict(self.critic1.state_dict())
+        self.critic_optimizer1 = Optimizer(
+            optim_config["critic"],
+            self.critic1.parameters(),
+            lr=optim_config["critic_lr"],
+        )
+
+        self.critic2 = Network(
+            critic, state_size, action_size, D_hidden=hidden_size, head=head
+        ).to(self.device)
+        self.target_critic2 = Network(
+            critic, state_size, action_size, D_hidden=hidden_size, head=head
+        ).to(self.device)
+        self.target_critic2.load_state_dict(self.critic2.state_dict())
+        self.critic_optimizer2 = Optimizer(
+            optim_config["critic"],
+            self.critic2.parameters(),
+            lr=optim_config["critic_lr"],
+        )
+
+        self.OU = OU_Noise(action_size, mu, theta, sigma)
+
+        self.gamma = gamma
+        self.tau = tau
+        self.memory = ReplayBuffer(buffer_size)
+        self.batch_size = batch_size
+        self.start_train_step = start_train_step
+        self.num_learn = 0
+        self.run_step = run_step
+
         self.actor_period = actor_period
         self.actor_loss = 0.0
 
@@ -56,39 +133,51 @@ class TD3(DDPG):
         # Critic Update
         with torch.no_grad():
             next_actions = self.target_actor(next_state)
-            next_q1, next_q2 = self.target_critic(next_state, next_actions)
+            next_q1 = self.target_critic1(next_state, next_actions)
+            next_q2 = self.target_critic2(next_state, next_actions)
             min_next_q = torch.min(next_q1, next_q2)
             target_q = reward + (1 - done) * self.gamma * min_next_q
-        q = self.critic(state, action)
-        critic_loss = F.mse_loss(target_q, q[0]) + F.mse_loss(target_q, q[1])
-        self.critic_optimizer.zero_grad()
-        critic_loss.backward()
-        self.critic_optimizer.step()
+        critic_loss1 = F.mse_loss(target_q, self.critic1(state, action))
+        self.critic_optimizer1.zero_grad()
+        critic_loss1.backward()
+        self.critic_optimizer1.step()
+
+        critic_loss2 = F.mse_loss(target_q, self.critic2(state, action))
+        self.critic_optimizer2.zero_grad()
+        critic_loss2.backward()
+        self.critic_optimizer2.step()
 
         max_Q = torch.max(target_q, axis=0).values.cpu().numpy()[0]
 
-        # Actor Update
-        if not self.num_learn % self.actor_period:
+        # Delayed Actor Update
+        if self.num_learn % self.actor_period == 0:
             action_pred = self.actor(state)
-            critic_1, _ = self.critic(state, action_pred)
-            actor_loss = -critic_1.mean()
+            actor_loss = -self.critic1(state, action_pred).mean()
 
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             self.actor_optimizer.step()
             self.actor_loss = actor_loss.item()
-
-            self.update_target_soft()
+            if self.num_learn > 0:
+                self.update_target_soft()
 
         self.num_learn += 1
 
         self.result = {
-            "critic_loss": critic_loss.item(),
+            "critic_loss": (critic_loss1 + critic_loss2).item(),
             "actor_loss": self.actor_loss,
             "max_Q": max_Q,
         }
 
         return self.result
+
+    def update_target_soft(self):
+        for t_p, p in zip(self.target_critic1.parameters(), self.critic1.parameters()):
+            t_p.data.copy_(self.tau * p.data + (1 - self.tau) * t_p.data)
+        for t_p, p in zip(self.target_critic2.parameters(), self.critic2.parameters()):
+            t_p.data.copy_(self.tau * p.data + (1 - self.tau) * t_p.data)
+        for t_p, p in zip(self.target_actor.parameters(), self.actor.parameters()):
+            t_p.data.copy_(self.tau * p.data + (1 - self.tau) * t_p.data)
 
     def process(self, transitions, step):
         result = {}
@@ -98,7 +187,33 @@ class TD3(DDPG):
         if self.memory.size >= self.batch_size and step >= self.start_train_step:
             result = self.learn()
             self.learning_rate_decay(
-                step, [self.actor_optimizer, self.critic_optimizer]
+                step,
+                [self.actor_optimizer, self.critic_optimizer1, self.critic_optimizer2],
             )
 
         return result
+
+    def save(self, path):
+        print(f"...Save model to {path}...")
+        save_dict = {
+            "actor": self.actor.state_dict(),
+            "actor_optimizer": self.actor_optimizer.state_dict(),
+            "critic1": self.critic1.state_dict(),
+            "critic2": self.critic2.state_dict(),
+            "critic_optimizer1": self.critic_optimizer1.state_dict(),
+            "critic_optimizer2": self.critic_optimizer2.state_dict(),
+        }
+        torch.save(save_dict, os.path.join(path, "ckpt"))
+
+    def load(self, path):
+        print(f"...Load model from {path}...")
+        checkpoint = torch.load(os.path.join(path, "ckpt"), map_location=self.device)
+        self.actor.load_state_dict(checkpoint["actor"])
+        self.actor_optimizer.load_state_dict(checkpoint["actor_optimizer"])
+
+        self.critic1.load_state_dict(checkpoint["critic1"])
+        self.critic1.load_state_dict(checkpoint["critic2"])
+        self.target_critic1.load_state_dict(self.critic1.state_dict())
+        self.target_critic2.load_state_dict(self.critic2.state_dict())
+        self.critic_optimizer1.load_state_dict(checkpoint["critic_optimizer1"])
+        self.critic_optimizer2.load_state_dict(checkpoint["critic_optimizer2"])
