@@ -35,6 +35,8 @@ agent = {
     "obs_normalize": True,
     "ri_normalize": True,
     "batch_norm": True,
+    "non_episodic": True,
+    "non_extrinsic": False,
 }
 
 optim = {

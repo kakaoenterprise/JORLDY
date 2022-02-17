@@ -16,7 +16,7 @@ agent = {
     "_lambda": 0.95,
     "epsilon_clip": 0.1,
     "vf_coef": 0.5,
-    "ent_coef": 0.001,
+    "ent_coef": 0.01,
     "clip_grad_norm": 1.0,
     "use_standardization": True,
     # Parameters for Random Network Distillation

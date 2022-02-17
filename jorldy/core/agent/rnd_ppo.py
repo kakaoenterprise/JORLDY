@@ -114,7 +114,13 @@ class RND_PPO(PPO):
             # RND: calculate exploration reward, update moments of obs and r_i
             self.rnd.update_rms_obs(next_state)
             r_i = self.rnd(next_state, update_ri=True)
-
+            
+            # old implementation 
+            # r_i = r_i.unsqueeze(-1)
+            
+            # reward *= self.extrinsic_coeff
+            # r_i *= self.intrinsic_coeff            
+            
             if self.action_type == "continuous":
                 mu, std, value = self.network(state)
                 m = Normal(mu, std)
@@ -148,8 +154,10 @@ class RND_PPO(PPO):
 
             ret = adv.view(-1, 1) + value
             ret_i = adv_i.view(-1, 1) + v_i
-
+            
+            # Check
             adv = self.extrinsic_coeff * adv + self.intrinsic_coeff * adv_i
+            
             if self.use_standardization:
                 adv = (adv - adv.mean(dim=1, keepdim=True)) / (
                     adv.std(dim=1, keepdim=True) + 1e-7
@@ -159,7 +167,7 @@ class RND_PPO(PPO):
 
         mean_ret = ret.mean().item()
         mean_ret_i = ret_i.mean().item()
-
+        
         # start train iteration
         actor_losses, critic_e_losses, critic_i_losses = [], [], []
         entropy_losses, rnd_losses, ratios, probs = [], [], [], []
@@ -168,11 +176,11 @@ class RND_PPO(PPO):
             np.random.shuffle(idxs)
             for offset in range(0, len(reward), self.batch_size):
                 idx = idxs[offset : offset + self.batch_size]
-
                 (
                     _state,
                     _action,
                     _value,
+                    _v_i,
                     _ret,
                     _ret_i,
                     _next_state,
@@ -184,6 +192,7 @@ class RND_PPO(PPO):
                         state,
                         action,
                         value,
+                        v_i,
                         ret,
                         ret_i,
                         next_state,
@@ -191,7 +200,10 @@ class RND_PPO(PPO):
                         log_prob_old,
                     ],
                 )
-
+                
+                #old implementation
+                _r_i = self.rnd.forward(_next_state) #* self.intrinsic_coeff
+                
                 if self.action_type == "continuous":
                     mu, std, value_pred = self.network(_state)
                     m = Normal(mu, std)
@@ -201,7 +213,7 @@ class RND_PPO(PPO):
                     pi, value_pred = self.network(_state)
                     m = Categorical(pi)
                     log_prob = m.log_prob(_action.squeeze(-1)).unsqueeze(-1)
-                v_i = self.network.get_v_i(_state)
+                value_i = self.network.get_v_i(_state)
 
                 ratio = (log_prob - _log_prob_old).sum(1, keepdim=True).exp()
                 surr1 = ratio * _adv
@@ -212,9 +224,33 @@ class RND_PPO(PPO):
                     * _adv
                 )
                 actor_loss = -torch.min(surr1, surr2).mean()
+                
+                #######################################
+                # Critic Clipping (temp) 
+                value_pred_clipped = _value + torch.clamp(
+                    value_pred - _value, -self.epsilon_clip, self.epsilon_clip
+                )
 
-                critic_e_loss = F.mse_loss(value_pred, _ret).mean()
-                critic_i_loss = F.mse_loss(v_i, _ret_i).mean()
+                critic_loss1 = F.mse_loss(value_pred, _ret)
+                critic_loss2 = F.mse_loss(value_pred_clipped, _ret)
+
+                critic_e_loss = torch.max(critic_loss1, critic_loss2).mean()
+                #######################################
+                # critic_e_loss = F.mse_loss(value_pred, _ret).mean()
+                
+                
+                #######################################
+                # Critic Clipping (temp) 
+                value_i_clipped = _v_i + torch.clamp(
+                    value_i - _v_i, -self.epsilon_clip, self.epsilon_clip
+                )
+
+                critic_i_loss1 = F.mse_loss(value_i, _ret_i)
+                critic_i_loss2 = F.mse_loss(value_i_clipped, _ret_i)
+
+                critic_i_loss = torch.max(critic_i_loss1, critic_i_loss2).mean()
+                #######################################
+                # critic_i_loss = F.mse_loss(v_i, _ret_i).mean()
 
                 critic_loss = critic_e_loss + critic_i_loss
 
@@ -225,8 +261,9 @@ class RND_PPO(PPO):
                     + self.ent_coef * entropy_loss
                 )
 
-                rnd_loss = self.rnd.forward(_next_state).mean()
-
+                # rnd_loss = self.rnd.forward(_next_state).mean()
+                rnd_loss = _r_i.mean()
+                
                 loss = ppo_loss + rnd_loss
 
                 self.optimizer.zero_grad(set_to_none=True)
