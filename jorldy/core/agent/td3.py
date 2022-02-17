@@ -132,9 +132,9 @@ class TD3(DDPG):
 
         # Critic Update
         with torch.no_grad():
-            next_actions = self.target_actor(next_state)
-            next_q1 = self.target_critic1(next_state, next_actions)
-            next_q2 = self.target_critic2(next_state, next_actions)
+            next_action = self.target_actor(next_state)
+            next_q1 = self.target_critic1(next_state, next_action)
+            next_q2 = self.target_critic2(next_state, next_action)
             min_next_q = torch.min(next_q1, next_q2)
             target_q = reward + (1 - done) * self.gamma * min_next_q
         critic_loss1 = F.mse_loss(target_q, self.critic1(state, action))

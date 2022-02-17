@@ -123,8 +123,8 @@ class DDPG(BaseAgent):
 
         # Critic Update
         with torch.no_grad():
-            next_actions = self.target_actor(next_state)
-            next_q = self.target_critic(next_state, next_actions)
+            next_action = self.target_actor(next_state)
+            next_q = self.target_critic(next_state, next_action)
             target_q = reward + (1 - done) * self.gamma * next_q
         q = self.critic(state, action)
         critic_loss = F.mse_loss(target_q, q)
