@@ -18,13 +18,13 @@ agent = {
     "network": "discrete_policy_separate_value",
     "head": "cnn",
     "gamma": 0.99,
-    "batch_size": 8,
+    "batch_size": 32,
     "n_step": 128,
-    "n_epoch": 4,
+    "n_epoch": 3,
     "_lambda": 0.95,
     "epsilon_clip": 0.1,
     "vf_coef": 1.0,
-    "ent_coef": 0.0001,
+    "ent_coef": 0.001,
     "clip_grad_norm": 1.0,
     "use_standardization": False,
     # Parameters for Random Network Distillation
@@ -35,6 +35,8 @@ agent = {
     "obs_normalize": True,
     "ri_normalize": True,
     "batch_norm": True,
+    "non_episodic": True,
+    "non_extrinsic": False,
 }
 
 optim = {
@@ -50,7 +52,7 @@ train = {
     "save_period": 100000,
     "eval_iteration": 1,
     "record": True,
-    "record_period": 250000,
+    "record_period": 1000000,
     # distributed setting
     "distributed_batch_size": 256,
     "update_period": agent["n_step"],
