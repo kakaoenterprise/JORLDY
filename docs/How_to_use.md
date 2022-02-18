@@ -16,7 +16,7 @@
 - [Additional Features](#Additional-Features)
   - [How to use multi-modal structure](#How-to-use-multi-modal-structure)
 
-## Run Mode description
+## Run Mode Description
 
 - single_train: train with single agent.
   - keyword: --single (This keyword can be omitted.)
