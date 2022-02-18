@@ -28,9 +28,11 @@ class TD3(DDPG):
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
         tau (float): the soft update coefficient.
-        mu (float): the drift coefficient of the Ornstein-Uhlenbeck process for action exploration.
-        theta (float): reversion of the time constant of the Ornstein-Uhlenbeck process.
-        sigma (float): diffusion coefficient of the Ornstein-Uhlenbeck process.
+        update_delay (int): delayed cycle in which actor and targets are updated.
+        action_noise_std (float): noise which use on choosing action when agent sample.
+        target_noise_std (float): noise which use on calculating target-q.
+        target_noise_clip (float): epsilon used on clipping.
+        run_step (int): the number of epochs.
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
     """
@@ -54,8 +56,8 @@ class TD3(DDPG):
         batch_size=128,
         start_train_step=2000,
         tau=1e-3,
-        actor_period=2,
-        act_noise_std=0.1,
+        update_delay=2,
+        action_noise_std=0.1,
         target_noise_std=0.2,
         target_noise_clip=0.5,
         run_step=1e6,
@@ -114,8 +116,8 @@ class TD3(DDPG):
         self.run_step = run_step
 
         self.action_size = action_size
-        self.actor_period = actor_period
-        self.act_noise_std = act_noise_std
+        self.update_delay = update_delay
+        self.action_noise_std = action_noise_std
         self.target_noise_std = target_noise_std
         self.target_noise_clip = target_noise_clip
         self.actor_loss = 0.0
@@ -126,7 +128,7 @@ class TD3(DDPG):
         action = self.actor(self.as_tensor(state))
         action = action.cpu().numpy()
         if training:
-            action += np.random.normal(0, self.act_noise_std, size=self.action_size)
+            action += np.random.normal(0, self.action_noise_std, size=self.action_size)
         return {"action": action}
 
     def learn(self):
@@ -164,7 +166,7 @@ class TD3(DDPG):
         max_Q = torch.max(target_q, axis=0).values.cpu().numpy()[0]
 
         # Delayed Actor Update
-        if self.num_learn % self.actor_period == 0:
+        if self.num_learn % self.update_delay == 0:
             action_pred = self.actor(state)
             actor_loss = -self.critic1(state, action_pred).mean()
 

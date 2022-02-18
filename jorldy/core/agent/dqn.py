@@ -34,7 +34,7 @@ class DQN(BaseAgent):
         target_update_period (int): period to update the target network (unit: step)
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
-        run_step (int): number of run step.
+        run_step (int): the number of epochs.
         num_workers: the number of agents in distributed learning
     """
 
