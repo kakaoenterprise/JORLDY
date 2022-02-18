@@ -73,13 +73,13 @@ Please refer to the [mujoco-py github installation](https://github.com/openai/mu
 ```
 cd jorldy
 
-# Examples: python [script name] --config [config path]
-python single_train.py --config config.dqn.cartpole
-python single_train.py --config config.rainbow.atari --env.name assault
+# Examples: python [run mode] --config [config path]
+python main.py --config config.dqn.cartpole
+python main.py --config config.rainbow.atari --env.name assault
 
-# Examples: python [script name] --config [config path] --[optional parameter key] [parameter value]
-python single_train.py --config config.dqn.cartpole --agent.batch_size 64
-python sync_distributed_train.py --config config.ppo.cartpole --train.num_workers 8 
+# Examples: python [run mode] --config [config path] --[optional parameter key] [parameter value]
+python main.py --config config.dqn.cartpole --agent.batch_size 64
+python main.py --sync --config config.ppo.cartpole --train.num_workers 8
 
 ```
 
