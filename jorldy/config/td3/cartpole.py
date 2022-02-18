@@ -16,10 +16,9 @@ agent = {
     "start_train_step": 2000,
     "tau": 1e-3,
     "actor_period": 2,
-    # OU noise
-    "mu": 0,
-    "theta": 1e-3,
-    "sigma": 2e-3,
+    "act_noise_std": 0.1,
+    "target_noise_std": 0.2,
+    "target_noise_clip": 0.5,
 }
 
 optim = {

@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
@@ -8,7 +9,6 @@ from core.network import Network
 from core.optimizer import Optimizer
 from core.buffer import ReplayBuffer
 from .ddpg import DDPG
-from .utils import OU_Noise
 
 
 class TD3(DDPG):
@@ -55,10 +55,9 @@ class TD3(DDPG):
         start_train_step=2000,
         tau=1e-3,
         actor_period=2,
-        # OU noise
-        mu=0,
-        theta=1e-3,
-        sigma=2e-3,
+        act_noise_std=0.1,
+        target_noise_std=0.2,
+        target_noise_clip=0.5,
         run_step=1e6,
         device=None,
         **kwargs,
@@ -106,8 +105,6 @@ class TD3(DDPG):
             lr=optim_config["critic_lr"],
         )
 
-        self.OU = OU_Noise(action_size, mu, theta, sigma)
-
         self.gamma = gamma
         self.tau = tau
         self.memory = ReplayBuffer(buffer_size)
@@ -116,8 +113,21 @@ class TD3(DDPG):
         self.num_learn = 0
         self.run_step = run_step
 
+        self.action_size = action_size
         self.actor_period = actor_period
+        self.act_noise_std = act_noise_std
+        self.target_noise_std = target_noise_std
+        self.target_noise_clip = target_noise_clip
         self.actor_loss = 0.0
+
+    @torch.no_grad()
+    def act(self, state, training=True):
+        self.actor.train(training)
+        action = self.actor(self.as_tensor(state))
+        action = action.cpu().numpy()
+        if training:
+            action += np.random.normal(0, self.act_noise_std, size=self.action_size)
+        return {"action": action}
 
     def learn(self):
         transitions = self.memory.sample(self.batch_size)
@@ -132,11 +142,15 @@ class TD3(DDPG):
 
         # Critic Update
         with torch.no_grad():
-            next_action = self.target_actor(next_state)
+            noise = (torch.randn_like(action) * self.target_noise_std).clamp(
+                -self.target_noise_clip, self.target_noise_clip
+            )
+            next_action = self.target_actor(next_state) + noise
             next_q1 = self.target_critic1(next_state, next_action)
             next_q2 = self.target_critic2(next_state, next_action)
             min_next_q = torch.min(next_q1, next_q2)
             target_q = reward + (1 - done) * self.gamma * min_next_q
+
         critic_loss1 = F.mse_loss(target_q, self.critic1(state, action))
         self.critic_optimizer1.zero_grad()
         critic_loss1.backward()
@@ -164,7 +178,8 @@ class TD3(DDPG):
         self.num_learn += 1
 
         self.result = {
-            "critic_loss": (critic_loss1 + critic_loss2).item(),
+            "critic_loss1": critic_loss1.item(),
+            "critic_loss2": critic_loss2.item(),
             "actor_loss": self.actor_loss,
             "max_Q": max_Q,
         }
