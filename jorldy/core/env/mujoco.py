@@ -43,6 +43,10 @@ class _Mujoco(BaseEnv):
         if self.render:
             self.env.render()
 
+        action = ((action + 1.0) * 0.5) * (
+            self.env.action_space.high - self.env.action_space.low
+        ) + self.env.action_space.low
+        action = np.reshape(action, self.env.action_space.shape)
         next_state, reward, done, info = self.env.step(action)
         self.score += reward
 

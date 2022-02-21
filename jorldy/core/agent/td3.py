@@ -128,7 +128,8 @@ class TD3(DDPG):
         action = self.actor(self.as_tensor(state))
         action = action.cpu().numpy()
         if training:
-            action += np.random.normal(0, self.action_noise_std, size=self.action_size)
+            noise = np.random.normal(0, self.action_noise_std, size=self.action_size)
+            action = (action + noise).clip(-1.0, 1.0)
         return {"action": action}
 
     def learn(self):
@@ -147,7 +148,7 @@ class TD3(DDPG):
             noise = (torch.randn_like(action) * self.target_noise_std).clamp(
                 -self.target_noise_clip, self.target_noise_clip
             )
-            next_action = self.target_actor(next_state) + noise
+            next_action = (self.target_actor(next_state) + noise).clamp(-1.0, 1.0)
             next_q1 = self.target_critic1(next_state, next_action)
             next_q2 = self.target_critic2(next_state, next_action)
             min_next_q = torch.min(next_q1, next_q2)

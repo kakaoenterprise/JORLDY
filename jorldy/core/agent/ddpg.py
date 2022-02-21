@@ -108,7 +108,7 @@ class DDPG(BaseAgent):
         self.actor.train(training)
         mu = self.actor(self.as_tensor(state))
         mu = mu.cpu().numpy()
-        action = mu + self.OU.sample() if training else mu
+        action = mu + self.OU.sample().clip(-1.0, 1.0) if training else mu
         return {"action": action}
 
     def learn(self):
