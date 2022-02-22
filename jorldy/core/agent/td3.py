@@ -48,13 +48,14 @@ class TD3(DDPG):
         optim_config={
             "actor": "adam",
             "critic": "adam",
-            "actor_lr": 5e-4,
+            "actor_lr": 1e-3,
             "critic_lr": 1e-3,
         },
         gamma=0.99,
         buffer_size=50000,
         batch_size=128,
-        start_train_step=2000,
+        start_train_step=1000,
+        initial_random_step=0,
         tau=1e-3,
         update_delay=2,
         action_noise_std=0.1,
@@ -112,6 +113,8 @@ class TD3(DDPG):
         self.memory = ReplayBuffer(buffer_size)
         self.batch_size = batch_size
         self.start_train_step = start_train_step
+        self.initial_random_step = initial_random_step
+        self.num_random_step = 0
         self.num_learn = 0
         self.run_step = run_step
 
@@ -125,11 +128,15 @@ class TD3(DDPG):
     @torch.no_grad()
     def act(self, state, training=True):
         self.actor.train(training)
-        action = self.actor(self.as_tensor(state))
-        action = action.cpu().numpy()
-        if training:
-            noise = np.random.normal(0, self.action_noise_std, size=self.action_size)
-            action = (action + noise).clip(-1.0, 1.0)
+        if training and self.num_random_step < self.initial_random_step:
+            action = np.random.uniform(-1.0, 1.0, (1, self.action_size))
+            self.num_random_step += 1
+        else:
+            action = self.actor(self.as_tensor(state))
+            action = action.cpu().numpy()
+            if training:
+                noise = np.random.normal(0, self.action_noise_std, self.action_size)
+                action = (action + noise).clip(-1.0, 1.0)
         return {"action": action}
 
     def learn(self):
