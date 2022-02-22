@@ -29,7 +29,6 @@ class Double(DQN):
             max_Q = torch.max(q).item()
             next_q = self.network(next_state)
             max_a = torch.argmax(next_q, axis=1)
-            max_eye = torch.eye(self.action_size).to(self.device)
             max_one_hot_action = eye[max_a.view(-1).long()]
 
             next_target_q = self.target_network(next_state)
