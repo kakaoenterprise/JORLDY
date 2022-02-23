@@ -17,6 +17,7 @@ class ApeX(DQN):
         epsilon_alpha (float): alpha in epsilon_i greedy policy
             where epsilon_i=epsilon^(1+(i/(N-1))*alpha).
         clip_grad_norm (float): gradient clipping threshold.
+        run_step (int): the number of epochs.
         alpha (float): prioritization exponent.
         beta (float): initial value of degree to use importance sampling.
         learn_period (int): period to train (unit: step)
@@ -30,6 +31,7 @@ class ApeX(DQN):
         epsilon=0.4,
         epsilon_alpha=0.7,
         clip_grad_norm=40.0,
+        run_step=1e6,
         # PER
         alpha=0.6,
         beta=0.4,
@@ -37,7 +39,6 @@ class ApeX(DQN):
         uniform_sample_prob=1e-3,
         # MultiStep
         n_step=4,
-        run_step=1e6,
         **kwargs
     ):
         super(ApeX, self).__init__(**kwargs)

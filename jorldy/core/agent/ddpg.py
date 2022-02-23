@@ -28,6 +28,7 @@ class DDPG(BaseAgent):
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
         tau (float): the soft update coefficient.
+        run_step (int): the number of epochs.
         mu (float): the drift coefficient of the Ornstein-Uhlenbeck process for action exploration.
         theta (float): reversion of the time constant of the Ornstein-Uhlenbeck process.
         sigma (float): diffusion coefficient of the Ornstein-Uhlenbeck process.
@@ -54,11 +55,11 @@ class DDPG(BaseAgent):
         batch_size=128,
         start_train_step=2000,
         tau=1e-3,
+        run_step=1e6,
         # OU noise
         mu=0,
         theta=1e-3,
         sigma=2e-3,
-        run_step=1e6,
         device=None,
         **kwargs,
     ):
@@ -107,7 +108,7 @@ class DDPG(BaseAgent):
         self.actor.train(training)
         mu = self.actor(self.as_tensor(state))
         mu = mu.cpu().numpy()
-        action = mu + self.OU.sample() if training else mu
+        action = mu + self.OU.sample().clip(-1.0, 1.0) if training else mu
         return {"action": action}
 
     def learn(self):
@@ -123,8 +124,8 @@ class DDPG(BaseAgent):
 
         # Critic Update
         with torch.no_grad():
-            next_actions = self.target_actor(next_state)
-            next_q = self.target_critic(next_state, next_actions)
+            next_action = self.target_actor(next_state)
+            next_q = self.target_critic(next_state, next_action)
             target_q = reward + (1 - done) * self.gamma * next_q
         q = self.critic(state, action)
         critic_loss = F.mse_loss(target_q, q)
