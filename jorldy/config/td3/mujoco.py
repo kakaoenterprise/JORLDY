@@ -6,13 +6,13 @@ env = {
 }
 agent = {
     "name": "td3",
-    "actor": "ddpg_actor",
-    "critic": "ddpg_critic",
+    "actor": "td3_actor",
+    "critic": "td3_critic",
     "gamma": 0.99,
     "buffer_size": 1000000,
     "batch_size": 128,
-    "start_train_step": 1000,
-    "initial_random_step": 1000,
+    "start_train_step": 25000,
+    "initial_random_step": 25000,
     "tau": 5e-3,
     "update_delay": 2,
     "action_noise_std": 0.1,

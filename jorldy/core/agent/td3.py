@@ -8,10 +8,10 @@ import os
 from core.network import Network
 from core.optimizer import Optimizer
 from core.buffer import ReplayBuffer
-from .ddpg import DDPG
+from .base import BaseAgent
 
 
-class TD3(DDPG):
+class TD3(BaseAgent):
     action_type = "continuous"
     """Twin-delayed deep deterministic policy gradient (TD3) agent.
 
@@ -27,6 +27,7 @@ class TD3(DDPG):
         buffer_size (int): the size of the memory buffer.
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
+        initial_random_step : number of  uniform-random action step, before running real policy.
         tau (float): the soft update coefficient.
         update_delay (int): delayed cycle in which actor and targets are updated.
         action_noise_std (float): noise which use on choosing action when agent sample.
@@ -41,9 +42,9 @@ class TD3(DDPG):
         self,
         state_size,
         action_size,
-        hidden_size=512,
-        actor="ddpg_actor",
-        critic="ddpg_critic",
+        hidden_size=256,
+        actor="td3_actor",
+        critic="td3_critic",
         head="mlp",
         optim_config={
             "actor": "adam",
@@ -242,3 +243,15 @@ class TD3(DDPG):
         self.target_critic2.load_state_dict(self.critic2.state_dict())
         self.critic_optimizer1.load_state_dict(checkpoint["critic_optimizer1"])
         self.critic_optimizer2.load_state_dict(checkpoint["critic_optimizer2"])
+
+    def sync_in(self, weights):
+        self.actor.load_state_dict(weights)
+
+    def sync_out(self, device="cpu"):
+        weights = self.actor.state_dict()
+        for k, v in weights.items():
+            weights[k] = v.to(device)
+        sync_item = {
+            "weights": weights,
+        }
+        return sync_item
