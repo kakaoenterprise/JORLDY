@@ -17,7 +17,7 @@ class ApeX(DQN):
         epsilon_alpha (float): alpha in epsilon_i greedy policy
             where epsilon_i=epsilon^(1+(i/(N-1))*alpha).
         clip_grad_norm (float): gradient clipping threshold.
-        run_step (int): the number of epochs.
+        run_step (int): the number of total steps.
         alpha (float): prioritization exponent.
         beta (float): initial value of degree to use importance sampling.
         learn_period (int): period to train (unit: step)

@@ -27,7 +27,7 @@ class Rainbow(DQN):
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
         target_update_period (int): period to update the target network. (unit: step)
-        run_step (int): the number of epochs.
+        run_step (int): the number of total steps.
         n_step: number of steps in multi-step Q learning.
         alpha (float): prioritization exponent.
         beta (float): initial value of degree to use importance sampling.
@@ -40,7 +40,6 @@ class Rainbow(DQN):
         num_support (int): number of support.
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
-        run_step (int): number of run step.
     """
 
     def __init__(

@@ -28,7 +28,7 @@ class DDPG(BaseAgent):
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
         tau (float): the soft update coefficient.
-        run_step (int): the number of epochs.
+        run_step (int): the number of total steps.
         mu (float): the drift coefficient of the Ornstein-Uhlenbeck process for action exploration.
         theta (float): reversion of the time constant of the Ornstein-Uhlenbeck process.
         sigma (float): diffusion coefficient of the Ornstein-Uhlenbeck process.

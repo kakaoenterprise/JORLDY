@@ -14,7 +14,7 @@ class PER(DQN):
         beta (float): initial value of degree to use importance sampling.
         learn_period (int): period to train (unit: step)
         uniform_sample_prob (float): ratio of uniform random sampling.
-        run_step (int): the number of epochs.
+        run_step (int): the number of total steps.
     """
 
     def __init__(
