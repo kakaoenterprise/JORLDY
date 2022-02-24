@@ -5,7 +5,7 @@ env = {"name": "pong_mlagent", "time_scale": 12.0}
 agent = {
     "name": "mpo",
     "actor": "discrete_policy",
-    "critic": "dqn",
+    "critic": "discrete_q_network",
     "critic_loss_type": "1step_TD",  # one of ['1step_TD', 'retrace']
     "gamma": 0.99,
     "buffer_size": 50000,

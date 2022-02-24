@@ -4,7 +4,7 @@ env = {"name": "pong_mlagent", "time_scale": 12.0}
 
 agent = {
     "name": "qrdqn",
-    "network": "dqn",
+    "network": "discrete_q_network",
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,
