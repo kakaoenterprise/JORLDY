@@ -16,7 +16,7 @@ env = {
 agent = {
     "name": "sac",
     "actor": "discrete_policy",
-    "critic": "dqn",
+    "critic": "discrete_q_network",
     "head": "cnn",
     "use_dynamic_alpha": True,
     "gamma": 0.99,

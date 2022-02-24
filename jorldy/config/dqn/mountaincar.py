@@ -7,7 +7,7 @@ env = {
 
 agent = {
     "name": "dqn",
-    "network": "dqn",
+    "network": "discrete_q_network",
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,

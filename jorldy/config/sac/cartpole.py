@@ -2,17 +2,17 @@
 
 env = {
     "name": "cartpole",
-    "action_type": "continuous",
-    # "action_type": "discrete",
+    # "action_type": "continuous",
+    "action_type": "discrete",
     "render": False,
 }
 
 agent = {
     "name": "sac",
-    # "actor": "discrete_policy",
-    # "critic": "dqn",
-    "actor": "continuous_policy",
-    "critic": "ddpg_critic",
+    "actor": "discrete_policy",
+    "critic": "discrete_q_network",
+    # "actor": "continuous_policy",
+    # "critic": "continuous_q_network",
     "use_dynamic_alpha": True,
     "gamma": 0.99,
     "tau": 5e-3,

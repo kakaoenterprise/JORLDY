@@ -8,7 +8,7 @@ env = {
 
 agent = {
     "name": "multistep",
-    "network": "dqn",
+    "network": "discrete_q_network",
     "n_step": 4,
     "gamma": 0.99,
     "epsilon_init": 1.0,

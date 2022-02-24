@@ -2,7 +2,7 @@
 
 #### Contents
 
-- [Script Description](#Script-description)
+- [Run Mode Description](#Run-Mode-description)
 
 - [How to Check Implemented List](#How-to-Check-Implemented-List)
   - [Agents](#Agents)
@@ -16,12 +16,16 @@
 - [Additional Features](#Additional-Features)
   - [How to use multi-modal structure](#How-to-use-multi-modal-structure)
 
-## Script description
+## Run Mode Description
 
-- single_train.py: train with single agent.
-- sync_distributed_train.py: train with sychronous distributed setting.
-- async_distributed_train.py: train with asychronous distributed setting.
-- eval.py: evaluate with trained agent.
+- single_train: train with single agent.
+  - keyword: --single (This keyword can be omitted.)
+- sync_distributed_train: train with sychronous distributed setting.
+  - keyword: --sync
+- async_distributed_train: train with asychronous distributed setting.
+  - keyword: --async
+- eval: evaluate with trained agent.
+  - keyword: --eval
 
 if you want to know the specific process of each script, please refer to [Distributed Architecture](./Distributed_Architecture.md)
 
@@ -73,36 +77,45 @@ agent = {
 }
 ```
 ## Run Command Example 
-- Default command line consists of script part and config part. When you type __*config path*__, you should omit '.py' in the name of the config file. If you do not type __*config path*__, It runs with the default config in the script.
+- Default command line consists of run_mode part and config part. When you type __*config path*__, you should omit '.py' in the name of the config file. If you do not type __*config path*__, It runs with the default config in the main.py. Similarly, if you do not type __*run mode*__, it run as single_train.
     ```
-    python [script name].py --config [config path]
+    python main.py --config [config path]
     ```
     - Example:
         ``` 
-        python single_train.py --config config.dqn.cartpole 
+        # single_train
+        python main.py --config config.dqn.cartpole 
         ```
-
+- If you want to use a __*run mode*__, type a keyword
+    ```
+    python main.py --[run mode] --config [config path]
+    ```
+    - Example:
+        ``` 
+        python main.py --sync --config config.ppo.cartpole 
+        ```
 - If you want to load environment in the atari (or procgen), use the atari (or procgen) config path and define environment by using the parser env.name. 
     ```
-    python [script name].py --config [config path] --env.name [env name]
+    python main.py --[run mode] --config [config path] --env.name [env name]
     ```
     - Example:
         ``` 
-        python single_train.py --config config.dqn.atari --env.name assault 
+        python main.py --single --config config.dqn.atari --env.name assault 
         ```
 - All parameters in the config file can be changed by using the parser without modifying the config file.
     ```
-    python [script name].py --config [config path] --[optional parameter key] [optional parameter value]
+    python main.py --[run mode] --config [config path] --[optional parameter key] [optional parameter value]
     ```
     - Example:
         ``` 
-        python single_train.py --config config.dqn.cartpole --agent.batch_size 64 
+        python main.py --single --config config.dqn.cartpole --agent.batch_size 64 
         ```
         ``` 
-        python sync_distributed_train.py --config config.ppo.cartpole --train.num_worker 8 
+        python main.py --sync --config config.ppo.cartpole --train.num_worker 8 
         ```
 
-- Executable script list: **single_train.py**, **sync_distributed_train.py**, **async_distributed_train.py**.
+- Executable run mode list: **single_train**: --single, **sync_distributed_train**: --sync, **async_distributed_train**: --async,
+**eval**: --eval.
 
 
 

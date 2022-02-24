@@ -30,6 +30,7 @@ class MPO(BaseAgent):
         n_step (int): number of steps in multi-step Q learning.
         clip_grad_norm (float): gradient clipping threshold.
         gamma (float): discount factor.
+        run_step (int): the number of epochs.
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
         critic_loss_type (str): type of critic loss. One of ['1step_TD', 'retrace'].
@@ -52,7 +53,7 @@ class MPO(BaseAgent):
         hidden_size=512,
         optim_config={"name": "adam"},
         actor="discrete_policy",
-        critic="dqn",
+        critic="discrete_q_network",
         head="mlp",
         buffer_size=50000,
         batch_size=64,

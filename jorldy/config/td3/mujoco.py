@@ -1,35 +1,36 @@
-### DDPG Mujoco Config ###
+### TD3 Mujoco Config ###
 
 env = {
     # "name": it should be defined in the command. ex) python main.py --config config.AGENT.mujoco --env.name half_cheetah
     "render": False,
 }
 agent = {
-    "name": "ddpg",
+    "name": "td3",
     "actor": "deterministic_policy",
     "critic": "continuous_q_network",
     "gamma": 0.99,
-    "buffer_size": 50000,
+    "buffer_size": 1000000,
     "batch_size": 128,
-    "start_train_step": 2000,
-    "tau": 1e-3,
-    # OU noise
-    "mu": 0,
-    "theta": 1e-3,
-    "sigma": 2e-3,
+    "start_train_step": 25000,
+    "initial_random_step": 25000,
+    "tau": 5e-3,
+    "update_delay": 2,
+    "action_noise_std": 0.1,
+    "target_noise_std": 0.2,
+    "target_noise_clip": 0.5,
 }
 
 optim = {
     "actor": "adam",
     "critic": "adam",
-    "actor_lr": 5e-4,
+    "actor_lr": 1e-3,
     "critic_lr": 1e-3,
 }
 
 train = {
     "training": True,
     "load_path": None,
-    "run_step": 300000,
+    "run_step": 1000000,
     "print_period": 5000,
     "save_period": 10000,
     "eval_iteration": 10,

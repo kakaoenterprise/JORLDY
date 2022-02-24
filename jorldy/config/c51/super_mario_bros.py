@@ -11,7 +11,7 @@ env = {
 
 agent = {
     "name": "c51",
-    "network": "dqn",
+    "network": "discrete_q_network",
     "head": "cnn",
     "gamma": 0.99,
     "epsilon_init": 1.0,
