@@ -5,7 +5,7 @@ env = {"name": "hopper_mlagent", "time_scale": 12.0}
 agent = {
     "name": "sac",
     "actor": "continuous_policy",
-    "critic": "sac_critic",
+    "critic": "ddpg_critic",
     "use_dynamic_alpha": True,
     "gamma": 0.99,
     "tau": 5e-3,

@@ -5,7 +5,7 @@ env = {"name": "drone_delivery_mlagent", "time_scale": 12.0}
 agent = {
     "name": "sac",
     "actor": "continuous_policy",
-    "critic": "sac_critic",
+    "critic": "ddpg_critic",
     "head": "multi",
     "use_dynamic_alpha": True,
     "gamma": 0.99,
