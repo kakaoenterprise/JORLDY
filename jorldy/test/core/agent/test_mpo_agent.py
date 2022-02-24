@@ -11,7 +11,7 @@ def test_discrete_retrace_mpo(MockEnv):
     run_step = 20
     buffer_size, batch_size, start_train_step = 100, 4, 8
     use_standardization = True
-    actor, critic = "discrete_policy", "dqn"
+    actor, critic = "discrete_policy", "discrete_q_network"
     n_step, n_epoch = 3, 2
     critic_loss_type = "retrace"
     num_sample = 10
@@ -68,7 +68,7 @@ def test_discrete_1step_TD_mpo(MockEnv):
     run_step = 20
     buffer_size, batch_size, start_train_step = 100, 4, 8
     use_standardization = True
-    actor, critic = "discrete_policy", "dqn"
+    actor, critic = "discrete_policy", "discrete_q_network"
     n_step, n_epoch = 3, 2
     critic_loss_type = "1step_TD"
     num_sample = 10
@@ -125,7 +125,7 @@ def test_continuous_retrace_mpo(MockEnv):
     run_step = 20
     buffer_size, batch_size, start_train_step = 100, 4, 8
     use_standardization = True
-    actor, critic = "continuous_policy", "ddpg_critic"
+    actor, critic = "continuous_policy", "continuous_q_network"
     n_step, n_epoch = 3, 2
     critic_loss_type = "retrace"
     num_sample = 10
@@ -182,7 +182,7 @@ def test_continuous_1step_TD_mpo(MockEnv):
     run_step = 20
     buffer_size, batch_size, start_train_step = 100, 4, 8
     use_standardization = True
-    actor, critic = "continuous_policy", "ddpg_critic"
+    actor, critic = "continuous_policy", "continuous_q_network"
     n_step, n_epoch = 3, 2
     critic_loss_type = "1step_TD"
     num_sample = 10

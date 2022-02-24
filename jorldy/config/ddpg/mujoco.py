@@ -6,8 +6,8 @@ env = {
 }
 agent = {
     "name": "ddpg",
-    "actor": "ddpg_actor",
-    "critic": "ddpg_critic",
+    "actor": "deterministic_policy",
+    "critic": "continuous_q_network",
     "gamma": 0.99,
     "buffer_size": 50000,
     "batch_size": 128,

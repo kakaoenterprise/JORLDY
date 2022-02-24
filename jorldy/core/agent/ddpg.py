@@ -41,8 +41,8 @@ class DDPG(BaseAgent):
         state_size,
         action_size,
         hidden_size=512,
-        actor="ddpg_actor",
-        critic="ddpg_critic",
+        actor="deterministic_policy",
+        critic="continuous_q_network",
         head="mlp",
         optim_config={
             "actor": "adam",

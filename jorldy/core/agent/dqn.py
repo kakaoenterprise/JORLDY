@@ -44,7 +44,7 @@ class DQN(BaseAgent):
         action_size,
         hidden_size=512,
         optim_config={"name": "adam"},
-        network="dqn",
+        network="discrete_q_network",
         head="mlp",
         gamma=0.99,
         epsilon_init=1.0,

@@ -8,8 +8,8 @@ env = {
 
 agent = {
     "name": "td3",
-    "actor": "td3_actor",
-    "critic": "td3_critic",
+    "actor": "deterministic_policy",
+    "critic": "continuous_q_network",
     "gamma": 0.99,
     "buffer_size": 50000,
     "batch_size": 128,

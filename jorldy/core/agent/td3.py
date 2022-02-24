@@ -43,8 +43,8 @@ class TD3(BaseAgent):
         state_size,
         action_size,
         hidden_size=256,
-        actor="td3_actor",
-        critic="td3_critic",
+        actor="deterministic_policy",
+        critic="continuous_q_network",
         head="mlp",
         optim_config={
             "actor": "adam",

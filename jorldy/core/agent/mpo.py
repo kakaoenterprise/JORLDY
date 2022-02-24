@@ -53,7 +53,7 @@ class MPO(BaseAgent):
         hidden_size=512,
         optim_config={"name": "adam"},
         actor="discrete_policy",
-        critic="dqn",
+        critic="discrete_q_network",
         head="mlp",
         buffer_size=50000,
         batch_size=64,
