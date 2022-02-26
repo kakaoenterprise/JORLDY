@@ -29,7 +29,7 @@ class LogManager:
 
         if len(frames) > 0:
             score = scalar_dict["score"]
-            write_path = os.path.join(self.path, f"{step:010d}_{score}.gif")
+            write_path = os.path.join(self.path, f"{int(step):010d}_{score}.gif")
             imageio.mimwrite(write_path, frames, fps=60)
             optimize(write_path)
             print(f"...Record episode to {write_path}...")
