@@ -17,8 +17,8 @@ def interact_process(
     try:
         while step < run_step:
             transitions = distributed_manager.run(update_period)
-            delta_t = len(transitions) // num_workers
-            step = step + delta_t
+            delta_t = len(transitions) / num_workers
+            step += delta_t
             trans_queue.put((step, transitions))
             if sync_queue.full():
                 distributed_manager.sync(sync_queue.get())
@@ -38,7 +38,6 @@ def manage_process(
     sync_queue,
     path_queue,
     run_step,
-    print_period,
     MetricManager,
     EvalManager,
     eval_manager_config,
@@ -53,78 +52,47 @@ def manage_process(
     path_queue.put(log_manager.path)
     config_manager.dump(log_manager.path)
 
-    step, print_stamp, eval_thread = 0, 0, None
+    heap = {"step": 0, "run_step": run_step, "wait_thread": False, "wait_process": True}
+    step = 0
+    gath_thread = Thread(
+        target=gather_thread,
+        args=(result_queue, metric_manager, heap, "append"),
+    )
+    gath_thread.start()
     try:
-        while step < run_step:
-            wait = True
-            while wait or not result_queue.empty():
-                _step, result = result_queue.get()
-                metric_manager.append(result)
-                wait = False
-            print_stamp += _step - step
-            step = _step
-            if print_stamp >= print_period or step >= run_step:
-                if (
-                    eval_thread is None
-                    or not eval_thread.is_alive()
-                    or step >= run_step
-                ):
-                    if eval_thread is not None:
-                        eval_thread.join()
-                    agent.sync_in(**sync_queue.get())
-                    statistics = metric_manager.get_statistics()
-                    eval_thread = Thread(
-                        target=evaluate_thread,
-                        args=(agent, step, statistics, eval_manager, log_manager),
-                    )
-                    eval_thread.start()
-                print_stamp = 0
+        while step < heap["run_step"]:
+            agent.sync_in(**sync_queue.get())
+            while heap["wait_process"]:
+                time.sleep(0.1)
+            heap["wait_thread"] = True
+            if step != heap["step"]:
+                step = heap["step"]
+                statistics = metric_manager.get_statistics()
+            heap["wait_thread"] = False
+            score, frames = eval_manager.evaluate(agent, step)
+            statistics["score"] = score
+            print(f"Step : {int(step)} / {statistics}")
+            log_manager.write(statistics, frames, step)
     except Exception as e:
         traceback.print_exc()
-        if eval_thread is not None:
-            eval_thread.terminate()
     finally:
-        if eval_thread is not None:
-            eval_thread.join()
+        gath_thread.join()
 
 
-# Evaluate
-def evaluate_thread(agent, step, statistics, eval_manager, log_manager):
-    score, frames = eval_manager.evaluate(agent, step)
-    statistics["score"] = score
-    print(f"Step : {step} / {statistics}")
-    log_manager.write(statistics, frames, step)
-
-
-# Optimize
-def optimize_thread(
-    agent,
-    step,
-    transitions,
-    interact_sync_queue,
-    result_queue,
-    manage_sync_queue,
-    print_signal,
-    save_signal,
-    save_path,
-    heap,
-):
-    opt_iter = 1
-    if heap["opt_time"] is not None:
-        opt_iter = max(1, heap["q_get_time"] // heap["opt_time"])
-    for i in range(opt_iter):
-        result = agent.process([], step) if i else agent.process(transitions, step)
-        try:
-            interact_sync_queue.get_nowait()
-        except:
-            pass
-        interact_sync_queue.put(agent.sync_out())
-        result_queue.put((step, result))
-        if print_signal:
-            try:
-                manage_sync_queue.get_nowait()
-            except:
-                pass
-            manage_sync_queue.put(agent.sync_out())
-    if save_signal:
-        agent.save(save_path)
+# Gather
+def gather_thread(queue, target, heap, mode):
+    stamp_keys = [key for key in heap.keys() if "stamp" in key]
+    while heap["step"] < heap["run_step"]:
+        _step, item = queue.get()
+        while heap["wait_thread"]:
+            time.sleep(0.1)
+        heap["wait_process"] = True
+        delta_t = _step - heap["step"]
+        for key in stamp_keys:
+            heap[key] += delta_t
+        heap["step"] = _step
+        if mode == "+=":
+            target += item
+        elif mode == "append":
+            target.append(item)
+        heap["wait_process"] = False
