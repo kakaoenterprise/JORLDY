@@ -10,11 +10,14 @@ if __name__ == "__main__":
     parser.add_argument("--single", action="store_true")
     parser.add_argument("--sync", action="store_true")
     parser.add_argument("--async", action="store_true")
+    parser.add_argument("--async_org", action="store_true")
     parser.add_argument("--eval", action="store_true")
     parser.add_argument("--config", type=str, help="config.dqn.cartpole")
     args, unknown = parser.parse_known_args()
 
-    choosed_mode_num = args.single + args.sync + args.__dict__["async"] + args.eval
+    choosed_mode_num = (
+        args.single + args.sync + args.__dict__["async"] + args.async_org + args.eval
+    )
     assert choosed_mode_num < 2, "You have to choose only one mode"
 
     config_path = args.config if args.config else default_config_path
@@ -25,5 +28,7 @@ if __name__ == "__main__":
         sync_distributed_train(config_path, unknown)
     elif args.__dict__["async"]:
         async_distributed_train(config_path, unknown)
+    elif args.async_org:
+        async_distributed_train_org(config_path, unknown)
     elif args.eval:
         evaluate(config_path, unknown)
