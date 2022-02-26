@@ -17,9 +17,9 @@ def interact_process(
     try:
         while step < run_step:
             transitions = distributed_manager.run(update_period)
-            delta_t = len(transitions) / num_workers
-            step += delta_t
-            trans_queue.put((int(step), transitions))
+            delta_t = len(transitions) // num_workers
+            step = step + delta_t
+            trans_queue.put((step, transitions))
             if sync_queue.full():
                 distributed_manager.sync(sync_queue.get())
             while trans_queue.full():
@@ -94,3 +94,37 @@ def evaluate_thread(agent, step, statistics, eval_manager, log_manager):
     statistics["score"] = score
     print(f"Step : {step} / {statistics}")
     log_manager.write(statistics, frames, step)
+
+
+# Optimize
+def optimize_thread(
+    agent,
+    step,
+    transitions,
+    interact_sync_queue,
+    result_queue,
+    manage_sync_queue,
+    print_signal,
+    save_signal,
+    save_path,
+    heap,
+):
+    opt_iter = 1
+    if heap["opt_time"] is not None:
+        opt_iter = max(1, heap["q_get_time"] // heap["opt_time"])
+    for i in range(opt_iter):
+        result = agent.process([], step) if i else agent.process(transitions, step)
+        try:
+            interact_sync_queue.get_nowait()
+        except:
+            pass
+        interact_sync_queue.put(agent.sync_out())
+        result_queue.put((step, result))
+        if print_signal:
+            try:
+                manage_sync_queue.get_nowait()
+            except:
+                pass
+            manage_sync_queue.put(agent.sync_out())
+    if save_signal:
+        agent.save(save_path)

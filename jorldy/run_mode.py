@@ -1,4 +1,6 @@
 import multiprocessing as mp
+from threading import Thread
+import time
 
 from core import *
 from manager import *
@@ -184,17 +186,15 @@ def sync_distributed_train(config_path, unknown):
             result = agent.process(transitions, step)
             distributed_manager.sync(agent.sync_out())
             result_queue.put((step, result))
-            if (
-                print_stamp >= config.train.print_period
-                or step >= config.train.run_step
-            ):
+            is_over = step >= config.train.run_step
+            if print_stamp >= config.train.print_period or is_over:
                 try:
                     manage_sync_queue.get_nowait()
                 except:
                     pass
                 manage_sync_queue.put(agent.sync_out())
                 print_stamp = 0
-            if save_stamp >= config.train.save_period or step >= config.train.run_step:
+            if save_stamp >= config.train.save_period or is_over:
                 agent.save(save_path)
                 save_stamp = 0
     except Exception as e:
@@ -211,6 +211,151 @@ def sync_distributed_train(config_path, unknown):
 
 
 def async_distributed_train(config_path, unknown):
+    config_manager = ConfigManager(config_path, unknown)
+    config = config_manager.config
+
+    env = Env(**config.env)
+    agent_config = {
+        "state_size": env.state_size,
+        "action_size": env.action_size,
+        "optim_config": config.optim,
+        "run_step": config.train.run_step,
+        "num_workers": config.train.num_workers,
+    }
+    env.close()
+
+    agent_config.update(config.agent)
+    if config.train.distributed_batch_size:
+        agent_config["batch_size"] = config.train.distributed_batch_size
+
+    trans_queue = mp.Queue(10)
+    interact_sync_queue = mp.Queue(1)
+    result_queue = mp.Queue()
+    manage_sync_queue = mp.Queue(1)
+    path_queue = mp.Queue(1)
+
+    record_period = (
+        config.train.record_period
+        if config.train.record_period
+        else config.train.run_step // 10
+    )
+    eval_manager_config = (
+        Env,
+        config.env,
+        config.train.eval_iteration,
+        config.train.record,
+        record_period,
+        config.train.eval_time_limit,
+    )
+    log_id = config.train.id if config.train.id else config.agent.name
+    log_manager_config = (config.env.name, log_id, config.train.experiment)
+    manage = mp.Process(
+        target=manage_process,
+        args=(
+            Agent,
+            {"device": "cpu", **agent_config},
+            result_queue,
+            manage_sync_queue,
+            path_queue,
+            config.train.run_step,
+            config.train.print_period,
+            MetricManager,
+            EvalManager,
+            eval_manager_config,
+            LogManager,
+            log_manager_config,
+            config_manager,
+        ),
+    )
+    distributed_manager_config = (
+        Env,
+        config.env,
+        Agent,
+        {"device": "cpu", **agent_config},
+        config.train.num_workers,
+        "async",
+    )
+    interact = mp.Process(
+        target=interact_process,
+        args=(
+            DistributedManager,
+            distributed_manager_config,
+            trans_queue,
+            interact_sync_queue,
+            config.train.run_step,
+            config.train.update_period,
+        ),
+    )
+    manage.start()
+    interact.start()
+    try:
+        agent = Agent(**agent_config)
+        assert agent.action_type == env.action_type
+        if config.train.load_path:
+            agent.load(config.train.load_path)
+
+        save_path = path_queue.get()
+        step, _step, print_stamp, save_stamp = 0, 0, 0, 0
+        transitions, opt_thread = [], None
+        heap = {"opt_time": None}
+        while step < config.train.run_step:
+            q_get_stamp = time.time()
+            _step, _transitions = trans_queue.get()
+            heap["q_get_time"] = time.time() - q_get_stamp
+            transitions += _transitions
+            delta_t = _step - step
+            print_stamp += delta_t
+            save_stamp += delta_t
+            step = _step
+
+            is_over = step >= config.train.run_step
+            if opt_thread is None or not opt_thread.is_alive() or is_over:
+                if opt_thread is not None:
+                    opt_thread.join()
+                print_signal, save_signal = False, False
+                if print_stamp >= config.train.print_period or is_over:
+                    print_signal = True
+                    print_stamp = 0
+                if save_stamp >= config.train.save_period or is_over:
+                    save_signal = True
+                    save_stamp = 0
+                opt_thread = Thread(
+                    target=optimize_thread,
+                    args=(
+                        agent,
+                        step,
+                        transitions.copy(),
+                        interact_sync_queue,
+                        result_queue,
+                        manage_sync_queue,
+                        print_signal,
+                        save_signal,
+                        save_path,
+                        heap,
+                    ),
+                )
+                opt_thread.start()
+                transitions = []
+
+    except Exception as e:
+        traceback.print_exc()
+        interact.terminate()
+        manage.terminate()
+    else:
+        print("Optimize process done.")
+        interact.join()
+        print("Interact process done.")
+        manage.join()
+        print("Manage process done.")
+    finally:
+        trans_queue.close()
+        interact_sync_queue.close()
+        result_queue.close()
+        manage_sync_queue.close()
+        path_queue.close()
+
+
+def async_distributed_train_org(config_path, unknown):
     config_manager = ConfigManager(config_path, unknown)
     config = config_manager.config
 
@@ -314,17 +459,15 @@ def async_distributed_train(config_path, unknown):
                 pass
             interact_sync_queue.put(agent.sync_out())
             result_queue.put((step, result))
-            if (
-                print_stamp >= config.train.print_period
-                or step >= config.train.run_step
-            ):
+            is_over = step >= config.train.run_step
+            if print_stamp >= config.train.print_period or is_over:
                 try:
                     manage_sync_queue.get_nowait()
                 except:
                     pass
                 manage_sync_queue.put(agent.sync_out())
                 print_stamp = 0
-            if save_stamp >= config.train.save_period or step >= config.train.run_step:
+            if save_stamp >= config.train.save_period or is_over:
                 agent.save(save_path)
                 save_stamp = 0
     except Exception as e:
