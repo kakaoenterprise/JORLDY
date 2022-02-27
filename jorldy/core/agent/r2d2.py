@@ -171,6 +171,7 @@ class R2D2(ApeX):
             "sampled_p": sampled_p,
             "mean_p": mean_p,
             "num_learn": self.num_learn,
+            "num_transitions": self.num_transitions,
         }
 
         return result

@@ -46,6 +46,7 @@ class ApeX(DQN):
         self.epsilon = epsilon
         self.epsilon_alpha = epsilon_alpha
         self.clip_grad_norm = clip_grad_norm
+        self.num_transitions = 0
 
         # PER
         self.alpha = alpha
@@ -127,12 +128,14 @@ class ApeX(DQN):
             "sampled_p": sampled_p,
             "mean_p": mean_p,
             "num_learn": self.num_learn,
+            "num_transitions": self.num_transitions,
         }
 
         return result
 
     def process(self, transitions, step):
         result = {}
+        self.num_transitions += len(transitions)
 
         # Process per step
         delta_t = step - self.time_t
