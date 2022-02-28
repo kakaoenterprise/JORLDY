@@ -65,9 +65,8 @@ def manage_process(
             while heap["wait_process"]:
                 time.sleep(0.1)
             heap["wait_thread"] = True
-            if step != heap["step"]:
-                step = heap["step"]
-                statistics = metric_manager.get_statistics()
+            step = heap["step"]
+            statistics = metric_manager.get_statistics()
             heap["wait_thread"] = False
             score, frames = eval_manager.evaluate(agent, step)
             statistics["score"] = score
