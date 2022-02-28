@@ -311,6 +311,7 @@ def async_distributed_train(config_path, unknown):
             while heap["wait_process"]:
                 time.sleep(0.1)
             heap["wait_thread"] = True
+            _transitions = []
             if step != heap["step"]:
                 step = heap["step"]
                 _transitions = transitions.copy()
