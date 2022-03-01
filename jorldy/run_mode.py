@@ -191,10 +191,10 @@ def sync_distributed_train(config_path, unknown):
                 except:
                     pass
                 manage_sync_queue.put(agent.sync_out())
-                print_stamp = 0
+                print_stamp -= config.train.print_period
             if save_stamp >= config.train.save_period or is_over:
                 agent.save(save_path)
-                save_stamp = 0
+                save_stamp -= config.train.save_period
     except Exception as e:
         traceback.print_exc()
         manage.terminate()
