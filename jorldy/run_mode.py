@@ -317,10 +317,10 @@ def async_distributed_train(config_path, unknown):
             is_over = step >= heap["run_step"]
             if heap["print_stamp"] >= config.train.print_period or is_over:
                 print_signal = True
-                heap["print_stamp"] = 0
+                heap["print_stamp"] -= config.train.print_period
             if heap["save_stamp"] >= config.train.save_period or is_over:
                 save_signal = True
-                heap["save_stamp"] = 0
+                heap["save_stamp"] -= config.train.save_period
             heap["wait_thread"] = False
             result = agent.process(_transitions, step)
             try:
