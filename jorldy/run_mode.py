@@ -375,7 +375,7 @@ def evaluate(config_path, unknown):
     assert config.train.load_path
     agent.load(config.train.load_path)
 
-    episode, score = 0, 0
+    episode = 0
     state = env.reset()
     for step in range(1, config.train.run_step + 1):
         action_dict = agent.act(state, training=False)
@@ -393,6 +393,5 @@ def evaluate(config_path, unknown):
             episode += 1
             print(f"{episode} Episode / Step : {step} / Score: {env.score}")
             state = env.reset()
-            score = 0
 
     env.close()
