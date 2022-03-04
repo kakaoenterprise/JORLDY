@@ -269,12 +269,12 @@ class Rainbow(DQN):
         ):
             result = self.learn()
             self.learning_rate_decay(step)
-            self.learn_period_stamp = 0
+            self.learn_period_stamp -= self.learn_period
 
         # Process per step if train start
         if self.num_learn > 0 and self.target_update_stamp >= self.target_update_period:
             self.update_target()
-            self.target_update_stamp = 0
+            self.target_update_stamp -= self.target_update_period
 
         return result
 
