@@ -190,9 +190,7 @@ class SAC(BaseAgent):
             with torch.no_grad():
                 next_pi = self.actor(next_state)
                 eps = (next_pi == 0.0).float() * 1e-8
-                next_pi += eps
-
-                next_log_prob = torch.log(next_pi)
+                next_log_prob = torch.log(next_pi+eps)
                 next_q1 = self.target_critic1(next_state)
                 next_q2 = self.target_critic2(next_state)
                 min_next_q = torch.min(next_q1, next_q2)
@@ -205,11 +203,11 @@ class SAC(BaseAgent):
         critic_loss1 = F.mse_loss(q1, target_q)
         critic_loss2 = F.mse_loss(q2, target_q)
 
-        self.critic_optimizer1.zero_grad()
+        self.critic_optimizer1.zero_grad(set_to_none=True)
         critic_loss1.backward()
         self.critic_optimizer1.step()
         
-        self.critic_optimizer2.zero_grad()
+        self.critic_optimizer2.zero_grad(set_to_none=True)
         critic_loss2.backward()
         self.critic_optimizer2.step()     
         
@@ -218,25 +216,24 @@ class SAC(BaseAgent):
             mu, std = self.actor(state)
             sample_action, log_prob = self.sample_action(mu, std)
             
-            # with torch.no_grad():
             q1 = self.critic1(state, sample_action)
             q2 = self.critic2(state, sample_action)        
             min_q = torch.min(q1, q2)
 
-            # actor_loss = ((self.alpha.to(self.device) * log_prob) - min_q).mean()
             actor_loss = ((self.alpha.detach() * log_prob) - min_q).mean()
         else:
             pi = self.actor(state)
-            log_prob = torch.log(pi + 1e-8)
             
-            # with torch.no_grad():
-            q1 = self.critic1(state)
-            q2 = self.critic2(state)        
-            min_q = torch.min(q1, q2)
+            with torch.no_grad():
+                eps = (pi == 0.0).float() * 1e-8
+                
+                q1 = self.critic1(state)
+                q2 = self.critic2(state)        
+                min_q = torch.min(q1, q2)
             
-            # actor_loss = (pi * ((self.alpha.to(self.device) * log_prob) - min_q)).sum(-1).mean()
-            actor_loss = (pi * ((self.alpha.detach() * log_prob) - min_q)).sum(-1).mean()
+            log_prob = torch.log(pi + eps)
             
+            actor_loss = (pi * ((self.alpha.detach() * log_prob) - min_q)).sum(-1).mean()   
 
         self.actor_optimizer.zero_grad(set_to_none=True)
         actor_loss.backward()
@@ -248,14 +245,9 @@ class SAC(BaseAgent):
                 self.log_alpha * (log_prob + self.target_entropy).detach()
             ).mean()
         else:
-            log_prob_discrete = (pi * log_prob).sum(-1).detach()
             alpha_loss = -(
-                self.log_alpha * (log_prob_discrete + self.target_entropy)
+                self.log_alpha * (pi*(log_prob + self.target_entropy)).sum(-1).detach()
             ).mean()
-            
-#             alpha_loss = -(
-#                 self.log_alpha * (pi*(log_prob + self.target_entropy)).sum(-1).detach()
-#             ).mean()
 
         self.alpha = self.log_alpha.exp()
 
@@ -355,3 +347,4 @@ class SAC(BaseAgent):
             "weights": weights,
         }
         return sync_item
+    
