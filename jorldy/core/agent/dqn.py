@@ -169,7 +169,7 @@ class DQN(BaseAgent):
 
             if self.target_update_stamp >= self.target_update_period:
                 self.update_target()
-                self.target_update_stamp = 0
+                self.target_update_stamp -= self.target_update_period
 
         return result
 

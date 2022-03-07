@@ -58,5 +58,5 @@ class EvalManager:
             scores.append(self.env.score)
 
         if record:
-            self.record_stamp = 0
+            self.record_stamp -= self.record_period
         return round(np.mean(scores), 4), frames
