@@ -1,5 +1,4 @@
 from collections import deque
-from itertools import islice
 import torch
 import torch.nn.functional as F
 
@@ -7,6 +6,7 @@ torch.backends.cudnn.benchmark = True
 import numpy as np
 
 from .base import BaseAgent
+from core.buffer import PERBuffer
 
 class MuZero(BaseAgent):
     """MuZero agent.
@@ -18,15 +18,60 @@ class MuZero(BaseAgent):
     def __init__(
         self,
         # MuZero
+        network="pseudo",
+        state_size=(96,96,3),
+        action_size=88,
+        batch_size=16,
+        start_train_step=0,
+        num_stacked_observation=32,
+        buffer_size=100000,
+        run_step=1e6,
+        # PER
+        alpha=0.6,
+        beta=0.4,
+        learn_period=4,
+        uniform_sample_prob=1e-3,
         **kwargs
     ):
         super(MuZero, self).__init__(network=network, **kwargs)
-        
+        self.state_size = state_size
+        self.action_size = action_size
+        self.hidden_state_shape = (6, 6, 1024)
+        self.batch_size = batch_size
+        self.start_train_step = start_train_step
+
+        self.num_stacked_observation = num_stacked_observation
+        self.stacked_observation = deque(maxlen=self.num_stacked_observation*2+1)
+
+        self.num_learn
+
+        # PER
+        self.alpha = alpha
+        self.beta = beta
+        self.learn_period = learn_period
+        self.learn_period_stamp = 0
+        self.uniform_sample_prob = uniform_sample_prob
+        self.beta_add = (1 - beta) / run_step
+        self.buffer_size = buffer_size
+        self.memory = PERBuffer(self.buffer_size, uniform_sample_prob)
+
+        self.num_learn = 0
+
+    def reset_observation(self):
+        self.stacked_observation.clear()
+        self.stacked_observation.extend([np.ones(self.state_size)])
 
     @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
-        pass
+        self.stacked_observation.append(state)
+
+        root_state = self.pseudo_representation(self.stacked_observation)
+        mcts = MCTS()
+        action, pi,  = mcts.run_mcts(root_state)
+
+        self.stacked_observation.append(action)
+        return action
 
     def learn(self):
         pass
@@ -39,13 +84,27 @@ class MuZero(BaseAgent):
         return result
 
     def process(self, transitions, step):
-        pass
+        result = {}
+
+        # Process per step
+        delta_t = step - self.time_t
+        self.memory.store(transitions)
+        self.time_t = step
+        self.learn_period_stamp += delta_t
+
+        if (
+            self.learn_period_stamp >= self.learn_period
+            and self.memory.buffer_counter >= self.batch_size
+            and self.time_t >= self.start_train_step
+        ):
+            result = self.learn()
+            self.learning_rate_decay(step)
+            self.learn_period_stamp = 0
     
         return result
 
-
     def interact_callback(self, transition):
-        pass
+        
 
         return _transition
 
@@ -66,6 +125,19 @@ class MuZero(BaseAgent):
         self.network.load_state_dict(checkpoint["network"])
         self.target_network.load_state_dict(checkpoint["network"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
+
+    def pseudo_representation(self, stacked_observation):
+        hidden_state_0 = torch.zeros(self.hidden_state_shape)
+        return hidden_state_0
+
+    def pseudo_prediction(self, hidden_state):
+        pi = torch.zeros(self.action_size)
+        value = 0
+        return pi, value
+
+    def pseudo_dynamics(self, hidden_state, action):
+        next_hidden_state, reward = torch.zeros(self.hidden_state_shape), 0
+        return next_hidden_state, reward
         
 
 class MCTS():
@@ -190,7 +262,7 @@ class MCTS():
             if node_id == ():
                 break
             
-            reward_list.append(self.tree[node_id]['r']
+            reward_list.append(self.tree[node_id]['r'])
             
     def init_mcts(self, root_state):
         tree = {}
@@ -226,5 +298,15 @@ class MCTS():
         action_idx = np.random.choice(self.action_size, p=pi_noise)
 
         return action_idx, pi
-                               
-   def vec2scalar(self, vec)
+
+    def backup(self):
+        pass
+
+
+class History():
+    def __init__(self):
+        pass
+
+    def append(self, transition):
+        pass
+
