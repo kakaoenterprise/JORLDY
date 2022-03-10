@@ -82,8 +82,7 @@ class MCTS():
             
         self.c1 = 1.25
         self.c2 = 19652
-        self.noise = 0
-        self.alpha = 0.0
+        self.alpha = 0.3
 
         self.q_min = 0
         self.q_max = 0
@@ -217,10 +216,11 @@ class MCTS():
             child_idx = self.root_id + (child_num,)
             n_list.append(self.tree[child_idx]['n'])
 
-        pi = (np.asarray(n_list) ** (1/self.temp_param)) / (np.sum(n_list) ** (1/self.temp_param))
-
-        noise_probs = np.random.dirichlet(0.3*np.ones(self.action_size))
-        pi_noise = ((1-self.alpha) * pi) + (self.alpha * noise_probs)
+        pi = np.asarray(n_list) / np.sum(n_list)
+        pi_temp = (np.asarray(n_list) ** (1/self.temp_param)) / (np.sum(n_list) ** (1/self.temp_param))
+                               
+        noise_probs = self.alpha * np.random.dirichlet(np.ones(self.action_size))
+        pi_noise = pi_temp + noise_probs
         pi_noise = pi_noise / np.sum(pi_noise)
 
         action_idx = np.random.choice(self.action_size, p=pi_noise)
