@@ -328,7 +328,7 @@ def async_distributed_train(config_path, unknown):
             except:
                 pass
             try:
-                interact_sync_queue.put(agent.sync_out(), timeout=10.0)
+                interact_sync_queue.put_nowait(agent.sync_out())
             except:
                 pass
             result_queue.put((step, result))
