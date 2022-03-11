@@ -118,11 +118,13 @@ python main.py --sync --config config.ppo.cartpole --train.num_workers 8
 
 :mailbox: Contact: jorldy@kakaoenterprise.com
 
-| <img src="./resrc/contributor_leonard.png" alt="leonard" width=100/> | <img src="./resrc/contributor_ramanuzan.png" alt="ramanuzan" width=100/> | <img src="./resrc/contributor_kan.png" alt="kan" width=100/> | <img src="./resrc/contributor_erinn.png" alt="erinn" width=100/> | <img src="./resrc/contributor_royce.png" alt="royce" width=100/> | <img src="./resrc/contributor_crest.png" alt="crest" width=100/> | <img src="./resrc/contributor_lisa.png" alt="lisa" width=100/> |
-| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-|                 leonard.q<br />(Kyushik_Min)                 |               ramanuzan.lee<br />(Hyunho_Lee)                |                   kan.s<br />(Kwansu_Shin)                   |                 erinn.lee<br />(Taehak_Lee)                  |                royce.choi<br />(Jinwon_Choi)                 |                 crest.son<br />(Sungho_Son)                  |               lisa.ekkim<br />(Eunkyeong_Kim)                |
+| <img src="./resrc/contributor_leonard.png" alt="leonard" width=100/> | <img src="./resrc/contributor_ramanuzan.png" alt="ramanuzan" width=100/> | <img src="./resrc/contributor_kan.png" alt="kan" width=100/> | <img src="./resrc/contributor_erinn.png" alt="erinn" width=100/> | <img src="./resrc/contributor_link.png" alt="link" width=100/> |
+| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+|                 leonard.q<br />(Kyushik Min)                 |               ramanuzan.lee<br />(Hyunho Lee)                |                   kan.s<br />(Kwansu Shin)                   |                 erinn.lee<br />(Taehak Lee)                  |                  link.lee<br />(Taehak Lee)                  |
+| <img src="./resrc/contributor_royce.png" alt="royce" width=100/> | <img src="./resrc/contributor_crest.png" alt="crest" width=100/> | <img src="./resrc/contributor_lisa.png" alt="lisa" width=100/> |                                                              |                                                              |
+|                royce.choi<br />(Jinwon Choi)                 |                 crest.son<br />(Sungho Son)                  |               lisa.ekkim<br />(Eunkyeong Kim)                |                                                              |                                                              |
 
- 
+
 
 
 ## :copyright: License
