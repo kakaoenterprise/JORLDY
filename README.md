@@ -118,10 +118,10 @@ python main.py --sync --config config.ppo.cartpole --train.num_workers 8
 
 :mailbox: Contact: jorldy@kakaoenterprise.com
 
-| <img src="./resrc/contributor_leonard.png" alt="leonard" width=100/> | <img src="./resrc/contributor_ramanuzan.png" alt="ramanuzan" width=100/> | <img src="./resrc/contributor_kan.png" alt="kan" width=100/> | <img src="./resrc/contributor_erinn.png" alt="erinn" width=100/> |
+| <img src="./resrc/contributor_leonard.png" alt="leonard" width=150/> | <img src="./resrc/contributor_ramanuzan.png" alt="ramanuzan" width=150/> | <img src="./resrc/contributor_kan.png" alt="kan" width=150/> | <img src="./resrc/contributor_erinn.png" alt="erinn" width=150/> |
 | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
 |                 leonard.q<br />(Kyushik Min)                 |               ramanuzan.lee<br />(Hyunho Lee)                |                   kan.s<br />(Kwansu Shin)                   |                 erinn.lee<br />(Taehak Lee)                  |
-| <img src="./resrc/contributor_link.png" alt="link" width=100/> | <img src="./resrc/contributor_royce.png" alt="royce" width=100/> | <img src="./resrc/contributor_crest.png" alt="crest" width=100/> | <img src="./resrc/contributor_lisa.png" alt="lisa" width=100/> |
+| <img src="./resrc/contributor_link.png" alt="link" width=150/> | <img src="./resrc/contributor_royce.png" alt="royce" width=150/> | <img src="./resrc/contributor_crest.png" alt="crest" width=150/> | <img src="./resrc/contributor_lisa.png" alt="lisa" width=150/> |
 |                  link.lee<br />(Hojoon Lee)                  |                royce.choi<br />(Jinwon Choi)                 |                 crest.son<br />(Sungho Son)                  |               lisa.ekkim<br />(Eunkyeong Kim)                |
 
 
