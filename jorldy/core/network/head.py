@@ -190,6 +190,114 @@ class CNN_LSTM(torch.nn.Module):
         x, hidden_out = self.lstm(x, hidden_in)
 
         return x, hidden_in, hidden_out
+    
+
+############################################################################################################
+# muzero atari head
+class Downsample(torch.nn.Module):
+    def __init__(self, D_in, D_hidden=512):
+        super(Downsample, self).__init__()
+        self.D_head_out = [1, 256, 6, 6]  # never use
+        self.in_channel = D_in[0]  # D_in = [128, 96, 96] -> in_channel = 128
+        self.mid_channel = 128
+        self.out_channel = 256
+        self.kernel = (3, 3)
+        self.stride = (2, 2)
+        self.padding = (1, 1)
+        self.num_residual_block = [2, 3, 3]
+        self.image_reshape = [1, 96, 96, 96]
+        self.action_reshape = [1, 32, 96, 96]
+        self.action_divisor = 18
+
+        self.conv_1 = torch.nn.Conv2d(
+            in_channels=self.in_channel,
+            out_channels=self.mid_channel,
+            kernel_size=self.kernel,
+            stride=self.stride,
+            padding=self.padding,
+            bias=False
+        )
+        self.conv_2 = torch.nn.Conv2d(
+            in_channels=self.mid_channel,
+            out_channels=self.out_channel,
+            kernel_size=self.kernel,
+            stride=self.stride,
+            padding=self.padding,
+            bias=False
+        )
+
+        # residual block
+        self.residual_block_1 = torch.nn.ModuleList(
+            [Residualblock(self.in_channel) for _ in range(self.num_residual_block[0])]
+        )
+        self.residual_block_2 = torch.nn.ModuleList(
+            [Residualblock(self.out_channel) for _ in range(self.num_residual_block[1])]
+        )
+        self.residual_block_3 = torch.nn.ModuleList(
+            [Residualblock(self.out_channel) for _ in range(self.num_residual_block[2])]
+        )
+
+    def forward(self, observations, action):
+        # observation, action : input -> normalize -> concatenate
+        observations = torch.reshape(observations, self.image_reshape)
+        observations = F.normalize(observations)
+        action = torch.reshape(action, self.action_reshape)
+        action /= self.action_divisor
+        x = torch.cat([observations, action], dim=1)
+
+        # down-sampling : ConvNet -> residual-block -> pooling
+        x = self.conv_1(x)
+        for block in self.residual_block_1:
+            x = block(x)
+
+        x = self.conv_2(x)
+        for block in self.residual_block_2:
+            x = block(x)
+
+        x = F.avg_pool2d(x, kernel_size=self.kernel, stride=self.stride, padding=self.padding)
+        for block in self.residual_block_3:
+            x = block(x)
+        x = F.avg_pool2d(x, kernel_size=self.kernel, stride=self.stride, padding=self.padding)
+        return x
+
+
+class Residualblock(torch.nn.Module):
+    def __init__(self, channel):
+        super(Residualblock, self).__init__()
+        self.channel = channel
+        self.kernel_size = (3, 3)
+        self.stride = (1, 1)
+        self.padding = (1, 1)
+
+        self.c1 = torch.nn.Conv2d(
+            in_channels=self.channel,
+            out_channels=self.channel,
+            kernel_size=self.kernel_size,
+            stride=self.stride,
+            padding=self.padding,
+            bias=False
+        )
+        self.b1 = torch.nn.BatchNorm2d(num_features=self.channel)
+        self.c2 = torch.nn.Conv2d(
+            in_channels=self.channel,
+            out_channels=self.channel,
+            kernel_size=self.kernel_size,
+            stride=self.stride,
+            padding=self.padding,
+            bias=False
+        )
+        self.b2 = torch.nn.BatchNorm2d(num_features=self.channel)
+
+    def forward(self, x):
+        x_residual_block = self.c1(x)
+        x_residual_block = self.b1(x_residual_block)
+        x_residual_block = F.relu(x_residual_block)
+        x_residual_block = self.c2(x_residual_block)
+        x_residual_block = self.b2(x_residual_block)
+        x_residual_block += x
+        x = F.relu(x_residual_block)
+        return x
+############################################################################################################
 
 
 import os, sys, inspect, re

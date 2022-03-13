@@ -8,8 +8,9 @@ env = {
 
 agent = {
     "name": "muzero",
-    "network": "muzero",
-    "gamma": 0.99,
+    "network": "muzero_fullyconnected",
+    "head": "mlp",
+    "gamma": 0.997,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
     "explore_ratio": 0.2,

@@ -3,6 +3,8 @@ format: (key, class)
 ------------------------
 ('cnn', <class 'core.network.head.CNN'>)
 ('cnn_lstm', <class 'core.network.head.CNN_LSTM'>)
+('downsample', <class 'jorldy.core.network.head.Downsample'>)
 ('mlp', <class 'core.network.head.MLP'>)
 ('mlp_lstm', <class 'core.network.head.MLP_LSTM'>)
 ('multi', <class 'core.network.head.Multi'>)
+('residualblock', <class 'jorldy.core.network.head.Residualblock'>)
