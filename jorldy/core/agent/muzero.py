@@ -37,7 +37,7 @@ class MuZero(BaseAgent):
         num_simulation=50,
         num_unroll=5,
         num_td_step=10,
-        num_stacked_state=32,
+        num_stack=32,
         buffer_size=10000,
         run_step=1e6,
         optim_config={
@@ -57,13 +57,11 @@ class MuZero(BaseAgent):
             else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         )
 
-        stacked_state_size = (
-            (state_size[0] + 1) * num_stacked_state + state_size[0],
+        stack_dim = (
+            (state_size[0] + 1) * num_stack + state_size[0],
             *state_size[1:],
         )
-        self.network = PseudoNetwork(
-            stacked_state_size, hidden_state_channel, action_size
-        )
+        self.network = PseudoNetwork(stack_dim, hidden_state_channel, action_size)
         self.optimizer = Optimizer(
             optim_config["name"], self.network.parameters(), lr=optim_config["lr"]
         )
@@ -79,7 +77,7 @@ class MuZero(BaseAgent):
         self.num_simulation = num_simulation
         self.num_unroll = num_unroll
         self.num_td_step = num_td_step
-        self.num_stacked_state = num_stacked_state
+        self.num_stack = num_stack
 
         self.time_t = 0
         self.trajectory_step_stamp = 0
@@ -119,7 +117,7 @@ class MuZero(BaseAgent):
             self.trajectory = Trajectory(state)
 
         states, actions = self.trajectory.get_stacked_state(
-            self.trajectory_step_stamp, self.num_stacked_state
+            self.trajectory_step_stamp, self.num_stack
         )
         states = self.as_tensor(np.expand_dims(states, axis=0))   
         actions = self.as_tensor(np.expand_dims(actions, axis=0))   
@@ -164,7 +162,7 @@ class MuZero(BaseAgent):
             transitions["reward"].append(rewards)
             transitions["action"].append(actions)
             states, actions = trajectory.get_stacked_state(
-                start_idx, self.num_stacked_state
+                start_idx, self.num_stack
             )
             transitions["states"].append(states)
             transitions["actions"].append(actions)
@@ -497,7 +495,7 @@ class Trajectory:
 
     def get_stacked_state(self, cur_idx, num_stack):
         # f_dim, r_shape = self.states[cur_idx].shape[1], self.states[cur_idx].shape[2:]
-        # num_stack = (f_dim + 1) * num_stacked_state + f_dim
+        # num_stack = (f_dim + 1) * num_stack + f_dim
         shape = self.states[cur_idx].shape[-2:]
         actions = np.zeros((num_stack, *shape))
         states = np.zeros((num_stack+1, *shape))
