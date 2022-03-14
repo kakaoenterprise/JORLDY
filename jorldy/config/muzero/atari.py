@@ -22,7 +22,7 @@ agent = {
     "epsilon_min": 0.1,
     "explore_ratio": 0.1,
     "buffer_size": 10000,
-    "batch_size": 16,
+    "batch_size": 8,
     "start_train_step": 0,
     "target_update_period": 10000,
 }
@@ -42,6 +42,6 @@ train = {
     "record": True,
     "record_period": 500000,
     # distributed setting
-    "update_period": 0,
+    "update_period": 200,
     "num_workers": 8,
 }

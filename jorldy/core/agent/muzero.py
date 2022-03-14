@@ -27,8 +27,8 @@ class MuZero(BaseAgent):
         device=None,
         network="pseudo",
         state_size=(1, 96, 96),
-        hidden_state_channel=8,
-        action_size=88,
+        hidden_state_channel=4,
+        action_size=18,
         gamma=0.99,
         batch_size=16,
         start_train_step=0,
@@ -80,7 +80,6 @@ class MuZero(BaseAgent):
         self.num_unroll = num_unroll
         self.num_td_step = num_td_step
         self.num_stacked_state = num_stacked_state
-        # self.stacked_state = deque(maxlen=self.num_stacked_state * 2 + 1)
 
         self.time_t = 0
         self.trajectory_step_stamp = 0
@@ -102,45 +101,42 @@ class MuZero(BaseAgent):
         self.memory = ReplayBuffer(buffer_size)
         self.memory.first_store = False
 
+        # MCTS
+        self.mcts = MCTS(
+            self.network.prediction,
+            self.network.dynamics,
+            self.action_size,
+            self.num_simulation,
+            self.num_unroll,
+            self.gamma,
+        )
+
     @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
-        # self.stacked_state.append(state)
 
         if not self.trajectory:
             self.trajectory = Trajectory(state)
 
-        stacked_state = self.as_tensor(
-            (
-                self.trajectory.create_stacked_state(
-                    self.trajectory_step_stamp, self.num_stacked_state
-                ),
-            )
+        states, actions = self.trajectory.get_stacked_state(
+            self.trajectory_step_stamp, self.num_stacked_state
         )
-        root_state = self.network.representation(stacked_state)
+        states = self.as_tensor(np.expand_dims(states, axis=0))   
+        actions = self.as_tensor(np.expand_dims(actions, axis=0))   
+        root_state = self.network.representation(states, actions)
         if self.network == "pseudo":
-            mcts = MCTS(
-                self.pseudo_prediction,
-                self.pseudo_dynamics,
-                self.action_size,
-                self.num_simulation,
-                self.num_unroll,
-                self.gamma,
-            )
-            action, pi, value = mcts.run_mcts(root_state)
+            action, pi, value = self.mcts.run_mcts(root_state)
         else:
             pi = np.ones(self.action_size) / self.action_size
             action = np.random.choice(self.action_size, size=(1, 1))
         value = np.random.random()
 
-        # self.stacked_state.append(action)
         return {"action": action, "value": value, "pi": pi}
 
     def learn(self):
         trajectories = self.memory.sample(self.batch_size)
 
         transitions = defaultdict(list)
-        trajectory: Trajectory
         for _, trajectory in enumerate(trajectories["trajectory"]):
             trajectory_len = len(trajectory.values)
             start_idx = np.random.choice(trajectory_len)
@@ -167,9 +163,11 @@ class MuZero(BaseAgent):
             transitions["policy"].append(policies)
             transitions["reward"].append(rewards)
             transitions["action"].append(actions)
-            transitions["stacked_state"].append(
-                trajectory.create_stacked_state(start_idx, self.num_stacked_state)
+            states, actions = trajectory.get_stacked_state(
+                start_idx, self.num_stacked_state
             )
+            transitions["states"].append(states)
+            transitions["actions"].append(actions)
 
         for key in transitions.keys():
             a = np.stack(transitions[key], axis=0)
@@ -177,13 +175,14 @@ class MuZero(BaseAgent):
                 a = a.squeeze(axis=-1)
             transitions[key] = self.as_tensor(a)
 
-        stacked_state = transitions["stacked_state"]
+        states = transitions["states"]
+        actions = transitions["actions"]
         target_action = transitions["action"]
         target_reward = transitions["reward"]
         target_policy = transitions["policy"]
         target_value = transitions["value"]
 
-        hidden_state = self.network.representation(stacked_state)
+        hidden_state = self.network.representation(states, actions)
         pi, value = self.network.prediction(hidden_state)
         reward = torch.zeros(target_reward.shape)
 
@@ -276,16 +275,17 @@ class MuZero(BaseAgent):
 class PseudoNetwork(torch.nn.Module):
     def __init__(self, s_shape, hidden_out, action_size):
         super().__init__()
-        self.encode = torch.nn.Conv2d(s_shape[0], hidden_out, s_shape[1]-1)
+        self.encode = torch.nn.Conv2d(s_shape[0], hidden_out, s_shape[1] - 1)
         self.hidden_flatten = torch.nn.Flatten()
-        flatten_size = hidden_out * (((96 - s_shape[1] + 1) // 1 + 1) ** 2)
+        flatten_size = hidden_out * ((1 // 1 + 1) ** 2)
         self.pi = torch.nn.Linear(in_features=flatten_size, out_features=action_size)
         self.value = torch.nn.Linear(in_features=flatten_size, out_features=1)
         self.reward = torch.nn.Linear(in_features=flatten_size, out_features=1)
         self.next_hidden = torch.nn.Conv2d(hidden_out, hidden_out, 1)
 
-    def representation(self, stacked_state):
-        return self.encode(stacked_state)
+    def representation(self, states, actions):
+        x = torch.cat([states, actions], dim=1)
+        return self.encode(x)
 
     def prediction(self, hidden_state):
         x = self.hidden_flatten(hidden_state)
@@ -470,24 +470,14 @@ class MCTS:
 
 class Trajectory:
     def __init__(self, state):
-        self.states = [state]
+        self.states = [state / 255]
         self.actions = [np.zeros((1, 1), dtype=int)]
         self.rewards = [np.zeros((1, 1))]
         self.values = []
         self.policies = []
 
-    def items(self):
-        a = np.expand_dims(np.array(self.rewards), axis=0)
-        return {
-            "state": np.expand_dims(np.array(self.states), axis=0),
-            "action": np.expand_dims(np.array(self.actions), axis=0),
-            "reward": a,
-            "value": np.expand_dims(np.array(self.values), axis=0),
-            "policy": np.expand_dims(np.array(self.policies), axis=0),
-        }.items()
-
     def append(self, transition):
-        self.states.append(transition["state"])
+        self.states.append(transition["state"] / 255)
         self.actions.append(transition["action"])
         self.rewards.append(transition["reward"])
         self.values.append(transition["value"])
@@ -505,18 +495,16 @@ class Trajectory:
 
         return bootstrap_value
 
-    def create_stacked_state(self, cur_idx, num_stacked_state):
-        f_dim, r_shape = self.states[cur_idx].shape[1], self.states[cur_idx].shape[2:]
-        num_stack = (f_dim + 1) * num_stacked_state + f_dim
-        stacked_state = np.zeros((num_stack,) + r_shape)
-        stacked_state[:f_dim] = self.states[cur_idx]
+    def get_stacked_state(self, cur_idx, num_stack):
+        # f_dim, r_shape = self.states[cur_idx].shape[1], self.states[cur_idx].shape[2:]
+        # num_stack = (f_dim + 1) * num_stacked_state + f_dim
+        shape = self.states[cur_idx].shape[-2:]
+        actions = np.zeros((num_stack, *shape))
+        states = np.zeros((num_stack+1, *shape))
+        states[0] = self.states[cur_idx]
 
-        for i, n in zip(range(f_dim, num_stack, f_dim + 1), reversed(range(cur_idx))):
-            stacked_state[i : i + f_dim] = self.states[n]
-            stacked_state[i + f_dim] = self.actions[n + 1]
+        for i, state in enumerate(self.states[max(0, cur_idx - num_stack): cur_idx]):
+            states[i+1] = state
+            actions[i] = np.ones(shape) * self.actions[i]
 
-        if cur_idx - num_stacked_state < 0:
-            remaind = (num_stacked_state - cur_idx) * (f_dim + 1)
-            stacked_state[-remaind:] = np.zeros((remaind, *r_shape))
-
-        return stacked_state
+        return states, actions
