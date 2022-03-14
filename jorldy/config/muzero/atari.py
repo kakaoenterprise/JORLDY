@@ -6,7 +6,7 @@ env = {
     "gray_img": True,
     "img_width": 96,
     "img_height": 96,
-    "stack_frame": 128,
+    "stack_frame": 1,
     "no_op": True,
     "skip_frame": 4,
     "reward_clip": True,
@@ -14,16 +14,16 @@ env = {
 }
 
 agent = {
-    "name": "muzero",
-    "network": "muzero_resnet",
+    "name": "mu_zero",
+    "network": "mu_zero_resnet",
     "head": "downsample",
     "gamma": 0.997,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,
     "explore_ratio": 0.1,
-    "buffer_size": 1000000,
-    "batch_size": 32,
-    "start_train_step": 100000,
+    "buffer_size": 10000,
+    "batch_size": 16,
+    "start_train_step": 0,
     "target_update_period": 10000,
 }
 
@@ -36,12 +36,12 @@ train = {
     "training": True,
     "load_path": None,
     "run_step": 10000000,
-    "print_period": 10000,
+    "print_period": 100,
     "save_period": 100000,
     "eval_iteration": 5,
     "record": True,
     "record_period": 500000,
     # distributed setting
-    "update_period": 32,
-    "num_workers": 16,
+    "update_period": 0,
+    "num_workers": 8,
 }
