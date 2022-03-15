@@ -190,14 +190,14 @@ class CNN_LSTM(torch.nn.Module):
         x, hidden_out = self.lstm(x, hidden_in)
 
         return x, hidden_in, hidden_out
-    
+
 
 ############################################################################################################
 # muzero atari head
 class Residualblock(torch.nn.Module):
     def __init__(self, D_in, D_hidden=512):
         super(Residualblock, self).__init__()
-        self.D_head_out = D_in[0] # never use
+        self.D_head_out = D_in[0]  # never use
 
         self.c1 = torch.nn.Conv2d(
             in_channels=D_in[0],
@@ -205,7 +205,7 @@ class Residualblock(torch.nn.Module):
             kernel_size=(3, 3),
             stride=(1, 1),
             padding=(1, 1),
-            bias=False
+            bias=False,
         )
         self.b1 = torch.nn.BatchNorm2d(num_features=D_in[0])
         self.c2 = torch.nn.Conv2d(
@@ -214,7 +214,7 @@ class Residualblock(torch.nn.Module):
             kernel_size=(3, 3),
             stride=(1, 1),
             padding=(1, 1),
-            bias=False
+            bias=False,
         )
         self.b2 = torch.nn.BatchNorm2d(num_features=D_in[0])
 
@@ -227,6 +227,8 @@ class Residualblock(torch.nn.Module):
         x_residual_block += x
         x = F.relu(x_residual_block)
         return x
+
+
 ############################################################################################################
 
 

@@ -1,4 +1,5 @@
 from collections import defaultdict, deque
+from collections.abc import Iterable
 import os
 import torch
 import torch.nn.functional as F
@@ -26,7 +27,7 @@ class MuZero(BaseAgent):
         # MuZero
         device=None,
         network="pseudo",
-        state_size=(1, 96, 96),
+        state_size=(1, 1, 96, 96),
         hidden_state_channel=4,
         action_size=18,
         gamma=0.99,
@@ -57,16 +58,17 @@ class MuZero(BaseAgent):
             else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         )
 
-        stack_dim = (
+        if not isinstance(state_size, Iterable):
+            state_size = (1, state_size, 8, 8)
+        stacked_shape = (
             (state_size[0] + 1) * num_stack + state_size[0],
             *state_size[1:],
         )
-        self.network = PseudoNetwork(stack_dim, hidden_state_channel, action_size)
+        self.network = PseudoNetwork(stacked_shape, hidden_state_channel, action_size)
         self.optimizer = Optimizer(
             optim_config["name"], self.network.parameters(), lr=optim_config["lr"]
         )
 
-        self.state_size = state_size
         self.action_size = action_size
         self.gamma = gamma
         self.batch_size = batch_size
@@ -116,11 +118,11 @@ class MuZero(BaseAgent):
         if not self.trajectory:
             self.trajectory = Trajectory(state)
 
-        states, actions = self.trajectory.get_stacked_state(
+        states, actions = self.trajectory.get_stacked_data(
             self.trajectory_step_stamp, self.num_stack
         )
-        states = self.as_tensor(np.expand_dims(states, axis=0))   
-        actions = self.as_tensor(np.expand_dims(actions, axis=0))   
+        states = self.as_tensor(np.expand_dims(states, axis=0))
+        actions = self.as_tensor(np.expand_dims(actions, axis=0))
         root_state = self.network.representation(states, actions)
         if self.network == "pseudo":
             action, pi, value = self.mcts.run_mcts(root_state)
@@ -161,9 +163,7 @@ class MuZero(BaseAgent):
             transitions["policy"].append(policies)
             transitions["reward"].append(rewards)
             transitions["action"].append(actions)
-            states, actions = trajectory.get_stacked_state(
-                start_idx, self.num_stack
-            )
+            states, actions = trajectory.get_stacked_data(start_idx, self.num_stack)
             transitions["states"].append(states)
             transitions["actions"].append(actions)
 
@@ -266,7 +266,6 @@ class MuZero(BaseAgent):
         print(f"...Load model from {path}...")
         checkpoint = torch.load(os.path.join(path, "ckpt"), map_location=self.device)
         self.network.load_state_dict(checkpoint["network"])
-        self.target_network.load_state_dict(checkpoint["network"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
 
 
@@ -493,16 +492,16 @@ class Trajectory:
 
         return bootstrap_value
 
-    def get_stacked_state(self, cur_idx, num_stack):
+    def get_stacked_data(self, cur_idx, num_stack):
         # f_dim, r_shape = self.states[cur_idx].shape[1], self.states[cur_idx].shape[2:]
         # num_stack = (f_dim + 1) * num_stack + f_dim
         shape = self.states[cur_idx].shape[-2:]
         actions = np.zeros((num_stack, *shape))
-        states = np.zeros((num_stack+1, *shape))
+        states = np.zeros((num_stack + 1, *shape))
         states[0] = self.states[cur_idx]
 
-        for i, state in enumerate(self.states[max(0, cur_idx - num_stack): cur_idx]):
-            states[i+1] = state
+        for i, state in enumerate(self.states[max(0, cur_idx - num_stack) : cur_idx]):
+            states[i + 1] = state
             actions[i] = np.ones(shape) * self.actions[i]
 
         return states, actions
