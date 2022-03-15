@@ -72,22 +72,22 @@ class _Mujoco(BaseEnv):
 
 class HalfCheetah(_Mujoco):
     def __init__(self, **kwargs):
-        super(HalfCheetah, self).__init__(f"HalfCheetah-v2", **kwargs)
+        super(HalfCheetah, self).__init__(f"HalfCheetah-v3", **kwargs)
 
 
 class Ant(_Mujoco):
     def __init__(self, **kwargs):
-        super(Ant, self).__init__(f"Ant-v2", **kwargs)
+        super(Ant, self).__init__(f"Ant-v3", **kwargs)
 
 
 class Hopper(_Mujoco):
     def __init__(self, **kwargs):
-        super(Hopper, self).__init__(f"Hopper-v2", **kwargs)
+        super(Hopper, self).__init__(f"Hopper-v3", **kwargs)
 
 
 class Humanoid(_Mujoco):
     def __init__(self, **kwargs):
-        super(Humanoid, self).__init__(f"Humanoid-v2", **kwargs)
+        super(Humanoid, self).__init__(f"Humanoid-v3", **kwargs)
 
 
 class HumanoidStandup(_Mujoco):
@@ -114,9 +114,9 @@ class Reacher(_Mujoco):
 
 class Swimmer(_Mujoco):
     def __init__(self, **kwargs):
-        super(Swimmer, self).__init__(f"Swimmer-v2", **kwargs)
+        super(Swimmer, self).__init__(f"Swimmer-v3", **kwargs)
 
 
 class Walker(_Mujoco):
     def __init__(self, **kwargs):
-        super(Walker, self).__init__(f"Walker2d-v2", **kwargs)
+        super(Walker, self).__init__(f"Walker2d-v3", **kwargs)
