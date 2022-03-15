@@ -190,7 +190,7 @@ class MCTS():
             if node_id == ():
                 break
             
-            reward_list.append(self.tree[node_id]['r']
+            reward_list.append(self.tree[node_id]['r'])
             
     def init_mcts(self, root_state):
         tree = {}
@@ -227,4 +227,5 @@ class MCTS():
 
         return action_idx, pi
                                
-   def vec2scalar(self, vec)
+    def vec2scalar(self, vec):
+        pass
