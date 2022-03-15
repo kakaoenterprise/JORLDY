@@ -23,6 +23,7 @@ class REINFORCE(BaseAgent):
         optim_config (dict): dictionary of the optimizer info.
         gamma (float): discount factor.
         use_standardization (bool): parameter that determine whether to use standardization for return.
+        run_step (int): the number of total steps.
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
     """
@@ -116,6 +117,7 @@ class REINFORCE(BaseAgent):
         # Process per epi
         if transitions[0]["done"]:
             result = self.learn()
+            self.learning_rate_decay(step)
 
         return result
 

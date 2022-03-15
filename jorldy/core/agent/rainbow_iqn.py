@@ -27,6 +27,7 @@ class RainbowIQN(Rainbow):
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
         target_update_period (int): period to update the target network. (unit: step)
+        run_step (int): the number of total steps.
         n_step: number of steps in multi-step Q learning.
         alpha (float): prioritization exponent.
         beta (float): initial value of degree to use importance sampling.
@@ -39,7 +40,6 @@ class RainbowIQN(Rainbow):
         sample_min (float): quantile minimum thresholds (tau_min).
         sample_max (float): quantile maximum thresholds (tau_max).
         device (str): device to use. (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
-        run_step (int): number of run step.
     """
 
     def __init__(
@@ -56,6 +56,7 @@ class RainbowIQN(Rainbow):
         batch_size=64,
         start_train_step=2000,
         target_update_period=500,
+        run_step=1e6,
         # MultiStep
         n_step=4,
         # PER
@@ -71,7 +72,6 @@ class RainbowIQN(Rainbow):
         sample_min=0.0,
         sample_max=1.0,
         device=None,
-        run_step=1e6,
         **kwargs,
     ):
         self.device = (
@@ -110,6 +110,7 @@ class RainbowIQN(Rainbow):
         self.target_update_period = target_update_period
         self.num_learn = 0
         self.time_t = 0
+        self.run_step = run_step
 
         # MultiStep
         self.n_step = n_step

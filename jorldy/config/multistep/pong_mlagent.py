@@ -4,7 +4,7 @@ env = {"name": "pong_mlagent", "time_scale": 12.0}
 
 agent = {
     "name": "multistep",
-    "network": "dqn",
+    "network": "discrete_q_network",
     "gamma": 0.99,
     "n_step": 4,
     "epsilon_init": 1.0,

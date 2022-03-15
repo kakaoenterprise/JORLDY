@@ -58,7 +58,11 @@ def test_r2d2(MockEnv):
         == run_step - max(0, (last_episode_len - n_step - 1)) % agent.store_period
     )
     assert agent.store_period == seq_len // 2
-    # assert agent.memory.size == ((episode_len - n_step)//agent.store_period + 1) * (run_step // episode_len) + max(0, (last_episode_len - n_step)//agent.store_period) + int(last_episode_len >= n_step)
+    assert agent.memory.size == ((run_step - n_step) // episode_len) * (
+        (episode_len // agent.store_period) + bool(episode_len % agent.store_period)
+    ) + (((run_step - n_step) % episode_len) // agent.store_period) + bool(
+        ((run_step - n_step) % episode_len) % agent.store_period
+    )
 
     # test save and load
     check_save_load(agent, "./tmp_test_r2d2")

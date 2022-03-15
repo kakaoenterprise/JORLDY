@@ -27,6 +27,7 @@ class Rainbow(DQN):
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
         target_update_period (int): period to update the target network. (unit: step)
+        run_step (int): the number of total steps.
         n_step: number of steps in multi-step Q learning.
         alpha (float): prioritization exponent.
         beta (float): initial value of degree to use importance sampling.
@@ -39,7 +40,6 @@ class Rainbow(DQN):
         num_support (int): number of support.
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
-        run_step (int): number of run step.
     """
 
     def __init__(
@@ -55,6 +55,7 @@ class Rainbow(DQN):
         batch_size=64,
         start_train_step=2000,
         target_update_period=500,
+        run_step=1e6,
         # MultiStep
         n_step=4,
         # PER
@@ -69,7 +70,6 @@ class Rainbow(DQN):
         v_max=10,
         num_support=51,
         device=None,
-        run_step=1e6,
         **kwargs,
     ):
         self.device = (
@@ -105,6 +105,7 @@ class Rainbow(DQN):
         self.target_update_period = target_update_period
         self.num_learn = 0
         self.time_t = 0
+        self.run_step = run_step
 
         # MultiStep
         self.n_step = n_step
@@ -267,12 +268,13 @@ class Rainbow(DQN):
             and self.time_t >= self.start_train_step
         ):
             result = self.learn()
-            self.learn_period_stamp = 0
+            self.learning_rate_decay(step)
+            self.learn_period_stamp -= self.learn_period
 
         # Process per step if train start
         if self.num_learn > 0 and self.target_update_stamp >= self.target_update_period:
             self.update_target()
-            self.target_update_stamp = 0
+            self.target_update_stamp -= self.target_update_period
 
         return result
 

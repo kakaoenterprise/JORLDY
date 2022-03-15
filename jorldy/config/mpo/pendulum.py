@@ -8,7 +8,7 @@ env = {
 agent = {
     "name": "mpo",
     "actor": "continuous_policy",
-    "critic": "ddpg_critic",
+    "critic": "continuous_q_network",
     "critic_loss_type": "retrace",  # one of ['1step_TD', 'retrace']
     "gamma": 0.99,
     "buffer_size": 50000,

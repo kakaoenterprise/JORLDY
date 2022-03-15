@@ -90,7 +90,7 @@ class BaseAgent(ABC):
     def interact_callback(self, transition):
         return transition
 
-    def learning_rate_decay(self, step, mode="cosine"):
+    def learning_rate_decay(self, step, optimizers=None, mode="cosine"):
         if mode == "linear":
             weight = 1 - (step / self.run_step)
         elif mode == "cosine":
@@ -100,5 +100,12 @@ class BaseAgent(ABC):
         else:
             raise Exception(f"check learning rate decay mode again! => {mode}")
 
-        for g in self.optimizer.param_groups:
-            g["lr"] = self.optimizer.defaults["lr"] * weight
+        if optimizers is None:
+            optimizers = [self.optimizer]
+
+        if not isinstance(optimizers, list):
+            optimizers = [optimizers]
+
+        for optimizer in optimizers:
+            for g in optimizer.param_groups:
+                g["lr"] = optimizer.defaults["lr"] * weight

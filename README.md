@@ -39,13 +39,13 @@ apt-get -y install gifsicle        # for gif optimize
 ```
 cd JORLDY
 
+docker pull jorldy/jorldy
+
 # mac, linux
-docker build -t jorldy -f ./docker/Dockerfile .
-docker run -it --rm --name jorldy -v `pwd`:/JORLDY jorldy /bin/bash
+docker run -it --rm --name jorldy -v `pwd`:/JORLDY jorldy/jorldy /bin/bash
 
 # windows
-docker build -t jorldy -f .\docker\Dockerfile .
-docker run -it --rm --name jorldy -v %cd%:/JORLDY jorldy /bin/bash
+docker run -it --rm --name jorldy -v %cd%:/JORLDY jorldy/jorldy /bin/bash
 ```
 
 ### :heavy_plus_sign: To use additional environments
@@ -73,13 +73,13 @@ Please refer to the [mujoco-py github installation](https://github.com/openai/mu
 ```
 cd jorldy
 
-# Examples: python [script name] --config [config path]
-python single_train.py --config config.dqn.cartpole
-python single_train.py --config config.rainbow.atari --env.name assault
+# Examples: python main.py [run mode] --config [config path]
+python main.py --config config.dqn.cartpole
+python main.py --async --config config.ape_x.cartpole
 
-# Examples: python [script name] --config [config path] --[optional parameter key] [parameter value]
-python single_train.py --config config.dqn.cartpole --agent.batch_size 64
-python sync_distributed_train.py --config config.ppo.cartpole --train.num_workers 8 
+# Examples: python main.py [run mode] --config [config path] --[optional parameter key] [parameter value]
+python main.py --config config.rainbow.atari --env.name breakout
+python main.py --sync --config config.ppo.cartpole --train.num_workers 8
 
 ```
 
@@ -87,11 +87,11 @@ python sync_distributed_train.py --config config.ppo.cartpole --train.num_worker
 
 | Version |   Release Date   |   Source   |   Release Note  |
 | :-----: | :--------------: | :--------: | :----------: |
+|  0.3.0  | March 10, 2022 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.3.0) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.3.0) |
 |  0.2.0  | January 23, 2022 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.2.0) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.2.0) |
 |  0.1.0  | December 23, 2021 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.1.0) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.1.0) |
 |  0.0.3  | November 23, 2021 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.0.3) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.0.3) |
 |  0.0.2  | November 06, 2021 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.0.2) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.0.2) |
-|  0.0.1  | November 03, 2021 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.0.1) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.0.1) |
 
 
 ## :mag: How to
@@ -118,7 +118,13 @@ python sync_distributed_train.py --config config.ppo.cartpole --train.num_worker
 
 :mailbox: Contact: jorldy@kakaoenterprise.com
 
-<img src="./resrc/contributors.png" alt="contributors" width=80%/> 
+| <img src="./resrc/contributor_leonard.png" alt="leonard" width=150/> | <img src="./resrc/contributor_ramanuzan.png" alt="ramanuzan" width=150/> | <img src="./resrc/contributor_kan_.png" alt="kan" width=150/> | <img src="./resrc/contributor_erinn.png" alt="erinn" width=150/> |
+| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+|                 leonard.q<br />(Kyushik Min)                 |               ramanuzan.lee<br />(Hyunho Lee)                |                   kan.s<br />(Kwansu Shin)                   |                 erinn.lee<br />(Taehak Lee)                  |
+| <img src="./resrc/contributor_link.png" alt="link" width=150/> | <img src="./resrc/contributor_royce.png" alt="royce" width=150/> | <img src="./resrc/contributor_crest.png" alt="crest" width=150/> | <img src="./resrc/contributor_lisa.png" alt="lisa" width=150/> |
+|                  link.lee<br />(Hojoon Lee)                  |                royce.choi<br />(Jinwon Choi)                 |                 crest.son<br />(Sungho Son)                  |               lisa.ekkim<br />(Eunkyeong Kim)                |
+
+
 
 
 ## :copyright: License

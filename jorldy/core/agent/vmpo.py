@@ -284,6 +284,7 @@ class VMPO(REINFORCE):
         # Process per n_step
         if self.learn_stamp >= self.n_step:
             result = self.learn()
-            self.learn_stamp = 0
+            self.learning_rate_decay(step)
+            self.learn_stamp -= self.n_step
 
         return result

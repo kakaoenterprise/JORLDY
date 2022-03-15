@@ -30,6 +30,7 @@ class MPO(BaseAgent):
         n_step (int): number of steps in multi-step Q learning.
         clip_grad_norm (float): gradient clipping threshold.
         gamma (float): discount factor.
+        run_step (int): the number of total steps.
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
         critic_loss_type (str): type of critic loss. One of ['1step_TD', 'retrace'].
@@ -52,7 +53,7 @@ class MPO(BaseAgent):
         hidden_size=512,
         optim_config={"name": "adam"},
         actor="discrete_policy",
-        critic="dqn",
+        critic="discrete_q_network",
         head="mlp",
         buffer_size=50000,
         batch_size=64,
@@ -61,6 +62,7 @@ class MPO(BaseAgent):
         n_step=8,
         clip_grad_norm=1.0,
         gamma=0.99,
+        run_step=1e6,
         device=None,
         # parameters unique to MPO
         critic_loss_type="retrace",  # one of ['1step_TD', 'retrace']
@@ -147,6 +149,7 @@ class MPO(BaseAgent):
         self.gamma = gamma
         self.tmp_buffer = deque(maxlen=n_step)
         self.memory = ReplayBuffer(buffer_size)
+        self.run_step = run_step
 
     @torch.no_grad()
     def act(self, state, training=True):
@@ -449,6 +452,9 @@ class MPO(BaseAgent):
         if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:
             for i in range(self.n_epoch):
                 result = self.learn()
+                self.learning_rate_decay(
+                    step, [self.actor_optimizer, self.critic_optimizer]
+                )
             self.update_target()
 
         return result

@@ -28,6 +28,7 @@ class DDPG(BaseAgent):
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
         tau (float): the soft update coefficient.
+        run_step (int): the number of total steps.
         mu (float): the drift coefficient of the Ornstein-Uhlenbeck process for action exploration.
         theta (float): reversion of the time constant of the Ornstein-Uhlenbeck process.
         sigma (float): diffusion coefficient of the Ornstein-Uhlenbeck process.
@@ -40,8 +41,8 @@ class DDPG(BaseAgent):
         state_size,
         action_size,
         hidden_size=512,
-        actor="ddpg_actor",
-        critic="ddpg_critic",
+        actor="deterministic_policy",
+        critic="continuous_q_network",
         head="mlp",
         optim_config={
             "actor": "adam",
@@ -54,6 +55,7 @@ class DDPG(BaseAgent):
         batch_size=128,
         start_train_step=2000,
         tau=1e-3,
+        run_step=1e6,
         # OU noise
         mu=0,
         theta=1e-3,
@@ -99,13 +101,14 @@ class DDPG(BaseAgent):
         self.batch_size = batch_size
         self.start_train_step = start_train_step
         self.num_learn = 0
+        self.run_step = run_step
 
     @torch.no_grad()
     def act(self, state, training=True):
         self.actor.train(training)
         mu = self.actor(self.as_tensor(state))
         mu = mu.cpu().numpy()
-        action = mu + self.OU.sample() if training else mu
+        action = mu + self.OU.sample().clip(-1.0, 1.0) if training else mu
         return {"action": action}
 
     def learn(self):
@@ -121,8 +124,8 @@ class DDPG(BaseAgent):
 
         # Critic Update
         with torch.no_grad():
-            next_actions = self.target_actor(next_state)
-            next_q = self.target_critic(next_state, next_actions)
+            next_action = self.target_actor(next_state)
+            next_q = self.target_critic(next_state, next_action)
             target_q = reward + (1 - done) * self.gamma * next_q
         q = self.critic(state, action)
         critic_loss = F.mse_loss(target_q, q)
@@ -153,6 +156,8 @@ class DDPG(BaseAgent):
     def update_target_soft(self):
         for t_p, p in zip(self.target_critic.parameters(), self.critic.parameters()):
             t_p.data.copy_(self.tau * p.data + (1 - self.tau) * t_p.data)
+        for t_p, p in zip(self.target_actor.parameters(), self.actor.parameters()):
+            t_p.data.copy_(self.tau * p.data + (1 - self.tau) * t_p.data)
 
     def process(self, transitions, step):
         result = {}
@@ -161,6 +166,9 @@ class DDPG(BaseAgent):
 
         if self.memory.size >= self.batch_size and step >= self.start_train_step:
             result = self.learn()
+            self.learning_rate_decay(
+                step, [self.actor_optimizer, self.critic_optimizer]
+            )
         if self.num_learn > 0:
             self.update_target_soft()
 

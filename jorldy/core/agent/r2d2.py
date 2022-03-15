@@ -171,6 +171,7 @@ class R2D2(ApeX):
             "sampled_p": sampled_p,
             "mean_p": mean_p,
             "num_learn": self.num_learn,
+            "num_transitions": self.num_transitions,
         }
 
         return result
@@ -267,14 +268,17 @@ class R2D2(ApeX):
             del _transition["q"]
 
             self.store_start = False
-            self.store_period_stamp = 0
+            self.store_period_stamp -= self.store_period
 
-            if self.tmp_buffer[-self.n_step - 1]["done"]:
-                self.store_start = True
-                self.tmp_buffer = deque(
-                    islice(self.tmp_buffer, len(self.tmp_buffer) - self.n_step, None),
-                    maxlen=self.tmp_buffer.maxlen,
-                )
+        if (
+            len(self.tmp_buffer) > self.n_step
+            and self.tmp_buffer[-self.n_step - 1]["done"]
+        ):
+            self.store_start = True
+            self.tmp_buffer = deque(
+                islice(self.tmp_buffer, len(self.tmp_buffer) - self.n_step, None),
+                maxlen=self.tmp_buffer.maxlen,
+            )
 
         self.store_period_stamp += 1
         if transition["done"]:

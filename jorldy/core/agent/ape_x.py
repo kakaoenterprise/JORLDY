@@ -17,6 +17,7 @@ class ApeX(DQN):
         epsilon_alpha (float): alpha in epsilon_i greedy policy
             where epsilon_i=epsilon^(1+(i/(N-1))*alpha).
         clip_grad_norm (float): gradient clipping threshold.
+        run_step (int): the number of total steps.
         alpha (float): prioritization exponent.
         beta (float): initial value of degree to use importance sampling.
         learn_period (int): period to train (unit: step)
@@ -30,6 +31,7 @@ class ApeX(DQN):
         epsilon=0.4,
         epsilon_alpha=0.7,
         clip_grad_norm=40.0,
+        run_step=1e6,
         # PER
         alpha=0.6,
         beta=0.4,
@@ -37,7 +39,6 @@ class ApeX(DQN):
         uniform_sample_prob=1e-3,
         # MultiStep
         n_step=4,
-        run_step=1e6,
         **kwargs
     ):
         super(ApeX, self).__init__(**kwargs)
@@ -45,6 +46,7 @@ class ApeX(DQN):
         self.epsilon = epsilon
         self.epsilon_alpha = epsilon_alpha
         self.clip_grad_norm = clip_grad_norm
+        self.num_transitions = 0
 
         # PER
         self.alpha = alpha
@@ -126,12 +128,14 @@ class ApeX(DQN):
             "sampled_p": sampled_p,
             "mean_p": mean_p,
             "num_learn": self.num_learn,
+            "num_transitions": self.num_transitions,
         }
 
         return result
 
     def process(self, transitions, step):
         result = {}
+        self.num_transitions += len(transitions)
 
         # Process per step
         delta_t = step - self.time_t
@@ -149,12 +153,13 @@ class ApeX(DQN):
             and self.time_t >= self.start_train_step
         ):
             result = self.learn()
-            self.learn_period_stamp = 0
+            self.learning_rate_decay(step)
+            self.learn_period_stamp -= self.learn_period
 
         # Process per step if train start
         if self.num_learn > 0 and self.target_update_stamp >= self.target_update_period:
             self.update_target()
-            self.target_update_stamp = 0
+            self.target_update_stamp = self.target_update_period
 
         return result
 
