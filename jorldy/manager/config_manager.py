@@ -95,8 +95,4 @@ def type_cast(var):
                 assert var in ["True", "False"]
                 return True if var == "True" else False
             except:
-                try:
-                    assert var == "None"
-                    return None
-                except:
-                    return var
+                return None if var == "None" else var
