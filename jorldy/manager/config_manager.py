@@ -45,7 +45,7 @@ class ConfigManager:
             if value is None:
                 remove_list.append((domain, key))
             else:
-                self.config[domain][key] = type_cast(value)
+                self.config[domain][key] = value
 
             idx += 1
 
