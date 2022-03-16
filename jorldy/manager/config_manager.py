@@ -41,7 +41,8 @@ class ConfigManager:
             domain, key = key.split(".")
 
             # Update
-            if value.lower() == "none":
+            value = type_cast(value)
+            if value is None:
                 remove_list.append((domain, key))
             else:
                 self.config[domain][key] = type_cast(value)
@@ -94,4 +95,8 @@ def type_cast(var):
                 assert var in ["True", "False"]
                 return True if var == "True" else False
             except:
-                return var
+                try:
+                    assert var == "None"
+                    return None
+                except:
+                    return var
