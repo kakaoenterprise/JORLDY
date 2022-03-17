@@ -1,0 +1,18 @@
+### Optimizer Dictionary ###
+format: (key, class)
+------------------------
+('adadelta', <class 'torch.optim.adadelta.Adadelta'>)
+('adagrad', <class 'torch.optim.adagrad.Adagrad'>)
+('adam', <class 'torch.optim.adam.Adam'>)
+('adam_w', <class 'torch.optim.adamw.AdamW'>)
+('adamax', <class 'torch.optim.adamax.Adamax'>)
+('asgd', <class 'torch.optim.asgd.ASGD'>)
+('lbfgs', <class 'torch.optim.lbfgs.LBFGS'>)
+('nadam', <class 'torch.optim.nadam.NAdam'>)
+('optimizer', <class 'torch.optim.optimizer.Optimizer'>)
+('ordered_dict', <class 'collections.OrderedDict'>)
+('radam', <class 'torch.optim.radam.RAdam'>)
+('rmsprop', <class 'torch.optim.rmsprop.RMSprop'>)
+('rprop', <class 'torch.optim.rprop.Rprop'>)
+('sgd', <class 'torch.optim.sgd.SGD'>)
+('sparse_adam', <class 'torch.optim.sparse_adam.SparseAdam'>)
