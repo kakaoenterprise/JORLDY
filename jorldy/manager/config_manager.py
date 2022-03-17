@@ -13,6 +13,7 @@ class ConfigManager:
         self.unknown_update(unknown_args)
 
     def unknown_update(self, unknown_args):
+        remove_list = []
         idx = 0
         while idx < len(unknown_args):
             # Get query
@@ -40,9 +41,16 @@ class ConfigManager:
             domain, key = key.split(".")
 
             # Update
-            self.config[domain][key] = type_cast(value)
+            value = type_cast(value)
+            if value is None:
+                remove_list.append((domain, key))
+            else:
+                self.config[domain][key] = value
 
             idx += 1
+
+        for domain, key in remove_list:
+            self.config[domain].pop(key, None)
 
     def dump(self, dump_path):
         tab, newline, open_brace, close_brace = "\t", "\n", "{", "}"
@@ -87,4 +95,4 @@ def type_cast(var):
                 assert var in ["True", "False"]
                 return True if var == "True" else False
             except:
-                return var
+                return None if var == "None" else var
