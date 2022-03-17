@@ -229,3 +229,23 @@ class MontezumaRevenge(_Atari):
         super(MontezumaRevenge, self).__init__(
             f"MontezumaRevenge{COMMON_VERSION}", **kwargs
         )
+
+
+class BattleZone(_Atari):
+    def __init__(self, **kwargs):
+        super(BattleZone, self).__init__(f"BattleZone{COMMON_VERSION}", **kwargs)
+
+
+class Robotank(_Atari):
+    def __init__(self, **kwargs):
+        super(Robotank, self).__init__(f"Robotank{COMMON_VERSION}", **kwargs)
+
+
+class MsPacman(_Atari):
+    def __init__(self, **kwargs):
+        super(MsPacman, self).__init__(f"MsPacman{COMMON_VERSION}", **kwargs)
+
+
+class TimePilot(_Atari):
+    def __init__(self, **kwargs):
+        super(TimePilot, self).__init__(f"TimePilot{COMMON_VERSION}", **kwargs)
