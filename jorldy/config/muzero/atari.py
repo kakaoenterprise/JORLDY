@@ -24,8 +24,8 @@ agent = {
     "buffer_size": 125000,
     "batch_size": 8,
     "start_train_step": 0,
-    "trajectory_size": 200,
-    "num_simulation": 50,
+    "trajectory_size": 10,
+    "num_simulation": 5,
 }
 
 optim = {
@@ -37,7 +37,7 @@ train = {
     "training": True,
     "load_path": None,
     "run_step": 10000000,
-    "print_period": 100,
+    "print_period": 10,
     "save_period": 100000,
     "eval_iteration": 5,
     "record": True,

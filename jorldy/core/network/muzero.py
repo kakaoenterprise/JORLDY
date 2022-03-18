@@ -38,7 +38,7 @@ class Muzero_Fullyconnected(BaseNetwork):
     def prediction(self, hidden_state):
         # pi(action_distribution)
         policy = self.policy_layer(hidden_state).reshape(self.D_out, 601)
-        policy = F.softmax(policy, dim=0)
+        policy = torch.exp(F.log_softmax(policy, dim=-1))
 
         # value(action_distribution)
         value_distribution = self.value_distribution_layer(hidden_state)
@@ -46,10 +46,10 @@ class Muzero_Fullyconnected(BaseNetwork):
 
     def dynamics(self, hidden_state, action):
         # hidden_state + action
-        combination = torch.cat([hidden_state, torch.unsqueeze(action, dim=0)])
+        combination = torch.cat([hidden_state, torch.unsqueeze(action, dim=-1)])
 
         # next_hidden_state_normalized
-        next_hidden_state = F.normalize(combination, dim=0)
+        next_hidden_state = F.normalize(combination, dim=-1)
 
         # reward(action_distribution)
         reward_distribution = self.reward_distribution_layer(combination)
@@ -73,7 +73,7 @@ class Muzero_Resnet(BaseNetwork):
             in_channels=256, out_channels=256, kernel_size=(1, 1)
         )
         self.prediction_policy_layer = torch.nn.Linear(
-            in_features=256 * (6 * 6), out_features=D_out * 601
+            in_features=256 * (6 * 6), out_features=D_out
         )
         self.prediction_value_distribution_layer = torch.nn.Linear(
             in_features=256 * (6 * 6), out_features=601
@@ -125,22 +125,22 @@ class Muzero_Resnet(BaseNetwork):
         # resnet -> conv -> flatten
         for block in self.prediction_resnet:
             hidden_state = block(hidden_state)
-        hidden_state = self.prediction_conv(hidden_state).flatten()
+            
+        hidden_state = self.prediction_conv(hidden_state)
+        hidden_state = hidden_state.view(hidden_state.size(0), -1)
 
         # pi(action_distribution)
-        policy = self.prediction_policy_layer(hidden_state).reshape(self.D_out, 601)
-        policy = F.softmax(policy, dim=0)
+        policy = self.prediction_policy_layer(hidden_state)
+        policy = torch.exp(F.log_softmax(policy, dim=-1))
 
         # value(distribution)
-        value_distribution = self.prediction_value_distribution_layer(hidden_state)
-        value_distribution = F.softmax(value_distribution, dim=0)
+        value_distribution = self.prediction_value_distribution_layer(hidden_state).reshape(-1, 601)
+        value_distribution = torch.exp(F.log_softmax(value_distribution, dim=-1))
         return policy, value_distribution
 
     def dynamics(self, hidden_state, action):
         # hidden_state + action -> conv -> resnet
-        action = torch.reshape(
-            torch.ones_like(hidden_state[0][0]) * action, [1, 1, 6, 6]
-        )
+        action = torch.broadcast_to(action.unsqueeze(dim=1), [8,6,6]).unsqueeze(dim=1)
         combination = torch.cat([hidden_state, action], dim=1)
         combination = self.dynamics_conv(combination)
         for block in self.dynamics_resnet:
@@ -150,9 +150,9 @@ class Muzero_Resnet(BaseNetwork):
         next_hidden_state = F.normalize(combination, dim=0)
 
         # conv -> flatten -> reward(distribution)
-        combination = self.dynamics_reward_conv(combination).flatten()
-        reward_distribution = self.dynamics_reward_distribution_layer(combination)
-        reward_distribution = F.softmax(reward_distribution, dim=0)
+        combination = self.dynamics_reward_conv(combination).view(hidden_state.size(0), -1)
+        reward_distribution = self.dynamics_reward_distribution_layer(combination).reshape(-1, 601)
+        reward_distribution = torch.exp(F.log_softmax(reward_distribution, dim=-1))
         return next_hidden_state, reward_distribution
 
 

@@ -195,9 +195,18 @@ class Muzero(BaseAgent):
         target_policy = transitions["policy"]
         target_value = transitions["value"]
         gradient_scale = transitions["gradient_scale"]
-
+        
+        ###
+        target_reward = torch.reshape(target_reward, [self.batch_size*(self.num_unroll+1), 1])
+        target_value = torch.reshape(target_value, [self.batch_size*(self.num_unroll+1), 1])
+        ###
+    
         target_reward = self.network.scalar2vector(target_reward, 300)
         target_value = self.network.scalar2vector(target_value, 300)
+        
+        ###
+        target_reward = torch.reshape(target_reward, [self.batch_size, (self.num_unroll+1), 601])
+        target_value = torch.reshape(target_value, [self.batch_size, (self.num_unroll+1), 601])
 
         # stacked_state batch, 32*3+1, 96,96
         hidden_state = self.network.representation(stacked_state, stacked_action)
@@ -218,11 +227,7 @@ class Muzero(BaseAgent):
         value, reward, pi = prediction[0]
         policy_loss = (-target_policy[:, 0] * torch.nn.LogSoftmax(dim=1)(pi)).sum(1)
         # value_loss = (-target_value[:, 0] * torch.nn.LogSoftmax(dim=1)(value)).sum(1)
-        value_loss = F.smooth_l1_loss(target_value[:, 0], value)
-        F.smooth_l1_loss(
-            target_reward[:, 0],
-            torch.zeros_like(target_reward[:, 0], device=self.device),
-        )
+        value_loss = (-target_value[:, 0] * torch.log(value+1e-6)).sum(1)
         # (-target_reward[:, 0] * torch.nn.LogSoftmax(dim=1)(reward)).sum(1)
         reward_loss = 0
         p_j[:, 0] = torch.pow(value - target_value[:, 0], self.alpha)
@@ -230,14 +235,14 @@ class Muzero(BaseAgent):
         
         # comput remain step
         for i, (value, reward, pi) in enumerate(prediction[1:], start=1):
-            local_loss = (-target_policy[:, i] * torch.nn.LogSoftmax(1)(pi)).sum(1)
+            local_loss = (-target_policy[:, i] * torch.log(pi+1e-6)).sum(1)
             local_loss.register_hook(lambda x: x / gradient_scale[:, i])
             policy_loss += local_loss
-            value_loss += (-target_value[:, i] * torch.nn.LogSoftmax(1)(value)).sum(1)
+            value_loss += (-target_value[:, i] * torch.log(value+1e-6)).sum(1)
             #local_loss = F.smooth_l1_loss(target_value[:, i], value)
             local_loss.register_hook(lambda x: x / gradient_scale[:, i])
             value_loss += local_loss
-            reward_loss += (-target_reward[:, i] * torch.nn.LogSoftmax(1)(reward)).sum(1)
+            reward_loss += (-target_reward[:, i] * torch.log(reward+1e-6)).sum(1)
             #local_loss = F.smooth_l1_loss(target_reward[:, i], reward)
             local_loss.register_hook(lambda x: x / gradient_scale[:, i])
             reward_loss += local_loss
@@ -255,12 +260,12 @@ class Muzero(BaseAgent):
         loss.backward()
         self.optimizer.step()
         self.num_learn += 1
-
+        
         result = {
             "loss": loss.item(),
             "policy_loss": policy_loss.mean().item(),
-            "value_loss": value_loss.item(),
-            "reward_loss": reward_loss.item(),
+            "value_loss": value_loss.mean().item(),
+            "reward_loss": reward_loss.mean().item(),
             "sampled_p": sampled_p,
             "mean_p": mean_p,
         }
