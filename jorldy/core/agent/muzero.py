@@ -14,7 +14,7 @@ from core.buffer import PERBuffer
 from .base import BaseAgent
 
 
-class MuZero(BaseAgent):
+class Muzero(BaseAgent):
     action_type = "discrete"
     """MuZero agent.
 
@@ -64,7 +64,7 @@ class MuZero(BaseAgent):
             (state_size[0] + 1) * num_stack + state_size[0],
             *state_size[1:],
         )
-        self.network = PseudoNetwork(stacked_shape, hidden_state_channel, action_size)
+        self.network = Network(network, state_size, action_size, D_hidden=hidden_size, head=head).to(self.device)
         self.optimizer = Optimizer(
             optim_config["name"], self.network.parameters(), lr=optim_config["lr"]
         )
@@ -103,8 +103,7 @@ class MuZero(BaseAgent):
 
         # MCTS
         self.mcts = MCTS(
-            self.network.prediction,
-            self.network.dynamics,
+            self.network
             self.action_size,
             self.num_simulation,
             self.num_unroll,
@@ -332,35 +331,11 @@ class MuZero(BaseAgent):
         self.network.load_state_dict(checkpoint["network"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
 
-
-class PseudoNetwork(torch.nn.Module):
-    def __init__(self, s_shape, hidden_out, action_size):
-        super().__init__()
-        self.encode = torch.nn.Conv2d(s_shape[0], hidden_out, s_shape[1] - 1)
-        self.hidden_flatten = torch.nn.Flatten()
-        flatten_size = hidden_out * ((1 // 1 + 1) ** 2)
-        self.pi = torch.nn.Linear(in_features=flatten_size, out_features=action_size)
-        self.value = torch.nn.Linear(in_features=flatten_size, out_features=1)
-        self.reward = torch.nn.Linear(in_features=flatten_size, out_features=1)
-        self.next_hidden = torch.nn.Conv2d(hidden_out, hidden_out, 1)
-
-    def representation(self, states, actions):
-        x = torch.cat([states, actions], dim=1)
-        return self.encode(x)
-
-    def prediction(self, hidden_state):
-        x = self.hidden_flatten(hidden_state)
-        return self.pi(x), self.value(x)
-
-    def dynamics(self, hidden_state, action):
-        x = self.hidden_flatten(hidden_state)
-        return self.next_hidden(hidden_state), self.reward(x)
-
-
 class MCTS:
-    def __init__(self, p_fn, d_fn, action_size, n_mcts, n_unroll, gamma):
-        self.p_fn = p_fn  # prediction function
-        self.d_fn = d_fn  # dynamics function
+    def __init__(self, network, action_size, n_mcts, n_unroll, gamma):
+        self.network = network 
+        self.p_fn = network.prediction  # prediction function
+        self.d_fn = network.dynamics  # dynamics function
 
         self.action_size = action_size
         self.n_mcts = n_mcts
@@ -426,8 +401,8 @@ class MCTS:
                 a_UCB = np.argmax(UCB_list)
                 node_id += (a_UCB,)
                 node_state, _ = self.d_fn(
-                    node_state, a_UCB
-                )  # a_UCB를 network의 입력형태로 변환 필요
+                    node_state, torch.FloatTensor(a_UCB)
+                ) 
             else:
                 break
 
@@ -438,8 +413,10 @@ class MCTS:
             child_id = leaf_id + (action_idx,)
 
             s_child, r_child = self.d_fn(
-                leaf_state, action_idx
-            )  # action_idx를 network의 입력형태로 변환 필요
+                leaf_state, torch.FloatTensor(action_idx)
+            )  
+            r_child = self.network.vector2scalar(r_child, 300).item()
+            
             # r_child를 scalar 형태로 변환 -> 네트워크에서 구현?
 
             p_child, _ = self.p_fn(s_child)
@@ -455,7 +432,7 @@ class MCTS:
             self.tree[leaf_id]["child"].append(action_idx)
 
         _, leaf_v = self.p_fn(leaf_state)
-        # v를 scalar 형태로 변환 -> 네트워크에서 구현?
+        leaf_v = self.network.vector2scalar(leaf_v, 300).item()
 
         return leaf_v
 
@@ -524,10 +501,6 @@ class MCTS:
         action_idx = np.random.choice(self.action_size, p=pi_noise)
 
         return action_idx, pi
-
-    def backup(self):
-        pass
-
 
 class Trajectory(dict):
     def __init__(self, state):

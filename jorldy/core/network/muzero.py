@@ -146,59 +146,60 @@ class Muzero_Resnet(BaseNetwork):
         return next_hidden_state, reward_distribution
 
 
-# codes modified from https://github.com/werner-duvaud/muzero-general
-def vector2scalar(probabilities, support_range):
-    """prediction value & dynamics reward output(vector:distribution) -> output(scalar:value)"""
-    # get supports
-    support = (
-        torch.tensor([x for x in range(-support_range, support_range + 1)])
-        .expand(probabilities.shape)
-        .float()
-        .to(device=probabilities.device)
-    )
-
-    # convert to scalar
-    scalar = torch.sum(support * probabilities, dim=0, keepdim=True)
-
-    # Invertible scaling
-    scalar = torch.sign(scalar) * (
-        (
-            (torch.sqrt(1 + 4 * 0.001 * (torch.abs(scalar) + 1 + 0.001)) - 1)
-            / (2 * 0.001)
+    # codes modified from https://github.com/werner-duvaud/muzero-general
+    def vector2scalar(probabilities, support_range):
+        """prediction value & dynamics reward output(vector:distribution) -> output(scalar:value)"""
+        # get supports
+        support = (
+            torch.tensor([x for x in range(-support_range, support_range + 1)])
+            .expand(probabilities.shape)
+            .float()
+            .to(device=probabilities.device)
         )
-        ** 2
-        - 1
-    )
-    return scalar
+
+        # convert to scalar
+        scalar = torch.sum(support * probabilities, dim=0, keepdim=True)
+
+        # Invertible scaling
+        eps = 0.001
+        scalar = torch.sign(scalar) * (
+            (
+                (torch.sqrt(1 + 4 * eps * (torch.abs(scalar) + 1 + eps)) - 1)
+                / (2 * eps)
+            )
+            ** 2
+            - 1
+        )
+        return scalar
 
 
-# codes modified from https://github.com/werner-duvaud/muzero-general
-def scalar2vector(scalar, support_range):
-    """initiate target distribution from scalar(batch-2D) & project to learn batch-data"""
-    # reduce scale
-    scalar = (
-        torch.sign(scalar) * (torch.sqrt(torch.abs(scalar) + 1) - 1) + 0.001 * scalar
-    )
-    scalar = scalar.view(scalar.shape)
-    scalar = torch.clamp(scalar, -support_range, support_range)
+    # codes modified from https://github.com/werner-duvaud/muzero-general
+    def scalar2vector(scalar, support_range):
+        """initiate target distribution from scalar(batch-2D) & project to learn batch-data"""
+        # reduce scale
+        scalar = (
+            torch.sign(scalar) * (torch.sqrt(torch.abs(scalar) + 1) - 1) + 0.001 * scalar
+        )
+        scalar = scalar.view(scalar.shape)
+        scalar = torch.clamp(scalar, -support_range, support_range)
 
-    # target distribution projection(distribute probability for lower support)
-    floor = scalar.floor()
-    probability = scalar - floor
-    distribution = torch.zeros(
-        scalar.shape[0], scalar.shape[1], 2 * support_range + 1
-    ).to(scalar.device)
-    distribution.scatter_(
-        2, (floor + support_range).long().unsqueeze(-1), (1 - probability).unsqueeze(-1)
-    )
+        # target distribution projection(distribute probability for lower support)
+        floor = scalar.floor()
+        probability = scalar - floor
+        distribution = torch.zeros(
+            scalar.shape[0], scalar.shape[1], 2 * support_range + 1
+        ).to(scalar.device)
+        distribution.scatter_(
+            2, (floor + support_range).long().unsqueeze(-1), (1 - probability).unsqueeze(-1)
+        )
 
-    # target distribution projection(distribute probability for higher support)
-    indexes = floor + support_range + 1
-    probability = probability.masked_fill_(2 * support_range < indexes, 0.0)
-    indexes = indexes.masked_fill_(2 * support_range < indexes, 0.0)
-    distribution.scatter_(2, indexes.long().unsqueeze(-1), probability.unsqueeze(-1))
+        # target distribution projection(distribute probability for higher support)
+        indexes = floor + support_range + 1
+        probability = probability.masked_fill_(2 * support_range < indexes, 0.0)
+        indexes = indexes.masked_fill_(2 * support_range < indexes, 0.0)
+        distribution.scatter_(2, indexes.long().unsqueeze(-1), probability.unsqueeze(-1))
 
-    return distribution
+        return distribution
 
 
 class Downsample(torch.nn.Module):
