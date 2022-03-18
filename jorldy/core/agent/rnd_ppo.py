@@ -113,8 +113,8 @@ class RND_PPO(PPO):
         with torch.no_grad():
             # RND: calculate exploration reward, update moments of obs and r_i
             self.rnd.update_rms_obs(next_state)
-            r_i = self.rnd(next_state, update_ri=True)     
-            
+            r_i = self.rnd(next_state, update_ri=True)
+
             if self.action_type == "continuous":
                 mu, std, value = self.network(state)
                 m = Normal(mu, std)
@@ -148,9 +148,9 @@ class RND_PPO(PPO):
 
             ret = adv.view(-1, 1) + value
             ret_i = adv_i.view(-1, 1) + v_i
-            
+
             adv = self.extrinsic_coeff * adv + self.intrinsic_coeff * adv_i
-            
+
             if self.use_standardization:
                 adv = (adv - adv.mean(dim=1, keepdim=True)) / (
                     adv.std(dim=1, keepdim=True) + 1e-7
@@ -160,7 +160,7 @@ class RND_PPO(PPO):
 
         mean_ret = ret.mean().item()
         mean_ret_i = ret_i.mean().item()
-        
+
         # start train iteration
         actor_losses, critic_e_losses, critic_i_losses = [], [], []
         entropy_losses, rnd_losses, ratios, probs = [], [], [], []
@@ -193,10 +193,10 @@ class RND_PPO(PPO):
                         log_prob_old,
                     ],
                 )
-                
-                #old implementation
-                _r_i = self.rnd.forward(_next_state) #* self.intrinsic_coeff
-                
+
+                # old implementation
+                _r_i = self.rnd.forward(_next_state)  # * self.intrinsic_coeff
+
                 if self.action_type == "continuous":
                     mu, std, value_pred = self.network(_state)
                     m = Normal(mu, std)
@@ -217,8 +217,8 @@ class RND_PPO(PPO):
                     * _adv
                 )
                 actor_loss = -torch.min(surr1, surr2).mean()
-                
-                # Critic Clipping 
+
+                # Critic Clipping
                 value_pred_clipped = _value + torch.clamp(
                     value_pred - _value, -self.epsilon_clip, self.epsilon_clip
                 )
@@ -248,7 +248,7 @@ class RND_PPO(PPO):
                 )
 
                 rnd_loss = _r_i.mean()
-                
+
                 loss = ppo_loss + rnd_loss
 
                 self.optimizer.zero_grad(set_to_none=True)
