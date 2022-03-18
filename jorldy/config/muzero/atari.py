@@ -22,10 +22,14 @@ agent = {
     "epsilon_min": 0.1,
     "explore_ratio": 0.1,
     "buffer_size": 125000,
-    "batch_size": 8,
-    "start_train_step": 0,
-    "trajectory_size": 10,
-    "num_simulation": 5,
+    "batch_size": 32,
+    "start_train_step": 100000,
+    "trajectory_size": 50,
+    "num_simulation": 20,
+    "value_loss_weight": 0.25,
+    "num_unroll": 5,
+    "num_td_step": 10,
+    "num_stack": 32,
 }
 
 optim = {
@@ -36,7 +40,7 @@ optim = {
 train = {
     "training": True,
     "load_path": None,
-    "run_step": 10000000,
+    "run_step": 100000000,
     "print_period": 10,
     "save_period": 100000,
     "eval_iteration": 5,
@@ -44,5 +48,5 @@ train = {
     "record_period": 500000,
     # distributed setting
     "update_period": 200,
-    "num_workers": 8,
+    "num_workers": 32,
 }
