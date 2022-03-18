@@ -106,13 +106,13 @@ def define_conv_batch_norm(instance):
 
 def conv_head(instance, s_next):
     if instance.batch_norm:
-        p = F.relu(instance.bn1_predict_conv(instance.conv1_predict(s_next)))
-        p = F.relu(instance.bn2_predict_conv(instance.conv2_predict(p)))
-        p = F.relu(instance.bn3_predict_conv(instance.conv3_predict(p)))
+        p = F.leaky_relu(instance.bn1_predict_conv(instance.conv1_predict(s_next)))
+        p = F.leaky_relu(instance.bn2_predict_conv(instance.conv2_predict(p)))
+        p = F.leaky_relu(instance.bn3_predict_conv(instance.conv3_predict(p)))
 
-        t = F.relu(instance.bn1_target_conv(instance.conv1_target(s_next)))
-        t = F.relu(instance.bn2_target_conv(instance.conv2_target(t)))
-        t = F.relu(instance.bn3_target_conv(instance.conv3_target(t)))
+        t = F.leaky_relu(instance.bn1_target_conv(instance.conv1_target(s_next)))
+        t = F.leaky_relu(instance.bn2_target_conv(instance.conv2_target(t)))
+        t = F.leaky_relu(instance.bn3_target_conv(instance.conv3_target(t)))
     else:
         p = F.leaky_relu(instance.conv1_predict(s_next))
         p = F.leaky_relu(instance.conv2_predict(p))
