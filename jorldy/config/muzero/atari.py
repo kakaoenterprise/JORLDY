@@ -16,7 +16,7 @@ env = {
 agent = {
     "name": "muzero",
     "network": "muzero_resnet",
-    "head": "downsample",
+    "head": "residualblock",
     "gamma": 0.997,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,

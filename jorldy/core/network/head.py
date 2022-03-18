@@ -197,7 +197,7 @@ class CNN_LSTM(torch.nn.Module):
 class Residualblock(torch.nn.Module):
     def __init__(self, D_in, D_hidden=512):
         super(Residualblock, self).__init__()
-        self.D_head_out = D_in[0]  # never use
+        self.D_head_out = 128  # never use
 
         self.c1 = torch.nn.Conv2d(
             in_channels=D_in[0],

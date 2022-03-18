@@ -28,7 +28,7 @@ class Muzero(BaseAgent):
         device=None,
         network="muzero_resnet",
         head="residualblock",
-        state_size=(1, 1, 96, 96),
+        state_size=(1, 96, 96),
         hidden_state_channel=4,
         hidden_size=512,
         action_size=18,
@@ -66,7 +66,8 @@ class Muzero(BaseAgent):
             (state_size[0] + 1) * num_stack + state_size[0],
             *state_size[1:],
         )
-        self.network = Network(network, state_size, action_size, D_hidden=hidden_size, head=head).to(self.device)
+
+        self.network = Network(network, state_size, action_size,(state_size[0] + 1) * num_stack + state_size[0], D_hidden=hidden_size, head=head).to(self.device)
         self.optimizer = Optimizer(
             optim_config["name"], self.network.parameters(), lr=optim_config["lr"]
         )

@@ -59,12 +59,12 @@ class Muzero_Fullyconnected(BaseNetwork):
 class Muzero_Resnet(BaseNetwork):
     """residual network"""
 
-    def __init__(self, D_in, D_out, D_hidden=512, head="residualblock"):
-        super(Muzero_Resnet, self).__init__([D_in[0] * 2, *D_in[1:]], D_hidden, head)
+    def __init__(self, D_in, D_out, num_stack, D_hidden=512, head="residualblock"):
+        super(Muzero_Resnet, self).__init__([256, *D_in[1:]], D_hidden, head)
         self.D_out = D_out
 
         # representation -> make hidden state
-        self.representation_downsample_layer = Downsample(D_in, D_out)
+        self.representation_downsample_layer = Downsample(D_in, D_out, num_stack)
         self.representation_resnet = torch.nn.ModuleList([self.head for _ in range(16)])
 
         # prediction -> make discrete policy and discrete value
@@ -95,6 +95,16 @@ class Muzero_Resnet(BaseNetwork):
             in_features=256 * (6 * 6), out_features=601
         )
 
+
+        self.encode = torch.nn.Conv2d(
+            65,
+            128,
+            kernel_size=(3, 3),
+            stride=(1, 1),
+            padding=(1, 1),
+            bias=False,
+        )
+
         orthogonal_init(self.dynamics_conv, "conv2d")
         orthogonal_init(self.dynamics_reward_conv, "conv2d")
         orthogonal_init(self.dynamics_reward_distribution_layer, "linear")
@@ -102,7 +112,7 @@ class Muzero_Resnet(BaseNetwork):
     def representation(self, observations, action):
         # downsample
         hidden_state = self.representation_downsample_layer(observations, action)
-
+        
         # resnet
         for block in self.representation_resnet:
             hidden_state = block(hidden_state)
@@ -147,6 +157,7 @@ class Muzero_Resnet(BaseNetwork):
 
 
     # codes modified from https://github.com/werner-duvaud/muzero-general
+    @staticmethod
     def vector2scalar(probabilities, support_range):
         """prediction value & dynamics reward output(vector:distribution) -> output(scalar:value)"""
         # get supports
@@ -174,6 +185,7 @@ class Muzero_Resnet(BaseNetwork):
 
 
     # codes modified from https://github.com/werner-duvaud/muzero-general
+    @staticmethod
     def scalar2vector(scalar, support_range):
         """initiate target distribution from scalar(batch-2D) & project to learn batch-data"""
         # reduce scale
@@ -203,9 +215,11 @@ class Muzero_Resnet(BaseNetwork):
 
 
 class Downsample(torch.nn.Module):
-    def __init__(self, D_in, D_out):
+    def __init__(self, D_in, D_out, num_stack):
         super(Downsample, self).__init__()
         self.action_divisor = D_out
+
+        D_in[0] = num_stack
 
         self.conv_1 = torch.nn.Conv2d(
             in_channels=D_in[0],
@@ -216,7 +230,7 @@ class Downsample(torch.nn.Module):
             bias=False,
         )
         self.conv_2 = torch.nn.Conv2d(
-            in_channels=D_in[0],
+            in_channels=128,
             out_channels=256,
             kernel_size=(3, 3),
             stride=(2, 2),
@@ -225,24 +239,34 @@ class Downsample(torch.nn.Module):
         )
 
         # resnet
-        self.resnet_1 = torch.nn.ModuleList([Residualblock(D_in) for _ in range(2)])
+        self.resnet_1 = torch.nn.ModuleList([Residualblock([128, *D_in[1:]]) for _ in range(2)])
         self.resnet_2 = torch.nn.ModuleList(
-            [Residualblock([D_in[0] * 2, *D_in[1:]]) for _ in range(3)]
+            [Residualblock([256, *D_in[1:]]) for _ in range(3)]
         )
         self.resnet_3 = torch.nn.ModuleList(
-            [Residualblock([D_in[0] * 2, *D_in[1:]]) for _ in range(3)]
+            [Residualblock([256, *D_in[1:]]) for _ in range(3)]
+        )
+
+        self.encode = torch.nn.Conv2d(
+            65,
+            128,
+            kernel_size=(3, 3),
+            stride=(1, 1),
+            padding=(1, 1),
+            bias=False,
         )
 
     def forward(self, observations, action):
         # observation, action : input -> normalize -> concatenate
-        observations = torch.reshape(observations, [1, 96, 96, 96])
+        #observations = torch.reshape(observations, [1, 96, 96, 96])
         observations = F.normalize(observations)
-        action = torch.reshape(action, [1, 32, 96, 96])
+        #action = torch.reshape(action, [1, 32, 96, 96])
         action /= self.action_divisor
         x = torch.cat([observations, action], dim=1)
 
         # down-sampling : conv -> resnet -> pooling
         x = self.conv_1(x)
+        x = self.encode(x)
         for block in self.resnet_1:
             x = block(x)
 
