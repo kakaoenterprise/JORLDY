@@ -30,7 +30,7 @@ class MuZero(BaseAgent):
         state_size=(1, 1, 96, 96),
         hidden_state_channel=4,
         action_size=18,
-        gamma=0.99,
+        gamma=0.997,
         batch_size=16,
         start_train_step=0,
         trajectory_size=200,
@@ -39,7 +39,7 @@ class MuZero(BaseAgent):
         num_unroll=5,
         num_td_step=10,
         num_stack=32,
-        buffer_size=10000,
+        buffer_size=125000,
         run_step=1e6,
         optim_config={
             "name": "adam",
@@ -89,16 +89,16 @@ class MuZero(BaseAgent):
         self.trajectory = None
 
         # PER
-        # self.alpha = alpha
-        # self.beta = beta
+        self.alpha = alpha
+        self.beta = beta
         self.learn_period = learn_period
         self.learn_period_stamp = 0
-        # self.uniform_sample_prob = uniform_sample_prob
-        # self.beta_add = (1 - beta) / run_step
-        # self.buffer_size = buffer_size
-        # self.memory = PERBuffer(self.buffer_size, uniform_sample_prob)
+        self.uniform_sample_prob = uniform_sample_prob
+        self.beta_add = (1 - beta) / run_step
+        self.buffer_size = buffer_size
+        self.memory = PERBuffer(self.buffer_size, uniform_sample_prob)
         # no priority
-        self.memory = ReplayBuffer(buffer_size)
+        # self.memory = ReplayBuffer(buffer_size)
         self.memory.first_store = False
 
         # MCTS
@@ -114,9 +114,10 @@ class MuZero(BaseAgent):
     @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
+        # TODO: if eval
 
         if not self.trajectory:
-            self.trajectory = Trajectory(state)
+            self.trajectory = Trajectory(state / 255)
 
         states, actions = self.trajectory.get_stacked_data(
             self.trajectory_step_stamp, self.num_stack
@@ -134,17 +135,25 @@ class MuZero(BaseAgent):
         return {"action": action, "value": value, "pi": pi}
 
     def learn(self):
-        trajectories = self.memory.sample(self.batch_size)
+        trajectories, weights, indices, sampled_p, mean_p = self.memory.sample(
+            self.beta, self.batch_size
+        )
 
         transitions = defaultdict(list)
-        for _, trajectory in enumerate(trajectories["trajectory"]):
-            trajectory_len = len(trajectory.values)
-            start_idx = np.random.choice(trajectory_len)
+        trajectory: Trajectory
+        for i, trajectory in enumerate(trajectories["trajectory"]):
+            trajectory_len = len(trajectory["values"])
+            # trajectory priority position sample
+            idx_probs = (trajectory["priorities"] / trajectory["priorities"].sum())
+            start_idx = np.random.choice(trajectory_len, p=idx_probs.squeeze())
+            idx_prob = idx_probs[start_idx]  # priority weight = 1 / (traj_w * idx_w)
+
+            # make target
             last_idx = start_idx + self.num_unroll + 1
             values = []
-            policies = trajectory.policies[start_idx:last_idx]
-            rewards = trajectory.rewards[start_idx:last_idx]
-            actions = trajectory.actions[start_idx:last_idx]
+            policies = trajectory["policies"][start_idx:last_idx]
+            rewards = trajectory["rewards"][start_idx:last_idx]
+            actions = trajectory["actions"][start_idx:last_idx]
             for idx in range(start_idx, last_idx):
                 if idx < trajectory_len:
                     values.append(
@@ -159,50 +168,83 @@ class MuZero(BaseAgent):
                         rewards.append(np.zeros((1, 1)))
                         actions.append(np.random.choice(self.action_size, size=(1, 1)))
 
-            transitions["value"].append(values)
-            transitions["policy"].append(policies)
-            transitions["reward"].append(rewards)
+            s, a = trajectory.get_stacked_data(start_idx, self.num_stack)
+            transitions["stacked_state"].append(s)
+            transitions["stacked_action"].append(a)
             transitions["action"].append(actions)
-            states, actions = trajectory.get_stacked_data(start_idx, self.num_stack)
-            transitions["states"].append(states)
-            transitions["actions"].append(actions)
+            transitions["reward"].append(rewards)
+            transitions["policy"].append(policies)
+            transitions["value"].append(values)
+            transitions["gradient_scale"].append(
+                np.ones(self.action_size)
+                * min(self.num_unroll, trajectory_len + 1 - start_idx)
+            )
 
         for key in transitions.keys():
-            a = np.stack(transitions[key], axis=0)
-            if a.shape[-1] == 1:
-                a = a.squeeze(axis=-1)
-            transitions[key] = self.as_tensor(a)
+            value = np.stack(transitions[key], axis=0)
+            if value.shape[-1] == 1:
+                value = value.squeeze(axis=-1)
+            transitions[key] = self.as_tensor(value)
 
-        states = transitions["states"]
-        actions = transitions["actions"]
+        stacked_state = transitions["stacked_state"]
+        stacked_action = transitions["stacked_action"]
         target_action = transitions["action"]
         target_reward = transitions["reward"]
         target_policy = transitions["policy"]
         target_value = transitions["value"]
+        gradient_scale = transitions["gradient_scale"]
 
-        hidden_state = self.network.representation(states, actions)
+        hidden_state = self.network.representation(stacked_state, stacked_action)
         pi, value = self.network.prediction(hidden_state)
-        reward = torch.zeros(target_reward.shape)
+        reward = torch.zeros(target_reward.shape, device=self.device)
+        prediction = [(value, reward, pi)]
+        p_j = torch.zeros_like(target_value)
 
-        policy_loss = (-target_policy[:, 0] * torch.nn.LogSoftmax(dim=1)(pi)).sum(1)
-        # value_loss = (-target_value[:, 0] * torch.nn.LogSoftmax(dim=1)(value)).sum(1)
-        value_loss = F.smooth_l1_loss(target_value[:, 0], value)
-        F.smooth_l1_loss(target_reward[:, 0], torch.zeros_like(target_reward[:, 0]))
-        # (-target_reward[:, 0] * torch.nn.LogSoftmax(dim=1)(reward)).sum(1)
-        reward_loss = 0
-
-        for i in range(1, self.num_unroll):
+        for i in range(1, self.num_unroll + 1):
             hidden_state, reward = self.network.dynamics(
                 hidden_state, target_action[:, i]
             )
             pi, value = self.network.prediction(hidden_state)
-            policy_loss += (-target_policy[:, i] * torch.nn.LogSoftmax(1)(pi)).sum(1)
-            # value_loss += (-target_value[:, i] * torch.nn.LogSoftmax(1)(value)).sum(1)
-            # reward_loss += (-target_reward[:, i] * torch.nn.LogSoftmax(1)(reward)).sum(1)
-            value_loss = F.smooth_l1_loss(target_value[:, i], value)
-            reward_loss = F.smooth_l1_loss(target_reward[:, i], reward)
+            hidden_state.register_hook(lambda x: x*0.5)
+            prediction.append((value, reward, pi))
 
-        loss = (self.value_loss_weight * value_loss + policy_loss + reward_loss).mean()
+        # compute start step
+        value, reward, pi = prediction[0]
+        policy_loss = (-target_policy[:, 0] * torch.nn.LogSoftmax(dim=1)(pi)).sum(1)
+        # value_loss = (-target_value[:, 0] * torch.nn.LogSoftmax(dim=1)(value)).sum(1)
+        value_loss = F.smooth_l1_loss(target_value[:, 0], value)
+        F.smooth_l1_loss(
+            target_reward[:, 0],
+            torch.zeros_like(target_reward[:, 0], device=self.device),
+        )
+        # (-target_reward[:, 0] * torch.nn.LogSoftmax(dim=1)(reward)).sum(1)
+        reward_loss = 0
+        p_j[:, 0] = torch.pow(value - target_value[:, 0], self.alpha)
+
+        
+        # comput remain step
+        for i, (value, reward, pi) in enumerate(prediction[1:], start=1):
+            local_loss = (-target_policy[:, i] * torch.nn.LogSoftmax(1)(pi)).sum(1)
+            local_loss.register_hook(lambda x: x / gradient_scale[:, i])
+            policy_loss += local_loss
+            # value_loss += (-target_value[:, i] * torch.nn.LogSoftmax(1)(value)).sum(1)
+            local_loss = F.smooth_l1_loss(target_value[:, i], value)
+            #local_loss.register_hook(lambda x: x / gradient_scale[:, i])
+            value_loss += local_loss
+            # reward_loss += (-target_reward[:, i] * torch.nn.LogSoftmax(1)(reward)).sum(1)
+            local_loss = F.smooth_l1_loss(target_reward[:, i], reward)
+            #local_loss.register_hook(lambda x: x / gradient_scale[:, i])
+            reward_loss += local_loss
+            
+            p_j[:, i] = torch.pow(value - target_value[:, i], self.alpha)
+
+        # for i, p in zip(indices, p_j.squeeze()):
+        #     self.memory.update_priority(p.item(), i)
+
+        weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
+        loss = (self.value_loss_weight * value_loss + policy_loss + reward_loss) * weights
+        loss = loss.mean()
+
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
@@ -213,6 +255,8 @@ class MuZero(BaseAgent):
             "policy_loss": policy_loss.mean().item(),
             "value_loss": value_loss.item(),
             "reward_loss": reward_loss.item(),
+            "sampled_p": sampled_p,
+            "mean_p": mean_p,
         }
 
         return result
@@ -220,33 +264,53 @@ class MuZero(BaseAgent):
     def process(self, transitions, step):
         result = {}
 
-        if self.memory.buffer_counter or transitions:
-            # Process per step
-            delta_t = step - self.time_t
-            self.memory.store(transitions)
-            self.time_t = step
-            self.learn_period_stamp += delta_t
+        # Process per step
+        delta_t = step - self.time_t
+        self.memory.store(transitions)
+        self.time_t = step
+        self.learn_period_stamp += delta_t
 
-            if (
-                self.learn_period_stamp >= self.learn_period
-                and self.memory.buffer_counter >= self.batch_size
-                and self.time_t >= self.start_train_step
-            ):
-                result = self.learn()
-                self.learning_rate_decay(step)
-                self.learn_period_stamp = 0
+        # Annealing beta
+        self.beta = min(1.0, self.beta + (self.beta_add * delta_t))
+
+        if (
+            self.learn_period_stamp >= self.learn_period
+            and self.memory.buffer_counter >= self.batch_size
+            and self.time_t >= self.start_train_step
+        ):
+            result = self.learn()
+            self.learning_rate_decay(step)
+            self.learn_period_stamp -= self.learn_period
 
         return result
 
     def interact_callback(self, transition):
-        # TODO: what if the trajectory is already terminal?
         _transition = None
         self.trajectory_step_stamp += 1
 
-        self.trajectory.append(transition)
+        self.trajectory["states"].append(transition["state"] / 255)
+        self.trajectory["actions"].append(transition["action"])
+        self.trajectory["rewards"].append(transition["reward"])
+        self.trajectory["values"].append(transition["value"])
+        self.trajectory["policies"].append(transition["pi"])
 
         if self.trajectory_step_stamp >= self.trajectory_size:
             self.trajectory_step_stamp = 0  # never self.trajectory_step_stamp -= period
+            if self.trajectory["priorities"] is None:
+                priorities = []
+                for i, value in enumerate(self.trajectory["values"]):
+                    priorities.append(
+                        np.abs(
+                            value
+                            - self.trajectory.get_bootstrap_value(
+                                i, self.num_td_step, self.gamma
+                            )
+                        )
+                        ** self.alpha
+                    )
+                self.trajectory["priorities"] = np.array(priorities, dtype=np.float32)
+                self.trajectory["priority"] = np.max(self.trajectory["priorities"])
+
             _transition = {"trajectory": [self.trajectory]}
             self.trajectory = None
 
@@ -465,43 +529,36 @@ class MCTS:
         pass
 
 
-class Trajectory:
+class Trajectory(dict):
     def __init__(self, state):
-        self.states = [state / 255]
-        self.actions = [np.zeros((1, 1), dtype=int)]
-        self.rewards = [np.zeros((1, 1))]
-        self.values = []
-        self.policies = []
+        self["states"] = [state]
+        self["actions"] = [np.zeros((1, 1), dtype=int)]
+        self["rewards"] = [np.zeros((1, 1))]
+        self["values"] = []
+        self["policies"] = []
+        self["priorities"] = None
+        self["priority"] = None
 
-    def append(self, transition):
-        self.states.append(transition["state"] / 255)
-        self.actions.append(transition["action"])
-        self.rewards.append(transition["reward"])
-        self.values.append(transition["value"])
-        self.policies.append(transition["pi"])
-
-    def get_bootstrap_value(self, start_idx, td_step, gamma):
-        bootstrap_idx = start_idx + td_step
+    def get_bootstrap_value(self, start_idx, num_td_step, gamma):
+        bootstrap_idx = start_idx + num_td_step
         bootstrap_value = (
-            self.values[bootstrap_idx] * (gamma**td_step)
-            if bootstrap_idx < len(self.values)
+            self["values"][bootstrap_idx] * (gamma**num_td_step)
+            if bootstrap_idx < len(self["values"])
             else np.zeros((1, 1))
         )
-        for i, reward in enumerate(self.rewards[start_idx + 1 : bootstrap_idx + 1]):
+        for i, reward in enumerate(self["rewards"][start_idx + 1 : bootstrap_idx + 1]):
             bootstrap_value += reward * (gamma**i)
 
         return bootstrap_value
 
     def get_stacked_data(self, cur_idx, num_stack):
-        # f_dim, r_shape = self.states[cur_idx].shape[1], self.states[cur_idx].shape[2:]
-        # num_stack = (f_dim + 1) * num_stack + f_dim
-        shape = self.states[cur_idx].shape[-2:]
+        shape = self["states"][cur_idx].shape[-2:]
         actions = np.zeros((num_stack, *shape))
         states = np.zeros((num_stack + 1, *shape))
-        states[0] = self.states[cur_idx]
+        states[0] = self["states"][cur_idx]
 
-        for i, state in enumerate(self.states[max(0, cur_idx - num_stack) : cur_idx]):
+        for i, state in enumerate(self["states"][max(0, cur_idx - num_stack) : cur_idx]):
             states[i + 1] = state
-            actions[i] = np.ones(shape) * self.actions[i]
+            actions[i] = np.ones(shape) * self["actions"][i]
 
         return states, actions
