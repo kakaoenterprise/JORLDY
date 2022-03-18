@@ -14,17 +14,18 @@ env = {
 }
 
 agent = {
-    "name": "mu_zero",
-    "network": "mu_zero_resnet",
+    "name": "muzero",
+    "network": "muzero_resnet",
     "head": "downsample",
     "gamma": 0.997,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,
     "explore_ratio": 0.1,
-    "buffer_size": 10000,
+    "buffer_size": 125000,
     "batch_size": 8,
     "start_train_step": 0,
-    "target_update_period": 10000,
+    "trajectory_size": 200,
+    "num_simulation": 50,
 }
 
 optim = {
