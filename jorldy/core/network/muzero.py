@@ -1,229 +1,170 @@
 import torch
 import torch.nn.functional as F
 
-from .base import BaseNetwork
-from .utils import orthogonal_init
-from .head import Residualblock
+from jorldy.core.network.base import BaseNetwork
+from jorldy.core.network.utils import orthogonal_init, Converter
+from jorldy.core.network.head import Residualblock
 
 
-class Muzero_Fullyconnected(BaseNetwork):
+class Muzero_mlp(BaseNetwork):
     """mlp network"""
 
-    def __init__(self, D_in, D_out, D_hidden=512, head="mlp"):
-        super(Muzero_Fullyconnected, self).__init__(D_in, D_hidden, head)
-        self.D_out = D_out
+    def __init__(self, D_in, D_out, in_channels, support, D_hidden=256, head="mlp"):
+        super(Muzero_mlp, self).__init__(D_in, D_hidden, head)
+        self.D_in = D_in
+        self.converter = Converter(support)
 
         # representation -> make hidden state
-        self.representation_layer = torch.nn.Linear(D_hidden, D_in)
+        self.hs_l = torch.nn.Linear(D_hidden, D_in)
 
         # prediction -> make discrete policy and discrete value
-        self.policy_layer = torch.nn.Linear(D_in, D_out * 601)
-        self.value_distribution_layer = torch.nn.Linear(D_in, 601)
+        self.pi_l = torch.nn.Linear(in_channels * D_in, D_out)
+        self.vd_l = torch.nn.Linear(in_channels * D_in, (support << 1) + 1)
 
-        orthogonal_init(self.policy_layer, "policy")
-        orthogonal_init(self.value_distribution_layer, "linear")
+        orthogonal_init(self.pi_l, "policy")
+        orthogonal_init(self.vd_l, "linear")
 
         # dynamics -> make reward and next hidden state
-        self.reward_distribution_layer = torch.nn.Linear(D_in + 1, 601)
+        self.rd_l = torch.nn.Linear((in_channels + 1) * D_in, (support << 1) + 1)
 
-        orthogonal_init(self.reward_distribution_layer, "linear")
+        orthogonal_init(self.rd_l, "linear")
 
-    def representation(self, state):
+    def representation(self, obs, a):
         # hidden_state
-        hidden_state = super(Muzero_Fullyconnected, self).forward(state)
-        hidden_state = self.representation_layer(hidden_state)
-        hidden_state = F.normalize(hidden_state, dim=0)
-        return hidden_state
+        obs_a = torch.cat([obs, a], dim=0).unsqueeze(dim=0)
+        hs = super(Muzero_mlp, self).forward(obs_a)
+        hs = self.hs_l(hs)
+        hs = F.normalize(hs, dim=0)
+        return hs
 
-    def prediction(self, hidden_state):
+    def prediction(self, hs):
+        # flatten
+        hs = hs.reshape(hs.size(0), -1)
+
         # pi(action_distribution)
-        policy = self.policy_layer(hidden_state).reshape(self.D_out, 601)
-        policy = torch.exp(F.log_softmax(policy, dim=-1))
+        pi = self.pi_l(hs)
+        pi = torch.exp(F.log_softmax(pi, dim=-1))
 
         # value(action_distribution)
-        value_distribution = self.value_distribution_layer(hidden_state)
-        return policy, value_distribution
+        vd = self.vd_l(hs)
+        vd = torch.exp(F.log_softmax(vd, dim=-1))
+        return pi, vd
 
-    def dynamics(self, hidden_state, action):
+    def dynamics(self, hs, a):
         # hidden_state + action
-        combination = torch.cat([hidden_state, torch.unsqueeze(action, dim=-1)])
+        a = torch.broadcast_to(a.unsqueeze(dim=-1), [hs.size(0), 1, self.D_in])
+        hs_a = torch.cat([hs, a], dim=1).reshape(hs.size(0), -1)
 
         # next_hidden_state_normalized
-        next_hidden_state = F.normalize(combination, dim=-1)
+        next_hs = F.normalize(hs_a, dim=-1)
 
         # reward(action_distribution)
-        reward_distribution = self.reward_distribution_layer(combination)
-        return next_hidden_state, reward_distribution
+        rd = self.rd_l(hs_a)
+        return next_hs, rd
 
 
 class Muzero_Resnet(BaseNetwork):
     """residual network"""
 
-    def __init__(self, D_in, D_out, num_stack, D_hidden=512, head="residualblock"):
-        super(Muzero_Resnet, self).__init__([256, *D_in[1:]], D_hidden, head)
+    def __init__(self, D_in, D_out, in_channels, support, D_hidden=256, head="residualblock"):
+        super(Muzero_Resnet, self).__init__(D_hidden, D_hidden, head)
         self.D_out = D_out
+        self.converter = Converter(support)
 
         # representation -> make hidden state
-        self.representation_downsample_layer = Downsample(D_in, D_out, num_stack)
-        self.representation_resnet = torch.nn.ModuleList([self.head for _ in range(16)])
+        self.hs_down = Downsample(in_channels)
+        self.hs_res = torch.nn.ModuleList([self.head for _ in range(16)])
 
         # prediction -> make discrete policy and discrete value
-        self.prediction_resnet = torch.nn.ModuleList([self.head for _ in range(16)])
-        self.prediction_conv = torch.nn.Conv2d(
-            in_channels=256, out_channels=256, kernel_size=(1, 1)
+        self.pred_res = torch.nn.ModuleList([self.head for _ in range(16)])
+        self.pred_conv = torch.nn.Conv2d(
+            in_channels=D_hidden, out_channels=D_hidden, kernel_size=(1, 1)
         )
-        self.prediction_policy_layer = torch.nn.Linear(
-            in_features=256 * (6 * 6), out_features=D_out
+        self.pred_pi = torch.nn.Linear(
+            in_features=D_hidden * (6 * 6), out_features=D_out
         )
-        self.prediction_value_distribution_layer = torch.nn.Linear(
-            in_features=256 * (6 * 6), out_features=601
+        self.pred_vd = torch.nn.Linear(
+            in_features=D_hidden * (6 * 6), out_features=(support << 1) + 1
         )
 
-        orthogonal_init(self.prediction_conv, "conv2d")
-        orthogonal_init(self.prediction_policy_layer, "linear")
-        orthogonal_init(self.prediction_value_distribution_layer, "linear")
+        orthogonal_init(self.pred_conv, "conv2d")
+        orthogonal_init(self.pred_pi, "linear")
+        orthogonal_init(self.pred_vd, "linear")
 
         # dynamics -> make reward and next hidden state
-        self.dynamics_conv = torch.nn.Conv2d(
-            in_channels=256 + 1, out_channels=256, kernel_size=(1, 1)
+        self.dy_conv = torch.nn.Conv2d(
+            in_channels=D_hidden + 1, out_channels=D_hidden, kernel_size=(1, 1)
         )
-        self.dynamics_reward_conv = torch.nn.Conv2d(
-            in_channels=256, out_channels=256, kernel_size=(1, 1)
+        self.dy_conv_rd = torch.nn.Conv2d(
+            in_channels=D_hidden, out_channels=D_hidden, kernel_size=(1, 1)
         )
-        self.dynamics_resnet = torch.nn.ModuleList([self.head for _ in range(16)])
-        self.dynamics_reward_distribution_layer = torch.nn.Linear(
-            in_features=256 * (6 * 6), out_features=601
-        )
-
-
-        self.encode = torch.nn.Conv2d(
-            65,
-            128,
-            kernel_size=(3, 3),
-            stride=(1, 1),
-            padding=(1, 1),
-            bias=False,
+        self.dy_res = torch.nn.ModuleList([self.head for _ in range(16)])
+        self.dy_rd = torch.nn.Linear(
+            in_features=D_hidden * (6 * 6), out_features=(support << 1) + 1
         )
 
-        orthogonal_init(self.dynamics_conv, "conv2d")
-        orthogonal_init(self.dynamics_reward_conv, "conv2d")
-        orthogonal_init(self.dynamics_reward_distribution_layer, "linear")
+        orthogonal_init(self.dy_conv, "conv2d")
+        orthogonal_init(self.dy_conv_rd, "conv2d")
+        orthogonal_init(self.dy_rd, "linear")
 
-    def representation(self, observations, action):
+    def representation(self, obs, a):
+        # observation, action : input -> normalize -> concatenate
+        obs = F.normalize(obs)
+        obs /= self.D_out
+        obs_a = torch.cat([obs, a], dim=0).unsqueeze(dim=0)
+
         # downsample
-        hidden_state = self.representation_downsample_layer(observations, action)
-        
+        hs = self.hs_down(obs_a)
+
         # resnet
-        for block in self.representation_resnet:
-            hidden_state = block(hidden_state)
+        for block in self.hs_res:
+            hs = block(hs)
 
         # hidden_state_normalized
-        hidden_state = F.normalize(hidden_state, dim=0)
-        return hidden_state
+        hs = F.normalize(hs, dim=0)
+        return hs
 
-    def prediction(self, hidden_state):
+    def prediction(self, hs):
         # resnet -> conv -> flatten
-        for block in self.prediction_resnet:
-            hidden_state = block(hidden_state)
-            
-        hidden_state = self.prediction_conv(hidden_state)
-        hidden_state = hidden_state.view(hidden_state.size(0), -1)
+        for block in self.pred_res:
+            hs = block(hs)
+        hs = self.pred_conv(hs)
+        hs = hs.reshape(hs.size(0), -1)
 
         # pi(action_distribution)
-        policy = self.prediction_policy_layer(hidden_state)
-        policy = torch.exp(F.log_softmax(policy, dim=-1))
+        pi = self.pred_pi(hs)
+        pi = torch.exp(F.log_softmax(pi, dim=-1))
 
         # value(distribution)
-        value_distribution = self.prediction_value_distribution_layer(hidden_state).reshape(-1, 601)
-        value_distribution = torch.exp(F.log_softmax(value_distribution, dim=-1))
-        return policy, value_distribution
+        vd = self.pred_vd(hs)
+        vd = torch.exp(F.log_softmax(vd, dim=-1))
+        return pi, vd
 
-    def dynamics(self, hidden_state, action):
+    def dynamics(self, hs, a):
         # hidden_state + action -> conv -> resnet
-        action = torch.broadcast_to(action.unsqueeze(dim=1), [8,6,6]).unsqueeze(dim=1)
-        combination = torch.cat([hidden_state, action], dim=1)
-        combination = self.dynamics_conv(combination)
-        for block in self.dynamics_resnet:
-            combination = block(combination)
+        a = torch.broadcast_to(a.unsqueeze(dim=-1).unsqueeze(dim=-1), [a.size(0), 1, 6, 6])
+        hs_a = torch.cat([hs, a], dim=1)
+        hs_a = self.dy_conv(hs_a)
+        for block in self.dy_res:
+            hs_a = block(hs_a)
 
         # next_hidden_state_normalized
-        next_hidden_state = F.normalize(combination, dim=0)
+        next_hs = F.normalize(hs_a, dim=0)
 
         # conv -> flatten -> reward(distribution)
-        combination = self.dynamics_reward_conv(combination).view(hidden_state.size(0), -1)
-        reward_distribution = self.dynamics_reward_distribution_layer(combination).reshape(-1, 601)
-        reward_distribution = torch.exp(F.log_softmax(reward_distribution, dim=-1))
-        return next_hidden_state, reward_distribution
-
-
-    # codes modified from https://github.com/werner-duvaud/muzero-general
-    @staticmethod
-    def vector2scalar(probabilities, support_range):
-        """prediction value & dynamics reward output(vector:distribution) -> output(scalar:value)"""
-        # get supports
-        support = (
-            torch.tensor([x for x in range(-support_range, support_range + 1)])
-            .expand(probabilities.shape)
-            .float()
-            .to(device=probabilities.device)
-        )
-
-        # convert to scalar
-        scalar = torch.sum(support * probabilities, dim=0, keepdim=True)
-
-        # Invertible scaling
-        eps = 0.001
-        scalar = torch.sign(scalar) * (
-            (
-                (torch.sqrt(1 + 4 * eps * (torch.abs(scalar) + 1 + eps)) - 1)
-                / (2 * eps)
-            )
-            ** 2
-            - 1
-        )
-        return scalar
-
-
-    # codes modified from https://github.com/werner-duvaud/muzero-general
-    @staticmethod
-    def scalar2vector(scalar, support_range):
-        """initiate target distribution from scalar(batch-2D) & project to learn batch-data"""
-        # reduce scale
-        scalar = (
-            torch.sign(scalar) * (torch.sqrt(torch.abs(scalar) + 1) - 1) + 0.001 * scalar
-        )
-        scalar = scalar.view(scalar.shape)
-        scalar = torch.clamp(scalar, -support_range, support_range)
-
-        # target distribution projection(distribute probability for lower support)
-        floor = scalar.floor()
-        probability = scalar - floor
-        distribution = torch.zeros(
-            scalar.shape[0], scalar.shape[1], 2 * support_range + 1
-        ).to(scalar.device)
-        distribution.scatter_(
-            2, (floor + support_range).long().unsqueeze(-1), (1 - probability).unsqueeze(-1)
-        )
-
-        # target distribution projection(distribute probability for higher support)
-        indexes = floor + support_range + 1
-        probability = probability.masked_fill_(2 * support_range < indexes, 0.0)
-        indexes = indexes.masked_fill_(2 * support_range < indexes, 0.0)
-        distribution.scatter_(2, indexes.long().unsqueeze(-1), probability.unsqueeze(-1))
-
-        return distribution
+        hs_a = self.dy_conv_rd(hs_a).reshape(hs.size(0), -1)
+        rd = self.dy_rd(hs_a)
+        rd = torch.exp(F.log_softmax(rd, dim=-1))
+        return next_hs, rd
 
 
 class Downsample(torch.nn.Module):
-    def __init__(self, D_in, D_out, num_stack):
+    def __init__(self, in_channels):
         super(Downsample, self).__init__()
-        self.action_divisor = D_out
-
-        D_in[0] = num_stack
 
         self.conv_1 = torch.nn.Conv2d(
-            in_channels=D_in[0],
-            out_channels=D_in[0],
+            in_channels=in_channels,
+            out_channels=128,
             kernel_size=(3, 3),
             stride=(2, 2),
             padding=(1, 1),
@@ -239,43 +180,24 @@ class Downsample(torch.nn.Module):
         )
 
         # resnet
-        self.resnet_1 = torch.nn.ModuleList([Residualblock([128, *D_in[1:]]) for _ in range(2)])
-        self.resnet_2 = torch.nn.ModuleList(
-            [Residualblock([256, *D_in[1:]]) for _ in range(3)]
+        self.res_1 = torch.nn.ModuleList([Residualblock(128) for _ in range(2)])
+        self.res_2 = torch.nn.ModuleList(
+            [Residualblock(256) for _ in range(3)]
         )
-        self.resnet_3 = torch.nn.ModuleList(
-            [Residualblock([256, *D_in[1:]]) for _ in range(3)]
-        )
-
-        self.encode = torch.nn.Conv2d(
-            65,
-            128,
-            kernel_size=(3, 3),
-            stride=(1, 1),
-            padding=(1, 1),
-            bias=False,
+        self.res_3 = torch.nn.ModuleList(
+            [Residualblock(256) for _ in range(3)]
         )
 
-    def forward(self, observations, action):
-        # observation, action : input -> normalize -> concatenate
-        #observations = torch.reshape(observations, [1, 96, 96, 96])
-        observations = F.normalize(observations)
-        #action = torch.reshape(action, [1, 32, 96, 96])
-        action /= self.action_divisor
-        x = torch.cat([observations, action], dim=1)
-
+    def forward(self, obs_a):
         # down-sampling : conv -> resnet -> pooling
-        x = self.conv_1(x)
-        x = self.encode(x)
-        for block in self.resnet_1:
-            x = block(x)
-
-        x = self.conv_2(x)
-        for block in self.resnet_2:
-            x = block(x)
-
-        x = F.avg_pool2d(x, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-        for block in self.resnet_3:
-            x = block(x)
-        x = F.avg_pool2d(x, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-        return x
+        obs_a = self.conv_1(obs_a)
+        for block in self.res_1:
+            obs_a = block(obs_a)
+        obs_a = self.conv_2(obs_a)
+        for block in self.res_2:
+            obs_a = block(obs_a)
+        obs_a = F.avg_pool2d(obs_a, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        for block in self.res_3:
+            obs_a = block(obs_a)
+        obs_a = F.avg_pool2d(obs_a, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        return obs_a
