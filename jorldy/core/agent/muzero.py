@@ -30,7 +30,7 @@ class Muzero(BaseAgent):
         head="residualblock",
         state_size=(1, 96, 96),
         hidden_state_channel=4,
-        hidden_size=512,
+        hidden_size=256,
         action_size=18,
         gamma=0.997,
         batch_size=16,
@@ -41,6 +41,7 @@ class Muzero(BaseAgent):
         num_unroll=5,
         num_td_step=10,
         num_stack=32,
+        num_support=300,
         buffer_size=125000,
         run_step=1e6,
         optim_config={
@@ -59,11 +60,19 @@ class Muzero(BaseAgent):
             if device
             else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         )
-
-        stack_dim = (state_size[0] + 1) * num_stack + state_size[0]
+        
+        if isinstance(state_size, Iterable):
+            stack_dim = (state_size[0]+1)*num_stack+state_size[0]
+        else:
+            stack_dim = (state_size+1)*num_stack+state_size
+            
         self.network = Network(
-            network, state_size, action_size, stack_dim, D_hidden=hidden_size, head=head
+            network, state_size, action_size, stack_dim, num_support, D_hidden=hidden_size, head=head
         ).to(self.device)
+        self.target_network = Network(
+            network, state_size, action_size, stack_dim, num_support, D_hidden=hidden_size, head=head
+        ).to('cpu')
+        self.target_network.load_state_dict(self.network.state_dict())
         self.optimizer = Optimizer(
             optim_config["name"], self.network.parameters(), lr=optim_config["lr"]
         )
@@ -102,7 +111,7 @@ class Muzero(BaseAgent):
 
         # MCTS
         self.mcts = MCTS(
-            self.network,
+            self.target_network,
             self.action_size,
             self.num_simulation,
             self.num_unroll,
@@ -123,7 +132,7 @@ class Muzero(BaseAgent):
         states = self.as_tensor(np.expand_dims(states, axis=0))
         actions = self.as_tensor(np.expand_dims(actions, axis=0))
         root_state = self.network.representation(states, actions)
-        action, pi, value = self.mcts.run_mcts(root_state)
+        action, pi, value = self.mcts.run_mcts(root_state.to('cpu'))
         action = np.array(((action,),))
 
         return {"action": action, "value": value, "pi": pi}
@@ -188,25 +197,8 @@ class Muzero(BaseAgent):
         target_value = transitions["value"]
         gradient_scale = transitions["gradient_scale"]
 
-        ###
-        target_reward = torch.reshape(
-            target_reward, [self.batch_size * (self.num_unroll + 1), 1]
-        )
-        target_value = torch.reshape(
-            target_value, [self.batch_size * (self.num_unroll + 1), 1]
-        )
-        ###
-
-        target_reward = self.network.scalar2vector(target_reward, 300)
-        target_value = self.network.scalar2vector(target_value, 300)
-
-        ###
-        target_reward = torch.reshape(
-            target_reward, [self.batch_size, (self.num_unroll + 1), 601]
-        )
-        target_value = torch.reshape(
-            target_value, [self.batch_size, (self.num_unroll + 1), 601]
-        )
+        target_reward = self.network.converter.scalar2vector(target_reward)
+        target_value = self.network.converter.scalar2vector(target_value)
 
         # stacked_state batch, 32*3+1, 96,96
         hidden_state = self.network.representation(stacked_state, stacked_action)
@@ -406,8 +398,8 @@ class MCTS:
                     u = (p * np.sqrt(total_n) / (n + 1)) * (
                         self.c1 + np.log((total_n + self.c2 + 1) / self.c2)
                     )
-                    UCB_list.append(q + u)
-
+                    UCB_list.append((q + u).cpu())
+                    
                 a_UCB = np.argmax(UCB_list)
                 node_id += (a_UCB,)
                 node_state, _ = self.d_fn(node_state, torch.FloatTensor([a_UCB]))
@@ -424,7 +416,7 @@ class MCTS:
             s_child, r_child = self.d_fn(leaf_state, torch.FloatTensor(action))
 
             # r_child를 scalar 형태로 변환 -> 네트워크에서 구현?
-            r_child_scalar = self.network.vector2scalar(r_child, 300).item()
+            r_child_scalar = self.network.converter.vector2scalar(r_child).item()
 
             p_child, _ = self.p_fn(s_child)
 
@@ -439,7 +431,7 @@ class MCTS:
             self.tree[leaf_id]["child"].append(action_idx)
 
         _, leaf_v = self.p_fn(leaf_state)
-        leaf_v = self.network.vector2scalar(leaf_v, 300).item()
+        leaf_v = self.network.converter.vector2scalar(leaf_v).item()
 
         return leaf_v
 

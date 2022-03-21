@@ -171,13 +171,13 @@ class Converter:
             scalar.shape[0], scalar.shape[1], (self.support << 1) + 1
         ).to(scalar.device)
         dist.scatter_(
-            2, (floor + self.support).long().unsqueeze(-1), (1 - prob).unsqueeze(-1)
+            -1, (floor + self.support).long(), (1 - prob)
         )
 
         # target distribution projection(distribute probability for higher support)
         idx = floor + self.support + 1
         prob = prob.masked_fill_((self.support << 1) < idx, 0.0)
         idx = idx.masked_fill_((self.support << 1) < idx, 0.0)
-        dist.scatter_(2, idx.long().unsqueeze(-1), prob.unsqueeze(-1))
+        dist.scatter_(-1, idx.long(), prob)
 
         return dist

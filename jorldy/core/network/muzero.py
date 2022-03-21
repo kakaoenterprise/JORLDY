@@ -1,9 +1,9 @@
 import torch
 import torch.nn.functional as F
 
-from jorldy.core.network.base import BaseNetwork
-from jorldy.core.network.utils import orthogonal_init, Converter
-from jorldy.core.network.head import Residualblock
+from .base import BaseNetwork
+from .utils import orthogonal_init, Converter
+from .head import Residualblock
 
 
 class Muzero_mlp(BaseNetwork):
@@ -31,7 +31,7 @@ class Muzero_mlp(BaseNetwork):
 
     def representation(self, obs, a):
         # hidden_state
-        obs_a = torch.cat([obs, a], dim=0).unsqueeze(dim=0)
+        obs_a = torch.cat([obs, a], dim=1)
         hs = super(Muzero_mlp, self).forward(obs_a)
         hs = self.hs_l(hs)
         hs = F.normalize(hs, dim=0)
@@ -111,7 +111,7 @@ class Muzero_Resnet(BaseNetwork):
         # observation, action : input -> normalize -> concatenate
         obs = F.normalize(obs)
         obs /= self.D_out
-        obs_a = torch.cat([obs, a], dim=0).unsqueeze(dim=0)
+        obs_a = torch.cat([obs, a], dim=1)
 
         # downsample
         hs = self.hs_down(obs_a)
