@@ -1,15 +1,15 @@
-from collections import defaultdict, deque
+from collections import defaultdict
 from collections.abc import Iterable
 import os
 import torch
-import torch.nn.functional as F
 import numpy as np
 
 torch.backends.cudnn.benchmark = True
 
 from core.network import Network
 from core.optimizer import Optimizer
-from core.buffer import ReplayBuffer
+
+# from core.buffer import ReplayBuffer
 from core.buffer import PERBuffer
 from .base import BaseAgent
 
@@ -60,14 +60,10 @@ class Muzero(BaseAgent):
             else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         )
 
-        if not isinstance(state_size, Iterable):
-            state_size = (1, state_size, 8, 8)
-        stacked_shape = (
-            (state_size[0] + 1) * num_stack + state_size[0],
-            *state_size[1:],
-        )
-
-        self.network = Network(network, state_size, action_size,(state_size[0] + 1) * num_stack + state_size[0], D_hidden=hidden_size, head=head).to(self.device)
+        stack_dim = (state_size[0] + 1) * num_stack + state_size[0]
+        self.network = Network(
+            network, state_size, action_size, stack_dim, D_hidden=hidden_size, head=head
+        ).to(self.device)
         self.optimizer = Optimizer(
             optim_config["name"], self.network.parameters(), lr=optim_config["lr"]
         )
@@ -127,12 +123,8 @@ class Muzero(BaseAgent):
         states = self.as_tensor(np.expand_dims(states, axis=0))
         actions = self.as_tensor(np.expand_dims(actions, axis=0))
         root_state = self.network.representation(states, actions)
-        if self.network == "pseudo":
-            action, pi, value = self.mcts.run_mcts(root_state)
-        else:
-            pi = np.ones(self.action_size) / self.action_size
-            action = np.random.choice(self.action_size, size=(1, 1))
-            value = np.random.random()
+        action, pi, value = self.mcts.run_mcts(root_state)
+        action = np.array(((action,),))
 
         return {"action": action, "value": value, "pi": pi}
 
@@ -146,7 +138,7 @@ class Muzero(BaseAgent):
         for i, trajectory in enumerate(trajectories["trajectory"]):
             trajectory_len = len(trajectory["values"])
             # trajectory priority position sample
-            idx_probs = (trajectory["priorities"] / trajectory["priorities"].sum())
+            idx_probs = trajectory["priorities"] / trajectory["priorities"].sum()
             start_idx = np.random.choice(trajectory_len, p=idx_probs.squeeze())
             idx_prob = idx_probs[start_idx]  # priority weight = 1 / (traj_w * idx_w)
 
@@ -178,7 +170,7 @@ class Muzero(BaseAgent):
             transitions["policy"].append(policies)
             transitions["value"].append(values)
             transitions["gradient_scale"].append(
-                np.ones(self.action_size)
+                np.ones(self.num_unroll+1)
                 * min(self.num_unroll, trajectory_len + 1 - start_idx)
             )
 
@@ -195,18 +187,26 @@ class Muzero(BaseAgent):
         target_policy = transitions["policy"]
         target_value = transitions["value"]
         gradient_scale = transitions["gradient_scale"]
-        
+
         ###
-        target_reward = torch.reshape(target_reward, [self.batch_size*(self.num_unroll+1), 1])
-        target_value = torch.reshape(target_value, [self.batch_size*(self.num_unroll+1), 1])
+        target_reward = torch.reshape(
+            target_reward, [self.batch_size * (self.num_unroll + 1), 1]
+        )
+        target_value = torch.reshape(
+            target_value, [self.batch_size * (self.num_unroll + 1), 1]
+        )
         ###
-    
+
         target_reward = self.network.scalar2vector(target_reward, 300)
         target_value = self.network.scalar2vector(target_value, 300)
-        
+
         ###
-        target_reward = torch.reshape(target_reward, [self.batch_size, (self.num_unroll+1), 601])
-        target_value = torch.reshape(target_value, [self.batch_size, (self.num_unroll+1), 601])
+        target_reward = torch.reshape(
+            target_reward, [self.batch_size, (self.num_unroll + 1), 601]
+        )
+        target_value = torch.reshape(
+            target_value, [self.batch_size, (self.num_unroll + 1), 601]
+        )
 
         # stacked_state batch, 32*3+1, 96,96
         hidden_state = self.network.representation(stacked_state, stacked_action)
@@ -220,47 +220,44 @@ class Muzero(BaseAgent):
                 hidden_state, target_action[:, i]
             )
             pi, value = self.network.prediction(hidden_state)
-            hidden_state.register_hook(lambda x: x*0.5)
+            hidden_state.register_hook(lambda x: x * 0.5)
             prediction.append((value, reward, pi))
 
         # compute start step
         value, reward, pi = prediction[0]
         policy_loss = (-target_policy[:, 0] * torch.nn.LogSoftmax(dim=1)(pi)).sum(1)
-        # value_loss = (-target_value[:, 0] * torch.nn.LogSoftmax(dim=1)(value)).sum(1)
-        value_loss = (-target_value[:, 0] * torch.log(value+1e-6)).sum(1)
-        # (-target_reward[:, 0] * torch.nn.LogSoftmax(dim=1)(reward)).sum(1)
-        reward_loss = 0
+        value_loss = (-target_value[:, 0] * torch.log(value + 1e-6)).sum(1)
+        reward_loss = torch.zeros_like(value_loss, device=self.device)
         p_j[:, 0] = torch.pow(value - target_value[:, 0], self.alpha)
 
-        
         # comput remain step
         for i, (value, reward, pi) in enumerate(prediction[1:], start=1):
-            local_loss = (-target_policy[:, i] * torch.log(pi+1e-6)).sum(1)
+            local_loss = (-target_policy[:, i] * torch.log(pi + 1e-6)).sum(1)
             local_loss.register_hook(lambda x: x / gradient_scale[:, i])
             policy_loss += local_loss
-            value_loss += (-target_value[:, i] * torch.log(value+1e-6)).sum(1)
-            #local_loss = F.smooth_l1_loss(target_value[:, i], value)
+            value_loss += (-target_value[:, i] * torch.log(value + 1e-6)).sum(1)
             local_loss.register_hook(lambda x: x / gradient_scale[:, i])
             value_loss += local_loss
-            reward_loss += (-target_reward[:, i] * torch.log(reward+1e-6)).sum(1)
-            #local_loss = F.smooth_l1_loss(target_reward[:, i], reward)
+            reward_loss += (-target_reward[:, i] * torch.log(reward + 1e-6)).sum(1)
             local_loss.register_hook(lambda x: x / gradient_scale[:, i])
             reward_loss += local_loss
-            
+
             p_j[:, i] = torch.pow(value - target_value[:, i], self.alpha)
 
         # for i, p in zip(indices, p_j.squeeze()):
         #     self.memory.update_priority(p.item(), i)
 
         weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
-        loss = (self.value_loss_weight * value_loss + policy_loss + reward_loss) * weights
+        loss = (
+            self.value_loss_weight * value_loss + policy_loss + reward_loss
+        ) * weights
         loss = loss.mean()
 
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
         self.num_learn += 1
-        
+
         result = {
             "loss": loss.item(),
             "policy_loss": policy_loss.mean().item(),
@@ -343,9 +340,10 @@ class Muzero(BaseAgent):
         self.network.load_state_dict(checkpoint["network"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
 
+
 class MCTS:
     def __init__(self, network, action_size, n_mcts, n_unroll, gamma):
-        self.network = network 
+        self.network = network
         self.p_fn = network.prediction  # prediction function
         self.d_fn = network.dynamics  # dynamics function
 
@@ -412,9 +410,7 @@ class MCTS:
 
                 a_UCB = np.argmax(UCB_list)
                 node_id += (a_UCB,)
-                node_state, _ = self.d_fn(
-                    node_state, torch.FloatTensor(a_UCB)
-                ) 
+                node_state, _ = self.d_fn(node_state, torch.FloatTensor([a_UCB]))
             else:
                 break
 
@@ -424,12 +420,11 @@ class MCTS:
         for action_idx in range(self.action_size):
             child_id = leaf_id + (action_idx,)
 
-            s_child, r_child = self.d_fn(
-                leaf_state, torch.FloatTensor(action_idx)
-            )  
-            r_child = self.network.vector2scalar(r_child, 300).item()
-            
+            action = np.ones((1, 1)) * action_idx
+            s_child, r_child = self.d_fn(leaf_state, torch.FloatTensor(action))
+
             # r_child를 scalar 형태로 변환 -> 네트워크에서 구현?
+            r_child_scalar = self.network.vector2scalar(r_child, 300).item()
 
             p_child, _ = self.p_fn(s_child)
 
@@ -461,7 +456,7 @@ class MCTS:
             for i in range(len(reward_list)):
                 discount_sum_r += (self.gamma ** (n - i)) * reward_list[i]
 
-            G = discount_sum_r + ((self.gamma ** (n + 1)) * value)
+            G = discount_sum_r + ((self.gamma ** (n + 1)) * node_v)
 
             # Update Q and N
             q = (self.tree[node_id]["n"] * self.tree[node_id]["q"] + G) / (
@@ -514,6 +509,7 @@ class MCTS:
 
         return action_idx, pi
 
+
 class Trajectory(dict):
     def __init__(self, state):
         self["states"] = [state]
@@ -542,7 +538,9 @@ class Trajectory(dict):
         states = np.zeros((num_stack + 1, *shape))
         states[0] = self["states"][cur_idx]
 
-        for i, state in enumerate(self["states"][max(0, cur_idx - num_stack) : cur_idx]):
+        for i, state in enumerate(
+            self["states"][max(0, cur_idx - num_stack) : cur_idx]
+        ):
             states[i + 1] = state
             actions[i] = np.ones(shape) * self["actions"][i]
 
