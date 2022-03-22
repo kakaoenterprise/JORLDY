@@ -9,7 +9,7 @@ torch.backends.cudnn.benchmark = True
 from core.network import Network
 from core.optimizer import Optimizer
 
-# from core.buffer import ReplayBuffer
+from core.buffer import ReplayBuffer
 from core.buffer import PERBuffer
 from .base import BaseAgent
 
@@ -40,8 +40,8 @@ class Muzero(BaseAgent):
         num_simulation=50,
         num_unroll=5,
         num_td_step=10,
-        num_stack=32,
         num_support=300,
+        num_stack=32,
         buffer_size=125000,
         run_step=1e6,
         optim_config={
@@ -60,19 +60,33 @@ class Muzero(BaseAgent):
             if device
             else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         )
-        
+
         if isinstance(state_size, Iterable):
-            stack_dim = (state_size[0]+1)*num_stack+state_size[0]
+            stack_dim = (state_size[0] + 1) * num_stack + state_size[0]
         else:
-            stack_dim = (state_size+1)*num_stack+state_size
-            
+            stack_dim = (state_size + 1) * num_stack + state_size
+
         self.network = Network(
-            network, state_size, action_size, stack_dim, num_support, D_hidden=hidden_size, head=head
+            network,
+            state_size,
+            action_size,
+            stack_dim,
+            num_support,
+            D_hidden=hidden_size,
+            head=head,
         ).to(self.device)
+
         self.target_network = Network(
-            network, state_size, action_size, stack_dim, num_support, D_hidden=hidden_size, head=head
-        ).to('cpu')
+            network,
+            state_size,
+            action_size,
+            stack_dim,
+            num_support,
+            D_hidden=hidden_size,
+            head=head,
+        ).to("cpu")
         self.target_network.load_state_dict(self.network.state_dict())
+
         self.optimizer = Optimizer(
             optim_config["name"], self.network.parameters(), lr=optim_config["lr"]
         )
@@ -97,16 +111,17 @@ class Muzero(BaseAgent):
         self.trajectory = None
 
         # PER
-        self.alpha = alpha
-        self.beta = beta
-        self.learn_period = learn_period
-        self.learn_period_stamp = 0
-        self.uniform_sample_prob = uniform_sample_prob
-        self.beta_add = (1 - beta) / run_step
-        self.buffer_size = buffer_size
-        self.memory = PERBuffer(self.buffer_size, uniform_sample_prob)
+        # self.alpha = alpha
+        # self.beta = beta
+        # self.learn_period = learn_period
+        # self.learn_period_stamp = 0
+        # self.buffer_size = buffer_size
+        # self.uniform_sample_prob = uniform_sample_prob
+        # self.beta_add = (1 - beta) / run_step
+        # self.memory = PERBuffer(self.buffer_size, uniform_sample_prob)
         # no priority
-        # self.memory = ReplayBuffer(buffer_size)
+        self.buffer_size = buffer_size
+        self.memory = ReplayBuffer(buffer_size)
         self.memory.first_store = False
 
         # MCTS
@@ -132,24 +147,18 @@ class Muzero(BaseAgent):
         states = self.as_tensor(np.expand_dims(states, axis=0))
         actions = self.as_tensor(np.expand_dims(actions, axis=0))
         root_state = self.network.representation(states, actions)
-        action, pi, value = self.mcts.run_mcts(root_state.to('cpu'))
+        action, pi, value = self.mcts.run_mcts(root_state.to("cpu"))
         action = np.array(((action,),))
 
         return {"action": action, "value": value, "pi": pi}
 
     def learn(self):
-        trajectories, weights, indices, sampled_p, mean_p = self.memory.sample(
-            self.beta, self.batch_size
-        )
+        trajectories = self.memory.sample(self.batch_size)
 
         transitions = defaultdict(list)
-        trajectory: Trajectory
         for i, trajectory in enumerate(trajectories["trajectory"]):
             trajectory_len = len(trajectory["values"])
-            # trajectory priority position sample
-            idx_probs = trajectory["priorities"] / trajectory["priorities"].sum()
-            start_idx = np.random.choice(trajectory_len, p=idx_probs.squeeze())
-            idx_prob = idx_probs[start_idx]  # priority weight = 1 / (traj_w * idx_w)
+            start_idx = np.random.choice(trajectory_len)
 
             # make target
             last_idx = start_idx + self.num_unroll + 1
@@ -179,7 +188,7 @@ class Muzero(BaseAgent):
             transitions["policy"].append(policies)
             transitions["value"].append(values)
             transitions["gradient_scale"].append(
-                np.ones(self.num_unroll+1)
+                np.ones(self.num_unroll + 1)
                 * min(self.num_unroll, trajectory_len + 1 - start_idx)
             )
 
@@ -205,7 +214,6 @@ class Muzero(BaseAgent):
         pi, value = self.network.prediction(hidden_state)
         reward = torch.zeros(target_reward.shape, device=self.device)
         prediction = [(value, reward, pi)]
-        p_j = torch.zeros_like(target_value)
 
         for i in range(1, self.num_unroll + 1):
             hidden_state, reward = self.network.dynamics(
@@ -220,7 +228,6 @@ class Muzero(BaseAgent):
         policy_loss = (-target_policy[:, 0] * torch.nn.LogSoftmax(dim=1)(pi)).sum(1)
         value_loss = (-target_value[:, 0] * torch.log(value + 1e-6)).sum(1)
         reward_loss = torch.zeros_like(value_loss, device=self.device)
-        p_j[:, 0] = torch.pow(value - target_value[:, 0], self.alpha)
 
         # comput remain step
         for i, (value, reward, pi) in enumerate(prediction[1:], start=1):
@@ -234,16 +241,7 @@ class Muzero(BaseAgent):
             local_loss.register_hook(lambda x: x / gradient_scale[:, i])
             reward_loss += local_loss
 
-            p_j[:, i] = torch.pow(value - target_value[:, i], self.alpha)
-
-        # for i, p in zip(indices, p_j.squeeze()):
-        #     self.memory.update_priority(p.item(), i)
-
-        weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
-        loss = (
-            self.value_loss_weight * value_loss + policy_loss + reward_loss
-        ) * weights
-        loss = loss.mean()
+        loss = (self.value_loss_weight * value_loss + policy_loss + reward_loss).mean()
 
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -255,32 +253,24 @@ class Muzero(BaseAgent):
             "policy_loss": policy_loss.mean().item(),
             "value_loss": value_loss.mean().item(),
             "reward_loss": reward_loss.mean().item(),
-            "sampled_p": sampled_p,
-            "mean_p": mean_p,
         }
 
+        print(loss.item())
         return result
 
     def process(self, transitions, step):
         result = {}
 
         # Process per step
-        delta_t = step - self.time_t
         self.memory.store(transitions)
         self.time_t = step
-        self.learn_period_stamp += delta_t
-
-        # Annealing beta
-        self.beta = min(1.0, self.beta + (self.beta_add * delta_t))
 
         if (
-            self.learn_period_stamp >= self.learn_period
-            and self.memory.buffer_counter >= self.batch_size
+            self.memory.buffer_counter >= self.batch_size
             and self.time_t >= self.start_train_step
         ):
             result = self.learn()
             self.learning_rate_decay(step)
-            self.learn_period_stamp -= self.learn_period
 
         return result
 
@@ -294,23 +284,8 @@ class Muzero(BaseAgent):
         self.trajectory["values"].append(transition["value"])
         self.trajectory["policies"].append(transition["pi"])
 
-        if self.trajectory_step_stamp >= self.trajectory_size:
+        if self.trajectory_step_stamp >= self.trajectory_size or transition["done"]:
             self.trajectory_step_stamp = 0  # never self.trajectory_step_stamp -= period
-            if self.trajectory["priorities"] is None:
-                priorities = []
-                for i, value in enumerate(self.trajectory["values"]):
-                    priorities.append(
-                        np.abs(
-                            value
-                            - self.trajectory.get_bootstrap_value(
-                                i, self.num_td_step, self.gamma
-                            )
-                        )
-                        ** self.alpha
-                    )
-                self.trajectory["priorities"] = np.array(priorities, dtype=np.float32)
-                self.trajectory["priority"] = np.max(self.trajectory["priorities"])
-
             _transition = {"trajectory": [self.trajectory]}
             self.trajectory = None
 
@@ -399,7 +374,7 @@ class MCTS:
                         self.c1 + np.log((total_n + self.c2 + 1) / self.c2)
                     )
                     UCB_list.append((q + u).cpu())
-                    
+
                 a_UCB = np.argmax(UCB_list)
                 node_id += (a_UCB,)
                 node_state, _ = self.d_fn(node_state, torch.FloatTensor([a_UCB]))
