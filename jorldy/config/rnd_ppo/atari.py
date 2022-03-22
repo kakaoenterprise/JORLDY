@@ -52,9 +52,9 @@ train = {
     "save_period": 100000,
     "eval_iteration": 1,
     "record": True,
-    "record_period": 1000000,
+    "record_period": 500000,
     # distributed setting
-    "distributed_batch_size": 1024,
+    "distributed_batch_size": 256,
     "update_period": agent["n_step"],
     "num_workers": 64,
 }

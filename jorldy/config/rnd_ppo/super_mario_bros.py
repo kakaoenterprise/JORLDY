@@ -24,7 +24,7 @@ agent = {
     "_lambda": 0.95,
     "epsilon_clip": 0.1,
     "vf_coef": 1.0,
-    "ent_coef": 0.001,
+    "ent_coef": 0.005,
     "clip_grad_norm": 1.0,
     "use_standardization": False,
     # Parameters for Random Network Distillation
@@ -52,7 +52,7 @@ train = {
     "save_period": 100000,
     "eval_iteration": 1,
     "record": True,
-    "record_period": 1000000,
+    "record_period": 500000,
     # distributed setting
     "distributed_batch_size": 256,
     "update_period": agent["n_step"],
