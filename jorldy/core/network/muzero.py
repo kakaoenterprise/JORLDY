@@ -10,22 +10,24 @@ class Muzero_mlp(BaseNetwork):
     """mlp network"""
 
     def __init__(self, D_in, D_out, in_channels, support, D_hidden=256, head="mlp"):
-        super(Muzero_mlp, self).__init__(D_in, D_hidden, head)
+        super(Muzero_mlp, self).__init__(in_channels, D_hidden, head)
         self.D_in = D_in
+        self.D_hidden = D_hidden
         self.converter = Converter(support)
 
         # representation -> make hidden state
-        self.hs_l = torch.nn.Linear(D_hidden, D_in)
+        self.hs_l = torch.nn.Linear(D_hidden, D_hidden)
 
         # prediction -> make discrete policy and discrete value
-        self.pi_l = torch.nn.Linear(in_channels * D_in, D_out)
-        self.vd_l = torch.nn.Linear(in_channels * D_in, (support << 1) + 1)
+        self.pi_l = torch.nn.Linear(D_hidden, D_out)
+        self.vd_l = torch.nn.Linear(D_hidden, (support << 1) + 1)
 
         orthogonal_init(self.pi_l, "policy")
         orthogonal_init(self.vd_l, "linear")
 
         # dynamics -> make reward and next hidden state
-        self.rd_l = torch.nn.Linear((in_channels + 1) * D_in, (support << 1) + 1)
+        self.rd_l = torch.nn.Linear(D_hidden << 1, (support << 1) + 1)
+        self.next_hs_l = torch.nn.Linear(D_hidden << 1, D_hidden)
 
         orthogonal_init(self.rd_l, "linear")
 
@@ -52,14 +54,16 @@ class Muzero_mlp(BaseNetwork):
 
     def dynamics(self, hs, a):
         # hidden_state + action
-        a = torch.broadcast_to(a.unsqueeze(dim=-1), [hs.size(0), 1, self.D_in])
+        a = torch.broadcast_to(a, [hs.size(0), self.D_hidden])
         hs_a = torch.cat([hs, a], dim=1).reshape(hs.size(0), -1)
-
-        # next_hidden_state_normalized
-        next_hs = F.normalize(hs_a, dim=-1)
 
         # reward(action_distribution)
         rd = self.rd_l(hs_a)
+
+        # next_hidden_state_normalized
+        next_hs = self.next_hs_l(hs_a)
+        next_hs = F.normalize(next_hs, dim=-1)
+
         return next_hs, rd
 
 

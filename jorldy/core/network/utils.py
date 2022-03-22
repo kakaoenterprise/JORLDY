@@ -161,8 +161,7 @@ class Converter:
         scalar = (
                 torch.sign(scalar) * (torch.sqrt(torch.abs(scalar) + 1) - 1) + 0.001 * scalar
         )
-        scalar = scalar.view(scalar.shape)
-        scalar = torch.clamp(scalar, -self.support, self.support+1)
+        scalar = torch.clamp(scalar, -self.support, self.support)
 
         # target distribution projection(distribute probability for lower support)
         floor = scalar.floor()
@@ -175,7 +174,7 @@ class Converter:
         )
 
         # target distribution projection(distribute probability for higher support)
-        idx = floor + self.support + 1
+        idx = floor + self.support
         prob = prob.masked_fill_((self.support << 1) < idx, 0.0)
         idx = idx.masked_fill_((self.support << 1) < idx, 0.0)
         dist.scatter_(-1, idx.long(), prob)
