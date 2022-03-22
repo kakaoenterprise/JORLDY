@@ -194,9 +194,6 @@ class RND_PPO(PPO):
                     ],
                 )
 
-                # old implementation
-                _r_i = self.rnd.forward(_next_state)  # * self.intrinsic_coeff
-
                 if self.action_type == "continuous":
                     mu, std, value_pred = self.network(_state)
                     m = Normal(mu, std)
@@ -246,7 +243,8 @@ class RND_PPO(PPO):
                     + self.vf_coef * critic_loss
                     + self.ent_coef * entropy_loss
                 )
-
+                
+                _r_i = self.rnd.forward(_next_state)
                 rnd_loss = _r_i.mean()
 
                 loss = ppo_loss + rnd_loss
@@ -296,7 +294,7 @@ class RND_PPO(PPO):
         # Process per epi
         if self.learn_stamp >= self.n_step:
             result = self.learn()
-            self.learning_rate_decay(step)
+            # self.learning_rate_decay(step)
             self.learn_stamp -= self.n_step
 
         return result
