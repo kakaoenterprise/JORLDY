@@ -62,8 +62,10 @@ class Muzero(BaseAgent):
         )
 
         if isinstance(state_size, Iterable):
+            self.trajectory_type = Trajectory
             stack_dim = (state_size[0] + 1) * num_stack + state_size[0]
         else:
+            self.trajectory_type = TrajectoryGym
             stack_dim = (state_size + 1) * num_stack + state_size
 
         self.network = Network(
@@ -139,7 +141,7 @@ class Muzero(BaseAgent):
         # TODO: if eval
 
         if not self.trajectory:
-            self.trajectory = Trajectory(state)
+            self.trajectory = self.trajectory_type(state)
 
         states, actions = self.trajectory.get_stacked_data(
             self.trajectory_step_stamp, self.num_stack
@@ -255,7 +257,7 @@ class Muzero(BaseAgent):
             "reward_loss": reward_loss.mean().item(),
         }
 
-        print(loss.item())
+        print(f"loss : {loss.item()}")
         return result
 
     def process(self, transitions, step):
@@ -510,5 +512,22 @@ class Trajectory(dict):
         ):
             states[i + 1] = state
             actions[i] = np.ones(shape) * self["actions"][i]
+
+        return states, actions
+
+
+class TrajectoryGym(Trajectory):
+    def get_stacked_data(self, cur_idx, num_stack):
+        d_channel = self["states"][cur_idx].shape[1]
+        actions = np.zeros(num_stack)
+        states = np.zeros((num_stack + 1) * d_channel)
+        states[0:d_channel] = self["states"][cur_idx]
+
+        for i, state in enumerate(
+            self["states"][max(0, cur_idx - num_stack) : cur_idx]
+        ):
+            si = (i + 1) * d_channel
+            states[si : si + d_channel] = state
+            actions[i] = np.ones(1) * self["actions"][i]
 
         return states, actions
