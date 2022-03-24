@@ -59,6 +59,7 @@ class Muzero_mlp(BaseNetwork):
 
         # reward(action_distribution)
         rd = self.rd_l(hs_a)
+        rd = torch.exp(F.log_softmax(rd, dim=-1))
 
         # next_hidden_state_normalized
         next_hs = self.next_hs_l(hs_a)
