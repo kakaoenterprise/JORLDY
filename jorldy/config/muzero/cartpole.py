@@ -15,14 +15,15 @@ agent = {
     "epsilon_min": 0.01,
     "explore_ratio": 0.2,
     "buffer_size": 50000,
-    "batch_size": 32,
-    "start_train_step": 2000,
-    "trajectory_size": 5,
-    "num_simulation": 5,
-    "value_loss_weight": 0.25,
-    "num_unroll": 3,
-    "num_td_step": 3,
-    "num_stack": 3,
+    "batch_size": 128,
+    "num_support": 10,
+    "start_train_step": 1000,
+    "trajectory_size": 1000,
+    "num_simulation": 50,
+    "value_loss_weight": 1.0,
+    "num_unroll": 5,
+    "num_td_step": 8,
+    "num_stack": 8,
 }
 
 optim = {

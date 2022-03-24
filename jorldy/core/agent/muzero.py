@@ -25,13 +25,11 @@ class Muzero(BaseAgent):
     def __init__(
         self,
         # MuZero
-        device=None,
+        state_size,
+        action_size,
         network="muzero_resnet",
         head="residualblock",
-        state_size=(1, 96, 96),
-        hidden_state_channel=4,
         hidden_size=256,
-        action_size=18,
         gamma=0.997,
         batch_size=16,
         start_train_step=0,
@@ -43,6 +41,7 @@ class Muzero(BaseAgent):
         num_support=300,
         num_stack=32,
         buffer_size=125000,
+        device=None,
         run_step=1e6,
         optim_config={
             "name": "adam",
@@ -137,19 +136,22 @@ class Muzero(BaseAgent):
 
     @torch.no_grad()
     def act(self, state, training=True):
-        self.network.train(training)
+        self.target_network.train(training)
         # TODO: if eval
 
         if not self.trajectory:
             self.trajectory = self.trajectory_type(state)
+            self.update_target()
 
         states, actions = self.trajectory.get_stacked_data(
             self.trajectory_step_stamp, self.num_stack
         )
+        self.device, swap = "cpu", self.device
         states = self.as_tensor(np.expand_dims(states, axis=0))
         actions = self.as_tensor(np.expand_dims(actions, axis=0))
-        root_state = self.network.representation(states, actions)
-        action, pi, value = self.mcts.run_mcts(root_state.to("cpu"))
+        self.device = swap
+        root_state = self.target_network.representation(states, actions)
+        action, pi, value = self.mcts.run_mcts(root_state)
         action = np.array(((action,),))
 
         return {"action": action, "value": value, "pi": pi}
@@ -164,23 +166,17 @@ class Muzero(BaseAgent):
 
             # make target
             last_idx = start_idx + self.num_unroll + 1
-            values = []
+            actions = trajectory["actions"][start_idx:last_idx]
             policies = trajectory["policies"][start_idx:last_idx]
             rewards = trajectory["rewards"][start_idx:last_idx]
-            actions = trajectory["actions"][start_idx:last_idx]
-            for idx in range(start_idx, last_idx):
-                if idx < trajectory_len:
-                    values.append(
-                        trajectory.get_bootstrap_value(
-                            idx, self.num_td_step, self.gamma
-                        )
-                    )
-                else:
-                    values.append(np.zeros((1, 1)))
-                    policies.append(np.ones(self.action_size) / self.action_size)
-                    if idx > trajectory_len:
-                        rewards.append(np.zeros((1, 1)))
-                        actions.append(np.random.choice(self.action_size, size=(1, 1)))
+            values = [
+                trajectory.get_bootstrap_value(i, self.num_td_step, self.gamma)
+                for i in range(start_idx, last_idx)
+            ]
+            for _ in range(trajectory_len, last_idx):
+                rewards.append(np.zeros((1, 1)))
+                actions.append(np.random.choice(self.action_size, size=(1, 1)))
+                policies.append(np.ones(self.action_size) / self.action_size)
 
             s, a = trajectory.get_stacked_data(start_idx, self.num_stack)
             transitions["stacked_state"].append(s)
@@ -256,9 +252,10 @@ class Muzero(BaseAgent):
             "value_loss": value_loss.mean().item(),
             "reward_loss": reward_loss.mean().item(),
         }
-
-        print(f"loss : {loss.item()}")
         return result
+
+    def update_target(self):
+        self.target_network.load_state_dict(self.network.state_dict())
 
     def process(self, transitions, step):
         result = {}
@@ -276,6 +273,15 @@ class Muzero(BaseAgent):
 
         return result
 
+    def get_temperature(self, step):
+        if step < self.run_step * 0.5:
+            t = 1.0
+        elif step < self.run_step * 0.75:
+            t = 0.5
+        else:
+            t = 0.25
+        return t
+
     def interact_callback(self, transition):
         _transition = None
         self.trajectory_step_stamp += 1
@@ -286,8 +292,14 @@ class Muzero(BaseAgent):
         self.trajectory["values"].append(transition["value"])
         self.trajectory["policies"].append(transition["pi"])
 
-        if self.trajectory_step_stamp >= self.trajectory_size or transition["done"]:
+        if transition["done"] or self.trajectory_step_stamp >= self.trajectory_size:
             self.trajectory_step_stamp = 0  # never self.trajectory_step_stamp -= period
+            # TODO: if not terminal -> n-step calc
+            self.trajectory["values"].append(np.zeros((1, 1)))
+            self.trajectory["policies"].append(
+                np.ones(self.action_size) / self.action_size
+            )
+
             _transition = {"trajectory": [self.trajectory]}
             self.trajectory = None
 
@@ -333,6 +345,7 @@ class MCTS:
         self.root_id = (0,)
         self.tree = {}
 
+    @torch.no_grad()
     def run_mcts(self, root_state):
         self.tree = self.init_mcts(root_state)
 
@@ -351,6 +364,7 @@ class MCTS:
 
         return root_action, pi, root_value
 
+    @torch.no_grad()
     def selection(self, root_state):
         node_id = self.root_id
         node_state = root_state
@@ -385,6 +399,7 @@ class MCTS:
 
         return node_id, node_state
 
+    @torch.no_grad()
     def expansion(self, leaf_id, leaf_state):
         for action_idx in range(self.action_size):
             child_id = leaf_id + (action_idx,)
@@ -412,6 +427,7 @@ class MCTS:
 
         return leaf_v
 
+    @torch.no_grad()
     def backup(self, leaf_id, leaf_v):
         node_id = leaf_id
         node_v = leaf_v
@@ -445,6 +461,7 @@ class MCTS:
 
             reward_list.append(self.tree[node_id]["r"])
 
+    @torch.no_grad()
     def init_mcts(self, root_state):
         tree = {}
         root_id = (0,)
@@ -456,6 +473,7 @@ class MCTS:
 
         return tree
 
+    @torch.no_grad()
     def select_root_action(self):
         child = self.tree[self.root_id]["child"]
 
@@ -489,17 +507,12 @@ class Trajectory(dict):
         self["priorities"] = None
         self["priority"] = None
 
-    def get_bootstrap_value(self, start_idx, num_td_step, gamma):
-        bootstrap_idx = start_idx + num_td_step
-        bootstrap_value = (
-            self["values"][bootstrap_idx] * (gamma**num_td_step)
-            if bootstrap_idx < len(self["values"])
-            else np.zeros((1, 1))
-        )
-        for i, reward in enumerate(self["rewards"][start_idx + 1 : bootstrap_idx + 1]):
-            bootstrap_value += reward * (gamma**i)
-
-        return bootstrap_value
+    def get_bootstrap_value(self, start, num_td_step, gamma):
+        last = start + num_td_step
+        value = self["values"][last] if last < len(self["values"]) else np.zeros((1, 1))
+        for reward in self["rewards"][start + 1 : last + 1]:
+            value = reward + gamma * value
+        return value
 
     def get_stacked_data(self, cur_idx, num_stack):
         shape = self["states"][cur_idx].shape[-2:]
