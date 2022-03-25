@@ -223,7 +223,7 @@ class ICM_PPO(PPO):
             self.learn_stamp -= self.n_step
 
         return result
-    
+
     def save(self, path):
         print(f"...Save model to {path}...")
         torch.save(
