@@ -243,7 +243,7 @@ class RND_PPO(PPO):
                     + self.vf_coef * critic_loss
                     + self.ent_coef * entropy_loss
                 )
-
+                
                 _r_i = self.rnd.forward(_next_state)
                 rnd_loss = _r_i.mean()
 
@@ -291,6 +291,7 @@ class RND_PPO(PPO):
         # Process per epi
         if self.learn_stamp >= self.n_step:
             result = self.learn()
+            # self.learning_rate_decay(step)
             self.learn_stamp -= self.n_step
 
         return result
