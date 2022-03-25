@@ -208,6 +208,22 @@ class ICM_PPO(PPO):
         }
         return result
 
+    def process(self, transitions, step):
+        result = {}
+        # Process per step
+        self.memory.store(transitions)
+        delta_t = step - self.time_t
+        self.time_t = step
+        self.learn_stamp += delta_t
+
+        # Process per epi
+        if self.learn_stamp >= self.n_step:
+            result = self.learn()
+            self.learning_rate_decay(step)
+            self.learn_stamp -= self.n_step
+
+        return result
+    
     def save(self, path):
         print(f"...Save model to {path}...")
         torch.save(
