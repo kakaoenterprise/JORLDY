@@ -288,13 +288,9 @@ class RND_PPO(PPO):
         self.time_t = step
         self.learn_stamp += delta_t
 
-        if len(transitions) > 0 and transitions[0]["done"]:
-            self.state_seq = None
-
         # Process per epi
         if self.learn_stamp >= self.n_step:
             result = self.learn()
-            # self.learning_rate_decay(step)
             self.learn_stamp -= self.n_step
 
         return result
