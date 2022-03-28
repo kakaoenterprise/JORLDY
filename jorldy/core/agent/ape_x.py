@@ -41,7 +41,7 @@ class ApeX(DQN):
         n_step=4,
         **kwargs
     ):
-        super(ApeX, self).__init__(run_step=run_step, **kwargs)
+        super(ApeX, self).__init__(**kwargs)
         # ApeX
         self.epsilon = epsilon
         self.epsilon_alpha = epsilon_alpha
@@ -54,7 +54,7 @@ class ApeX(DQN):
         self.learn_period = learn_period
         self.learn_period_stamp = 0
         self.uniform_sample_prob = uniform_sample_prob
-        self.beta_add = (1 - beta) / run_step
+        self.beta_add = (1 - beta) / self.run_step
 
         # MultiStep
         self.n_step = n_step
