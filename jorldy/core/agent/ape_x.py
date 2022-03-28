@@ -31,7 +31,6 @@ class ApeX(DQN):
         epsilon=0.4,
         epsilon_alpha=7.0,
         clip_grad_norm=40.0,
-        run_step=1e6,
         # PER
         alpha=0.6,
         beta=0.4,
