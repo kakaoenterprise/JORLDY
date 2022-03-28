@@ -177,11 +177,7 @@ class SAC(BaseAgent):
                 next_action, next_log_prob = self.sample_action(mu, std)
                 next_q1 = self.target_critic1(next_state, next_action)
                 next_q2 = self.target_critic2(next_state, next_action)
-
-                min_next_q = torch.min(next_q1, next_q2)
-                target_q = reward + (1 - done) * self.gamma * (
-                    min_next_q - self.alpha * next_log_prob
-                )
+                entropy = -next_log_prob
         else:
             q1 = self.critic1(state).gather(1, action.long())
             q2 = self.critic2(state).gather(1, action.long())
@@ -194,14 +190,14 @@ class SAC(BaseAgent):
                 next_q2 = (next_pi * self.target_critic2(next_state)).sum(
                     -1, keepdim=True
                 )
-                min_next_q = torch.min(next_q1, next_q2)
-
                 m = Categorical(next_pi)
-                # scaled_entropy
-                entropy = torch.tanh(m.entropy().unsqueeze(-1))
-                target_q = reward + (1 - done) * self.gamma * (
-                    min_next_q + self.alpha * entropy
-                )
+                entropy = m.entropy().unsqueeze(-1)
+
+        with torch.no_grad():
+            min_next_q = torch.min(next_q1, next_q2)
+            target_q = reward + (1 - done) * self.gamma * (
+                min_next_q + self.alpha * entropy
+            )
 
         max_Q = torch.max(target_q, axis=0).values.cpu().numpy()[0]
 
@@ -223,31 +219,22 @@ class SAC(BaseAgent):
             sample_action, log_prob = self.sample_action(mu, std)
             q1 = self.critic1(state, sample_action)
             q2 = self.critic2(state, sample_action)
-            min_q = torch.min(q1, q2)
-            actor_loss = ((self.alpha.detach() * log_prob) - min_q).mean()
+            entropy = -log_prob
         else:
             pi = self.actor(state)
             q1 = (pi * self.critic1(state)).sum(-1, keepdim=True)
             q2 = (pi * self.critic2(state)).sum(-1, keepdim=True)
-            min_q = torch.min(q1, q2)
             m = Categorical(pi)
-            # scaled_entropy
-            entropy = torch.tanh(m.entropy().unsqueeze(-1))
-            actor_loss = -((self.alpha.detach() * entropy) + min_q).mean()
+            entropy = m.entropy().unsqueeze(-1)
 
+        min_q = torch.min(q1, q2)
+        actor_loss = -((self.alpha.detach() * entropy) + min_q).mean()
         self.actor_optimizer.zero_grad(set_to_none=True)
         actor_loss.backward()
         self.actor_optimizer.step()
 
         # Alpha
-        if self.action_type == "continuous":
-            alpha_loss = -(
-                self.log_alpha * (log_prob + self.target_entropy).detach()
-            ).mean()
-        else:
-            alpha_loss = (
-                self.log_alpha * (entropy - self.target_entropy).detach().mean()
-            )
+        alpha_loss = self.log_alpha * (entropy - self.target_entropy).detach().mean()
 
         self.alpha = self.log_alpha.exp()
 
@@ -264,7 +251,9 @@ class SAC(BaseAgent):
             "actor_loss": actor_loss.item(),
             "alpha_loss": alpha_loss.item(),
             "max_Q": max_Q,
+            "mean_Q": min_q.mean().item(),
             "alpha": self.alpha.item(),
+            "entropy": entropy.mean().item(),
         }
         return result
 
@@ -273,6 +262,10 @@ class SAC(BaseAgent):
             t_p.data.copy_(self.tau * p.data + (1 - self.tau) * t_p.data)
         for t_p, p in zip(self.target_critic2.parameters(), self.critic2.parameters()):
             t_p.data.copy_(self.tau * p.data + (1 - self.tau) * t_p.data)
+
+    def update_target_hard(self):
+        self.target_critic1.load_state_dict(self.critic1.state_dict())
+        self.target_critic2.load_state_dict(self.critic2.state_dict())
 
     def process(self, transitions, step):
         result = {}
@@ -290,7 +283,12 @@ class SAC(BaseAgent):
             )
 
         if self.num_learn > 0:
-            self.update_target_soft()
+            if self.action_type == "continuous":
+                self.update_target_soft()
+            else:
+                if self.target_update_stamp >= self.target_update_period:
+                    self.update_target_hard()
+                    self.target_update_stamp = 0
 
         return result
 
