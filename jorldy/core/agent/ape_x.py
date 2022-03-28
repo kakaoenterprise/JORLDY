@@ -29,7 +29,7 @@ class ApeX(DQN):
         self,
         # ApeX
         epsilon=0.4,
-        epsilon_alpha=0.7,
+        epsilon_alpha=7.0,
         clip_grad_norm=40.0,
         run_step=1e6,
         # PER
@@ -41,7 +41,7 @@ class ApeX(DQN):
         n_step=4,
         **kwargs
     ):
-        super(ApeX, self).__init__(**kwargs)
+        super(ApeX, self).__init__(run_step=run_step, **kwargs)
         # ApeX
         self.epsilon = epsilon
         self.epsilon_alpha = epsilon_alpha
@@ -159,7 +159,7 @@ class ApeX(DQN):
         # Process per step if train start
         if self.num_learn > 0 and self.target_update_stamp >= self.target_update_period:
             self.update_target()
-            self.target_update_stamp = self.target_update_period
+            self.target_update_stamp -= self.target_update_period
 
         return result
 
