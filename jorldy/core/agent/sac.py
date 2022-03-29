@@ -283,7 +283,12 @@ class SAC(BaseAgent):
 
             if self.lr_decay:
                 self.learning_rate_decay(
-                    step, [self.actor_optimizer, self.critic_optimizer]
+                    step,
+                    [
+                        self.actor_optimizer,
+                        self.critic_optimizer1,
+                        self.critic_optimizer2,
+                    ],
                 )
 
         if self.num_learn > 0:

@@ -31,4 +31,4 @@ class _Nes(_Atari):
 
 class SuperMarioBros(_Nes):
     def __init__(self, **kwargs):
-        super(SuperMarioBros, self).__init__("SuperMarioBros-v3", **kwargs)
+        super(SuperMarioBros, self).__init__("SuperMarioBros-v0", **kwargs)
