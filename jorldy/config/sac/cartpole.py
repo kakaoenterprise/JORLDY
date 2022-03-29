@@ -9,7 +9,7 @@ env = {
 agent = {
     "name": "sac",
     "actor": "continuous_policy",
-    "critic": "sac_critic",
+    "critic": "continuous_q_network",
     "use_dynamic_alpha": True,
     "gamma": 0.99,
     "tau": 5e-3,
@@ -17,15 +17,16 @@ agent = {
     "batch_size": 64,
     "start_train_step": 5000,
     "static_log_alpha": -2.0,
+    "target_update_period": 500,
 }
 
 optim = {
     "actor": "adam",
     "critic": "adam",
     "alpha": "adam",
-    "actor_lr": 5e-4,
-    "critic_lr": 1e-3,
-    "alpha_lr": 3e-4,
+    "actor_lr": 1.5e-4,
+    "critic_lr": 3e-4,
+    "alpha_lr": 1e-5,
 }
 
 train = {
