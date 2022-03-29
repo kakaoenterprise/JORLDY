@@ -79,6 +79,7 @@ def test_static_alpha_sac(MockEnv):
     # test sync in and out
     check_sync_in_out(agent)
 
+
 def test_discrete_sac(MockEnv):
     state_size, action_size, action_type = 2, 3, "discrete"
     episode_len = 10
