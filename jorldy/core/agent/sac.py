@@ -30,9 +30,9 @@ class SAC(BaseAgent):
         start_train_step (int): steps to start learning.
         static_log_alpha (float): static value used as log alpha when use_dynamic_alpha is false.
         run_step (int): the number of total steps.
+        lr_decay: lr_decay option which apply decayed weight on parameters of network.
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
-
     """
 
     def __init__(
@@ -59,6 +59,7 @@ class SAC(BaseAgent):
         start_train_step=2000,
         static_log_alpha=-2.0,
         run_step=1e6,
+        lr_decay=True,
         device=None,
         **kwargs,
     ):
@@ -107,6 +108,7 @@ class SAC(BaseAgent):
         self.batch_size = batch_size
         self.start_train_step = start_train_step
         self.run_step = run_step
+        self.lr_decay = lr_decay
         self.num_learn = 0
 
     @torch.no_grad()
@@ -207,9 +209,10 @@ class SAC(BaseAgent):
 
         if self.memory.size > self.batch_size and step >= self.start_train_step:
             result = self.learn()
-            self.learning_rate_decay(
-                step, [self.actor_optimizer, self.critic_optimizer]
-            )
+            if self.lr_decay:
+                self.learning_rate_decay(
+                    step, [self.actor_optimizer, self.critic_optimizer]
+                )
 
         if self.num_learn > 0:
             self.update_target_soft()

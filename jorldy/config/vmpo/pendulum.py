@@ -22,6 +22,7 @@ agent = {
     "eta": 1.0,
     "alpha_mu": 1.0,
     "alpha_sigma": 1.0,
+    "lr_decay": True,
 }
 
 optim = {

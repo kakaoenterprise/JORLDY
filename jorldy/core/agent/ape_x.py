@@ -153,7 +153,8 @@ class ApeX(DQN):
             and self.time_t >= self.start_train_step
         ):
             result = self.learn()
-            self.learning_rate_decay(step)
+            if self.lr_decay:
+                self.learning_rate_decay(step)
             self.learn_period_stamp -= self.learn_period
 
         # Process per step if train start

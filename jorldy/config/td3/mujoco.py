@@ -18,6 +18,7 @@ agent = {
     "action_noise_std": 0.1,
     "target_noise_std": 0.2,
     "target_noise_clip": 0.5,
+    "lr_decay": True,
 }
 
 optim = {

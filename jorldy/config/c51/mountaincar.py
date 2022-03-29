@@ -19,6 +19,7 @@ agent = {
     "v_min": -1,
     "v_max": 10,
     "num_support": 51,
+    "lr_decay": True,
 }
 
 optim = {

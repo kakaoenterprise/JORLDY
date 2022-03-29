@@ -15,6 +15,7 @@ agent = {
     "vf_coef": 1.0,
     "ent_coef": 0.1,
     "clip_grad_norm": 1.0,
+    "lr_decay": True,
     # Parameters for Random Network Distillation
     "rnd_network": "rnd_multi",  # rnd_mlp, rnd_cnn, rnd_multi
     "gamma_i": 0.99,

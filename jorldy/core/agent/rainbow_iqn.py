@@ -28,6 +28,7 @@ class RainbowIQN(Rainbow):
         start_train_step (int): steps to start learning.
         target_update_period (int): period to update the target network. (unit: step)
         run_step (int): the number of total steps.
+        lr_decay: lr_decay option which apply decayed weight on parameters of network.
         n_step: number of steps in multi-step Q learning.
         alpha (float): prioritization exponent.
         beta (float): initial value of degree to use importance sampling.
@@ -57,6 +58,7 @@ class RainbowIQN(Rainbow):
         start_train_step=2000,
         target_update_period=500,
         run_step=1e6,
+        lr_decay=True,
         # MultiStep
         n_step=4,
         # PER
@@ -111,6 +113,7 @@ class RainbowIQN(Rainbow):
         self.num_learn = 0
         self.time_t = 0
         self.run_step = run_step
+        self.lr_decay = lr_decay
 
         # MultiStep
         self.n_step = n_step

@@ -29,6 +29,7 @@ class DDPG(BaseAgent):
         start_train_step (int): steps to start learning.
         tau (float): the soft update coefficient.
         run_step (int): the number of total steps.
+        lr_decay: lr_decay option which apply decayed weight on parameters of network.
         mu (float): the drift coefficient of the Ornstein-Uhlenbeck process for action exploration.
         theta (float): reversion of the time constant of the Ornstein-Uhlenbeck process.
         sigma (float): diffusion coefficient of the Ornstein-Uhlenbeck process.
@@ -56,6 +57,7 @@ class DDPG(BaseAgent):
         start_train_step=2000,
         tau=1e-3,
         run_step=1e6,
+        lr_decay=True,
         # OU noise
         mu=0,
         theta=1e-3,
@@ -102,6 +104,7 @@ class DDPG(BaseAgent):
         self.start_train_step = start_train_step
         self.num_learn = 0
         self.run_step = run_step
+        self.lr_decay = lr_decay
 
     @torch.no_grad()
     def act(self, state, training=True):
@@ -166,9 +169,10 @@ class DDPG(BaseAgent):
 
         if self.memory.size >= self.batch_size and step >= self.start_train_step:
             result = self.learn()
-            self.learning_rate_decay(
-                step, [self.actor_optimizer, self.critic_optimizer]
-            )
+            if self.lr_decay:
+                self.learning_rate_decay(
+                    step, [self.actor_optimizer, self.critic_optimizer]
+                )
         if self.num_learn > 0:
             self.update_target_soft()
 

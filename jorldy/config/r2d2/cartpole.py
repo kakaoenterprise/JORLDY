@@ -16,6 +16,7 @@ agent = {
     "clip_grad_norm": 40.0,
     "start_train_step": 2000,
     "target_update_period": 500,
+    "lr_decay": True,
     # MultiStep
     "n_step": 3,
     # PER

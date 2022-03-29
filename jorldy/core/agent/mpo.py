@@ -31,6 +31,7 @@ class MPO(BaseAgent):
         clip_grad_norm (float): gradient clipping threshold.
         gamma (float): discount factor.
         run_step (int): the number of total steps.
+        lr_decay: lr_decay option which apply decayed weight on parameters of network.
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
         critic_loss_type (str): type of critic loss. One of ['1step_TD', 'retrace'].
@@ -63,6 +64,7 @@ class MPO(BaseAgent):
         clip_grad_norm=1.0,
         gamma=0.99,
         run_step=1e6,
+        lr_decay=True,
         device=None,
         # parameters unique to MPO
         critic_loss_type="retrace",  # one of ['1step_TD', 'retrace']
@@ -150,6 +152,7 @@ class MPO(BaseAgent):
         self.tmp_buffer = deque(maxlen=n_step)
         self.memory = ReplayBuffer(buffer_size)
         self.run_step = run_step
+        self.lr_decay = lr_decay
 
     @torch.no_grad()
     def act(self, state, training=True):
@@ -452,9 +455,10 @@ class MPO(BaseAgent):
         if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:
             for i in range(self.n_epoch):
                 result = self.learn()
-                self.learning_rate_decay(
-                    step, [self.actor_optimizer, self.critic_optimizer]
-                )
+                if self.lr_decay:
+                    self.learning_rate_decay(
+                        step, [self.actor_optimizer, self.critic_optimizer]
+                    )
             self.update_target()
 
         return result

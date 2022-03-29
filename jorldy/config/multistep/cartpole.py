@@ -18,6 +18,7 @@ agent = {
     "batch_size": 32,
     "start_train_step": 2000,
     "target_update_period": 500,
+    "lr_decay": True,
 }
 
 optim = {

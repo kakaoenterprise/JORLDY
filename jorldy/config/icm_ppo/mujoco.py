@@ -8,7 +8,7 @@ env = {
 agent = {
     "name": "icm_ppo",
     "network": "continuous_policy_separate_value",
-    "head": "cnn",
+    "head": "mlp",
     "gamma": 0.99,
     "batch_size": 32,
     "n_step": 128,
@@ -18,8 +18,9 @@ agent = {
     "vf_coef": 1.0,
     "ent_coef": 0.01,
     "clip_grad_norm": 1.0,
+    "lr_decay": True,
     # Parameters for Curiosity-driven Exploration
-    "icm_network": "icm_cnn",  # icm_mlp, icm_cnn, icm_multi
+    "icm_network": "icm_mlp",  # icm_mlp, icm_cnn, icm_multi
     "beta": 0.2,
     "lamb": 1.0,
     "eta": 0.1,

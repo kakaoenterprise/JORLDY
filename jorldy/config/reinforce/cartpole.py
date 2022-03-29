@@ -10,6 +10,7 @@ agent = {
     "name": "reinforce",
     "network": "discrete_policy",
     "gamma": 0.99,
+    "lr_decay": True,
 }
 
 optim = {

@@ -86,7 +86,7 @@ class Cartpole(_Gym):
 class Pendulum(_Gym):
     def __init__(self, **kwargs):
         self.action_type = "continuous"
-        super(Pendulum, self).__init__("Pendulum-v1", **kwargs)
+        super(Pendulum, self).__init__("Pendulum-v0", **kwargs)
 
 
 class MountainCar(_Gym):

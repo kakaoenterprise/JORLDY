@@ -26,6 +26,7 @@ agent = {
     "ent_coef": 0.01,
     "clip_grad_norm": 1.0,
     "use_standardization": False,
+    "lr_decay": True,
 }
 
 optim = {

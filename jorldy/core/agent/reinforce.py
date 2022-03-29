@@ -24,6 +24,7 @@ class REINFORCE(BaseAgent):
         gamma (float): discount factor.
         use_standardization (bool): parameter that determine whether to use standardization for return.
         run_step (int): the number of total steps.
+        lr_decay: lr_decay option which apply decayed weight on parameters of network.
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
     """
@@ -39,6 +40,7 @@ class REINFORCE(BaseAgent):
         gamma=0.99,
         use_standardization=True,
         run_step=1e6,
+        lr_decay=True,
         device=None,
         **kwargs,
     ):
@@ -59,6 +61,7 @@ class REINFORCE(BaseAgent):
         self.use_standardization = use_standardization
         self.memory = RolloutBuffer()
         self.run_step = run_step
+        self.lr_decay = lr_decay
 
     @torch.no_grad()
     def act(self, state, training=True):
@@ -117,7 +120,8 @@ class REINFORCE(BaseAgent):
         # Process per epi
         if transitions[0]["done"]:
             result = self.learn()
-            self.learning_rate_decay(step)
+            if self.lr_decay:
+                self.learning_rate_decay(step)
 
         return result
 

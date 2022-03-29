@@ -20,6 +20,7 @@ agent = {
     "embedding_dim": 64,
     "sample_min": 0.0,
     "sample_max": 1.0,
+    "lr_decay": True,
 }
 
 optim = {

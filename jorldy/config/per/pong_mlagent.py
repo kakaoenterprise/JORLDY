@@ -17,6 +17,7 @@ agent = {
     "beta": 0.4,
     "uniform_sample_prob": 1e-3,
     "learn_period": 16,
+    "lr_decay": True,
 }
 
 optim = {

@@ -13,6 +13,7 @@ agent = {
     "epsilon_clip": 0.1,
     "vf_coef": 1.0,
     "ent_coef": 0.01,
+    "lr_decay": True,
 }
 
 optim = {
