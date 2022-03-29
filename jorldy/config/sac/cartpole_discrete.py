@@ -2,14 +2,14 @@
 
 env = {
     "name": "cartpole",
-    "action_type": "continuous",
+    "action_type": "discrete",
     "render": False,
 }
 
 agent = {
     "name": "sac",
-    "actor": "continuous_policy",
-    "critic": "continuous_q_network",
+    "actor": "discrete_policy",
+    "critic": "discrete_q_network",
     "use_dynamic_alpha": True,
     "gamma": 0.99,
     "tau": 5e-3,
@@ -18,7 +18,6 @@ agent = {
     "start_train_step": 5000,
     "static_log_alpha": -2.0,
     "target_update_period": 500,
-    "lr_decay": True,
 }
 
 optim = {

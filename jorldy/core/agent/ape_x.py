@@ -29,9 +29,8 @@ class ApeX(DQN):
         self,
         # ApeX
         epsilon=0.4,
-        epsilon_alpha=0.7,
+        epsilon_alpha=7.0,
         clip_grad_norm=40.0,
-        run_step=1e6,
         # PER
         alpha=0.6,
         beta=0.4,
@@ -54,7 +53,7 @@ class ApeX(DQN):
         self.learn_period = learn_period
         self.learn_period_stamp = 0
         self.uniform_sample_prob = uniform_sample_prob
-        self.beta_add = (1 - beta) / run_step
+        self.beta_add = (1 - beta) / self.run_step
 
         # MultiStep
         self.n_step = n_step
@@ -160,7 +159,7 @@ class ApeX(DQN):
         # Process per step if train start
         if self.num_learn > 0 and self.target_update_stamp >= self.target_update_period:
             self.update_target()
-            self.target_update_stamp = self.target_update_period
+            self.target_update_stamp -= self.target_update_period
 
         return result
 

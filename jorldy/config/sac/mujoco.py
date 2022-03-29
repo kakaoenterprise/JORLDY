@@ -8,8 +8,7 @@ env = {
 agent = {
     "name": "sac",
     "actor": "continuous_policy",
-    "critic": "sac_critic",
-    "head": "multi",
+    "critic": "continuous_q_network",
     "use_dynamic_alpha": True,
     "gamma": 0.99,
     "tau": 5e-3,
