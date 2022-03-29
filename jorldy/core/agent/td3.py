@@ -33,7 +33,7 @@ class TD3(BaseAgent):
         action_noise_std (float): noise which use on choosing action when agent sample.
         target_noise_std (float): noise which use on calculating target-q.
         target_noise_clip (float): epsilon used on clipping.
-        run_step (int): the number of epochs.
+        run_step (int): the number of total steps.
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
     """

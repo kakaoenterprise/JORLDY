@@ -87,11 +87,11 @@ python main.py --sync --config config.ppo.cartpole --train.num_workers 8
 
 | Version |   Release Date   |   Source   |   Release Note  |
 | :-----: | :--------------: | :--------: | :----------: |
+|  0.3.0  | March 10, 2022 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.3.0) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.3.0) |
 |  0.2.0  | January 23, 2022 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.2.0) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.2.0) |
 |  0.1.0  | December 23, 2021 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.1.0) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.1.0) |
 |  0.0.3  | November 23, 2021 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.0.3) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.0.3) |
 |  0.0.2  | November 06, 2021 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.0.2) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.0.2) |
-|  0.0.1  | November 03, 2021 | [Source](https://github.com/kakaoenterprise/JORLDY/tree/v0.0.1) | [Release Note](https://github.com/kakaoenterprise/JORLDY/releases/tag/v0.0.1) |
 
 
 ## :mag: How to
@@ -118,7 +118,13 @@ python main.py --sync --config config.ppo.cartpole --train.num_workers 8
 
 :mailbox: Contact: jorldy@kakaoenterprise.com
 
-<img src="./resrc/contributors.png" alt="contributors" width=80%/> 
+| <img src="./resrc/contributor_leonard.png" alt="leonard" width=100/> | <img src="./resrc/contributor_ramanuzan.png" alt="ramanuzan" width=100/> | <img src="./resrc/contributor_kan_.png" alt="kan" width=100/> | <img src="./resrc/contributor_erinn.png" alt="erinn" width=100/> |
+| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+|                 leonard.q<br />(Kyushik Min)                 |               ramanuzan.lee<br />(Hyunho Lee)                |                   kan.s<br />(Kwansu Shin)                   |                 erinn.lee<br />(Taehak Lee)                  |
+| <img src="./resrc/contributor_link.png" alt="link" width=100/> | <img src="./resrc/contributor_royce.png" alt="royce" width=100/> | <img src="./resrc/contributor_crest.png" alt="crest" width=100/> | <img src="./resrc/contributor_lisa.png" alt="lisa" width=100/> |
+|                  link.lee<br />(Hojoon Lee)                  |                royce.choi<br />(Jinwon Choi)                 |                 crest.son<br />(Sungho Son)                  |               lisa.ekkim<br />(Eunkyeong Kim)                |
+
+
 
 
 ## :copyright: License

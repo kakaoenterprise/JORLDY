@@ -1,4 +1,6 @@
 import multiprocessing as mp
+from threading import Thread
+import time
 
 from core import *
 from manager import *
@@ -46,7 +48,6 @@ def single_train(config_path, unknown):
             manage_sync_queue,
             path_queue,
             config.train.run_step,
-            config.train.print_period,
             MetricManager,
             EvalManager,
             eval_manager_config,
@@ -148,7 +149,6 @@ def sync_distributed_train(config_path, unknown):
             manage_sync_queue,
             path_queue,
             config.train.run_step,
-            config.train.print_period,
             MetricManager,
             EvalManager,
             eval_manager_config,
@@ -184,19 +184,17 @@ def sync_distributed_train(config_path, unknown):
             result = agent.process(transitions, step)
             distributed_manager.sync(agent.sync_out())
             result_queue.put((step, result))
-            if (
-                print_stamp >= config.train.print_period
-                or step >= config.train.run_step
-            ):
+            is_over = step >= config.train.run_step
+            if print_stamp >= config.train.print_period or is_over:
                 try:
                     manage_sync_queue.get_nowait()
                 except:
                     pass
                 manage_sync_queue.put(agent.sync_out())
-                print_stamp = 0
-            if save_stamp >= config.train.save_period or step >= config.train.run_step:
+                print_stamp -= config.train.print_period
+            if save_stamp >= config.train.save_period or is_over:
                 agent.save(save_path)
-                save_stamp = 0
+                save_stamp -= config.train.save_period
     except Exception as e:
         traceback.print_exc()
         manage.terminate()
@@ -258,7 +256,6 @@ def async_distributed_train(config_path, unknown):
             manage_sync_queue,
             path_queue,
             config.train.run_step,
-            config.train.print_period,
             MetricManager,
             EvalManager,
             eval_manager_config,
@@ -295,38 +292,56 @@ def async_distributed_train(config_path, unknown):
             agent.load(config.train.load_path)
 
         save_path = path_queue.get()
-        step, _step, print_stamp, save_stamp = 0, 0, 0, 0
-        while step < config.train.run_step:
-            transitions = []
-            while (_step == 0 or not trans_queue.empty()) and (
-                _step - step < config.train.update_period
-            ):
-                _step, _transitions = trans_queue.get()
-                transitions += _transitions
-            delta_t = _step - step
-            print_stamp += delta_t
-            save_stamp += delta_t
-            step = _step
-            result = agent.process(transitions, step)
+        heap = {
+            "step": 0,
+            "run_step": config.train.run_step,
+            "print_stamp": 0,
+            "save_stamp": 0,
+            "wait_thread": False,
+            "wait_process": True,
+        }
+        step, transitions = 0, []
+        print_signal, save_signal = False, False
+        gath_thread = Thread(
+            target=gather_thread,
+            args=(trans_queue, transitions, heap, "+="),
+        )
+        gath_thread.start()
+        while step < heap["run_step"]:
+            while heap["wait_process"]:
+                time.sleep(0.1)
+            heap["wait_thread"] = True
+            step = heap["step"]
+            _transitions = transitions.copy()
+            transitions.clear()
+            is_over = step >= heap["run_step"]
+            if heap["print_stamp"] >= config.train.print_period or is_over:
+                print_signal = True
+                heap["print_stamp"] -= config.train.print_period
+            if heap["save_stamp"] >= config.train.save_period or is_over:
+                save_signal = True
+                heap["save_stamp"] -= config.train.save_period
+            heap["wait_thread"] = False
+            result = agent.process(_transitions, step)
             try:
                 interact_sync_queue.get_nowait()
             except:
                 pass
-            interact_sync_queue.put(agent.sync_out())
+            try:
+                interact_sync_queue.put_nowait(agent.sync_out())
+            except:
+                pass
             result_queue.put((step, result))
-            if (
-                print_stamp >= config.train.print_period
-                or step >= config.train.run_step
-            ):
+            if print_signal:
                 try:
                     manage_sync_queue.get_nowait()
                 except:
                     pass
                 manage_sync_queue.put(agent.sync_out())
-                print_stamp = 0
-            if save_stamp >= config.train.save_period or step >= config.train.run_step:
+                print_signal = False
+            if save_signal:
                 agent.save(save_path)
-                save_stamp = 0
+                save_signal = False
     except Exception as e:
         traceback.print_exc()
         interact.terminate()
@@ -339,6 +354,7 @@ def async_distributed_train(config_path, unknown):
         print("Manage process done.")
     finally:
         trans_queue.close()
+        gath_thread.join()
         interact_sync_queue.close()
         result_queue.close()
         manage_sync_queue.close()
@@ -362,7 +378,7 @@ def evaluate(config_path, unknown):
     assert config.train.load_path
     agent.load(config.train.load_path)
 
-    episode, score = 0, 0
+    episode = 0
     state = env.reset()
     for step in range(1, config.train.run_step + 1):
         action_dict = agent.act(state, training=False)
@@ -380,6 +396,5 @@ def evaluate(config_path, unknown):
             episode += 1
             print(f"{episode} Episode / Step : {step} / Score: {env.score}")
             state = env.reset()
-            score = 0
 
     env.close()

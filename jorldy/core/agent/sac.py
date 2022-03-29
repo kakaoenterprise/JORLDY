@@ -2,7 +2,7 @@ import torch
 
 torch.backends.cudnn.benchmark = True
 import torch.nn.functional as F
-from torch.distributions import Normal
+from torch.distributions import Normal, Categorical
 import os
 import numpy as np
 
@@ -29,6 +29,7 @@ class SAC(BaseAgent):
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
         static_log_alpha (float): static value used as log alpha when use_dynamic_alpha is false.
+        run_step (int): the number of total steps.
         target_update_period (int): period to update the target network (for hard target update) (unit: step)
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
@@ -40,7 +41,7 @@ class SAC(BaseAgent):
         action_size,
         hidden_size=512,
         actor="continuous_policy",
-        critic="sac_critic",
+        critic="continuous_q_network",
         head="mlp",
         optim_config={
             "actor": "adam",
@@ -75,33 +76,14 @@ class SAC(BaseAgent):
         self.actor_optimizer = Optimizer(
             optim_config["actor"], self.actor.parameters(), lr=optim_config["actor_lr"]
         )
-        
-        self.critic1 = Network(
-            critic, state_size, action_size, D_hidden=hidden_size, head=head
-        ).to(self.device)
-        self.target_critic1 = Network(
-            critic, state_size, action_size, D_hidden=hidden_size, head=head
-        ).to(self.device)
-        self.target_critic1.load_state_dict(self.critic1.state_dict())
-        self.critic_optimizer1 = Optimizer(
-            optim_config["critic"],
-            self.critic1.parameters(),
-            lr=optim_config["critic_lr"],
+
+        (self.critic1, self.target_critic1, self.critic_optimizer1,) = self.critic_set(
+            critic, state_size, action_size, hidden_size, head, optim_config
+        )
+        (self.critic2, self.target_critic2, self.critic_optimizer2,) = self.critic_set(
+            critic, state_size, action_size, hidden_size, head, optim_config
         )
 
-        self.critic2 = Network(
-            critic, state_size, action_size, D_hidden=hidden_size, head=head
-        ).to(self.device)
-        self.target_critic2 = Network(
-            critic, state_size, action_size, D_hidden=hidden_size, head=head
-        ).to(self.device)
-        self.target_critic2.load_state_dict(self.critic2.state_dict())
-        self.critic_optimizer2 = Optimizer(
-            optim_config["critic"],
-            self.critic2.parameters(),
-            lr=optim_config["critic_lr"],
-        )
-        
         self.use_dynamic_alpha = use_dynamic_alpha
         if use_dynamic_alpha:
             self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
@@ -112,7 +94,7 @@ class SAC(BaseAgent):
             self.log_alpha = torch.tensor(static_log_alpha).to(self.device)
             self.alpha_optimizer = None
         self.alpha = self.log_alpha.exp()
-        
+
         if self.action_type == "continuous":
             self.target_entropy = -action_size
         else:
@@ -129,11 +111,28 @@ class SAC(BaseAgent):
         self.target_update_stamp = 0
         self.time_t = 0
         self.target_update_period = target_update_period
-        
+
+    def critic_set(
+        self, critic_id, state_size, action_size, hidden_size, head, optim_config
+    ):
+        critic = Network(
+            critic_id, state_size, action_size, D_hidden=hidden_size, head=head
+        ).to(self.device)
+        target_critic = Network(
+            critic_id, state_size, action_size, D_hidden=hidden_size, head=head
+        ).to(self.device)
+        target_critic.load_state_dict(critic.state_dict())
+        critic_optimizer = Optimizer(
+            optim_config["critic"],
+            critic.parameters(),
+            lr=optim_config["critic_lr"],
+        )
+        return critic, target_critic, critic_optimizer
+
     @torch.no_grad()
     def act(self, state, training=True):
         self.actor.train(training)
-        
+
         if self.action_type == "continuous":
             mu, std = self.actor(self.as_tensor(state))
             z = torch.normal(mu, std) if training else mu
@@ -168,7 +167,7 @@ class SAC(BaseAgent):
         reward = transitions["reward"]
         next_state = transitions["next_state"]
         done = transitions["done"]
-        
+
         if self.action_type == "continuous":
             q1 = self.critic1(state, action)
             q2 = self.critic2(state, action)
@@ -178,24 +177,27 @@ class SAC(BaseAgent):
                 next_action, next_log_prob = self.sample_action(mu, std)
                 next_q1 = self.target_critic1(next_state, next_action)
                 next_q2 = self.target_critic2(next_state, next_action)
-
-                min_next_q = torch.min(next_q1, next_q2)
-                target_q = reward + (1 - done) * self.gamma * (
-                    min_next_q - self.alpha * next_log_prob
-                )
+                entropy = -next_log_prob
         else:
             q1 = self.critic1(state).gather(1, action.long())
             q2 = self.critic2(state).gather(1, action.long())
 
             with torch.no_grad():
                 next_pi = self.actor(next_state)
-                eps = (next_pi == 0.0).float() * 1e-8
-                next_log_prob = torch.log(next_pi+eps)
-                next_q1 = self.target_critic1(next_state)
-                next_q2 = self.target_critic2(next_state)
-                min_next_q = torch.min(next_q1, next_q2)
-                next_v = (next_pi * (min_next_q - self.alpha * next_log_prob)).sum(-1, keepdim=True)
-                target_q = reward + (1 - done) * self.gamma * next_v 
+                next_q1 = (next_pi * self.target_critic1(next_state)).sum(
+                    -1, keepdim=True
+                )
+                next_q2 = (next_pi * self.target_critic2(next_state)).sum(
+                    -1, keepdim=True
+                )
+                m = Categorical(next_pi)
+                entropy = m.entropy().unsqueeze(-1)
+
+        with torch.no_grad():
+            min_next_q = torch.min(next_q1, next_q2)
+            target_q = reward + (1 - done) * self.gamma * (
+                min_next_q + self.alpha * entropy
+            )
 
         max_Q = torch.max(target_q, axis=0).values.cpu().numpy()[0]
 
@@ -206,48 +208,33 @@ class SAC(BaseAgent):
         self.critic_optimizer1.zero_grad(set_to_none=True)
         critic_loss1.backward()
         self.critic_optimizer1.step()
-        
+
         self.critic_optimizer2.zero_grad(set_to_none=True)
         critic_loss2.backward()
-        self.critic_optimizer2.step()     
-        
+        self.critic_optimizer2.step()
+
         # Actor
         if self.action_type == "continuous":
             mu, std = self.actor(state)
             sample_action, log_prob = self.sample_action(mu, std)
-            
             q1 = self.critic1(state, sample_action)
-            q2 = self.critic2(state, sample_action)        
-            min_q = torch.min(q1, q2)
-
-            actor_loss = ((self.alpha.detach() * log_prob) - min_q).mean()
+            q2 = self.critic2(state, sample_action)
+            entropy = -log_prob
         else:
             pi = self.actor(state)
-            
-            with torch.no_grad():
-                eps = (pi == 0.0).float() * 1e-8
-                
-                q1 = self.critic1(state)
-                q2 = self.critic2(state)        
-                min_q = torch.min(q1, q2)
-            
-            log_prob = torch.log(pi + eps)
-            
-            actor_loss = (pi * ((self.alpha.detach() * log_prob) - min_q)).sum(-1).mean()   
+            q1 = (pi * self.critic1(state)).sum(-1, keepdim=True)
+            q2 = (pi * self.critic2(state)).sum(-1, keepdim=True)
+            m = Categorical(pi)
+            entropy = m.entropy().unsqueeze(-1)
 
+        min_q = torch.min(q1, q2)
+        actor_loss = -((self.alpha.detach() * entropy) + min_q).mean()
         self.actor_optimizer.zero_grad(set_to_none=True)
         actor_loss.backward()
         self.actor_optimizer.step()
-        
+
         # Alpha
-        if self.action_type == "continuous":
-            alpha_loss = -(
-                self.log_alpha * (log_prob + self.target_entropy).detach()
-            ).mean()
-        else:
-            alpha_loss = -(
-                self.log_alpha * (pi*(log_prob + self.target_entropy)).sum(-1).detach()
-            ).mean()
+        alpha_loss = self.log_alpha * (entropy - self.target_entropy).detach().mean()
 
         self.alpha = self.log_alpha.exp()
 
@@ -255,7 +242,6 @@ class SAC(BaseAgent):
             self.alpha_optimizer.zero_grad(set_to_none=True)
             alpha_loss.backward()
             self.alpha_optimizer.step()
-
 
         self.num_learn += 1
 
@@ -265,7 +251,9 @@ class SAC(BaseAgent):
             "actor_loss": actor_loss.item(),
             "alpha_loss": alpha_loss.item(),
             "max_Q": max_Q,
+            "mean_Q": min_q.mean().item(),
             "alpha": self.alpha.item(),
+            "entropy": entropy.mean().item(),
         }
         return result
 
@@ -274,11 +262,11 @@ class SAC(BaseAgent):
             t_p.data.copy_(self.tau * p.data + (1 - self.tau) * t_p.data)
         for t_p, p in zip(self.target_critic2.parameters(), self.critic2.parameters()):
             t_p.data.copy_(self.tau * p.data + (1 - self.tau) * t_p.data)
-            
+
     def update_target_hard(self):
         self.target_critic1.load_state_dict(self.critic1.state_dict())
         self.target_critic2.load_state_dict(self.critic2.state_dict())
-        
+
     def process(self, transitions, step):
         result = {}
         # Process per step
@@ -286,11 +274,12 @@ class SAC(BaseAgent):
         delta_t = step - self.time_t
         self.time_t = step
         self.target_update_stamp += delta_t
-        
+
         if self.memory.size > self.batch_size and step >= self.start_train_step:
             result = self.learn()
             self.learning_rate_decay(
-                step, [self.actor_optimizer, self.critic_optimizer1, self.critic_optimizer2]
+                step,
+                [self.actor_optimizer, self.critic_optimizer1, self.critic_optimizer2],
             )
 
         if self.num_learn > 0:
@@ -324,14 +313,14 @@ class SAC(BaseAgent):
         checkpoint = torch.load(os.path.join(path, "ckpt"), map_location=self.device)
         self.actor.load_state_dict(checkpoint["actor"])
         self.actor_optimizer.load_state_dict(checkpoint["actor_optimizer"])
-        
+
         self.critic1.load_state_dict(checkpoint["critic1"])
         self.critic1.load_state_dict(checkpoint["critic2"])
         self.target_critic1.load_state_dict(self.critic1.state_dict())
         self.target_critic2.load_state_dict(self.critic2.state_dict())
         self.critic_optimizer1.load_state_dict(checkpoint["critic_optimizer1"])
         self.critic_optimizer2.load_state_dict(checkpoint["critic_optimizer2"])
-        
+
         if self.use_dynamic_alpha and "log_alpha" in checkpoint.keys():
             self.log_alpha = checkpoint["log_alpha"]
             self.alpha_optimizer.load_state_dict(checkpoint["alpha_optimizer"])
@@ -347,4 +336,3 @@ class SAC(BaseAgent):
             "weights": weights,
         }
         return sync_item
-    

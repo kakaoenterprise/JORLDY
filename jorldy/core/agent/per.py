@@ -14,7 +14,7 @@ class PER(DQN):
         beta (float): initial value of degree to use importance sampling.
         learn_period (int): period to train (unit: step)
         uniform_sample_prob (float): ratio of uniform random sampling.
-        run_step (int): the number of epochs.
+        run_step (int): the number of total steps.
     """
 
     def __init__(
@@ -108,7 +108,7 @@ class PER(DQN):
         ):
             result = self.learn()
             self.learning_rate_decay(step)
-            self.learn_period_stamp = 0
+            self.learn_period_stamp -= self.learn_period
 
         # Process per step if train start
         if self.num_learn > 0:
@@ -116,6 +116,6 @@ class PER(DQN):
 
             if self.target_update_stamp >= self.target_update_period:
                 self.update_target()
-                self.target_update_stamp = 0
+                self.target_update_stamp -= self.target_update_period
 
         return result
