@@ -10,25 +10,26 @@ agent = {
     "name": "muzero",
     "network": "muzero_mlp",
     "head": "mlp",
+    "hidden_size": 64,
     "gamma": 0.997,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
     "explore_ratio": 0.2,
-    "buffer_size": 50000,
-    "batch_size": 128,
-    "num_support": 10,
-    "start_train_step": 1000,
+    "buffer_size": 10000,
+    "batch_size": 8,
+    "num_support": 20,
+    "start_train_step": 5000,
     "trajectory_size": 1000,
     "num_simulation": 50,
     "value_loss_weight": 1.0,
     "num_unroll": 5,
-    "num_td_step": 8,
-    "num_stack": 8,
+    "num_td_step": 5,
+    "num_stack": 3,
 }
 
 optim = {
     "name": "adam",
-    "lr": 0.0001,
+    "lr": 0.01,
 }
 
 train = {
@@ -37,8 +38,9 @@ train = {
     "run_step": 100000,
     "print_period": 1000,
     "save_period": 10000,
-    "eval_iteration": 10,
+    "eval_iteration": 5,
     # distributed setting
-    "update_period": 32,
-    "num_workers": 8,
+    "distributed_batch_size": 128,
+    "update_period": 500,
+    "num_workers": 16,
 }

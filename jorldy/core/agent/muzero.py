@@ -1,5 +1,3 @@
-from collections import defaultdict
-from collections.abc import Iterable
 import os
 import torch
 import numpy as np
@@ -8,6 +6,8 @@ torch.backends.cudnn.benchmark = True
 
 from core.network import Network
 from core.optimizer import Optimizer
+from collections import defaultdict
+from collections.abc import Iterable
 
 from core.buffer import ReplayBuffer
 from core.buffer import PERBuffer
@@ -32,7 +32,7 @@ class Muzero(BaseAgent):
         hidden_size=256,
         gamma=0.997,
         batch_size=16,
-        start_train_step=0,
+        start_train_step=2000,
         trajectory_size=200,
         value_loss_weight=0.25,
         num_simulation=50,
@@ -108,6 +108,7 @@ class Muzero(BaseAgent):
         self.trajectory_step_stamp = 0
         self.run_step = run_step
         self.num_learn = 0
+        self.num_transitions = 0
 
         self.trajectory = None
 
@@ -137,7 +138,6 @@ class Muzero(BaseAgent):
     @torch.no_grad()
     def act(self, state, training=True):
         self.target_network.train(training)
-        # TODO: if eval
 
         if not self.trajectory:
             self.trajectory = self.trajectory_type(state)
@@ -152,7 +152,7 @@ class Muzero(BaseAgent):
         self.device = swap
         root_state = self.target_network.representation(states, actions)
         action, pi, value = self.mcts.run_mcts(root_state)
-        action = np.array(((action,),))
+        action = np.array(action if training else np.argmax(pi), ndmin=2)
 
         return {"action": action, "value": value, "pi": pi}
 
@@ -160,7 +160,7 @@ class Muzero(BaseAgent):
         trajectories = self.memory.sample(self.batch_size)
 
         transitions = defaultdict(list)
-        for i, trajectory in enumerate(trajectories["trajectory"]):
+        for trajectory in trajectories["trajectory"]:
             trajectory_len = len(trajectory["values"])
             start_idx = np.random.choice(trajectory_len)
 
@@ -176,7 +176,7 @@ class Muzero(BaseAgent):
             for _ in range(trajectory_len, last_idx):
                 rewards.append(np.zeros((1, 1)))
                 actions.append(np.random.choice(self.action_size, size=(1, 1)))
-                policies.append(np.ones(self.action_size) / self.action_size)
+                policies.append(np.zeros(self.action_size))
 
             s, a = trajectory.get_stacked_data(start_idx, self.num_stack)
             transitions["stacked_state"].append(s)
@@ -185,10 +185,6 @@ class Muzero(BaseAgent):
             transitions["reward"].append(rewards)
             transitions["policy"].append(policies)
             transitions["value"].append(values)
-            transitions["gradient_scale"].append(
-                np.ones(self.num_unroll + 1)
-                * min(self.num_unroll, trajectory_len + 1 - start_idx)
-            )
 
         for key in transitions.keys():
             value = np.stack(transitions[key], axis=0)
@@ -198,48 +194,35 @@ class Muzero(BaseAgent):
 
         stacked_state = transitions["stacked_state"]
         stacked_action = transitions["stacked_action"]
-        target_action = transitions["action"]
+        action = transitions["action"].long()
         target_reward = transitions["reward"]
         target_policy = transitions["policy"]
         target_value = transitions["value"]
-        gradient_scale = transitions["gradient_scale"]
 
         target_reward = self.network.converter.scalar2vector(target_reward)
         target_value = self.network.converter.scalar2vector(target_value)
 
-        # stacked_state batch, 32*3+1, 96,96
+        # comput start step loss
         hidden_state = self.network.representation(stacked_state, stacked_action)
         pi, value = self.network.prediction(hidden_state)
-        reward = torch.zeros(target_reward.shape, device=self.device)
-        prediction = [(value, reward, pi)]
 
+        policy_loss = -(target_policy[:, 0] * pi).sum(1)
+        value_loss = -(target_value[:, 0] * value).sum(1)
+        reward_loss = torch.zeros(self.batch_size, device=self.device)
+
+        # comput unroll step loss
         for i in range(1, self.num_unroll + 1):
-            hidden_state, reward = self.network.dynamics(
-                hidden_state, target_action[:, i]
-            )
+            hidden_state, reward = self.network.dynamics(hidden_state, action[:, i])
             pi, value = self.network.prediction(hidden_state)
             hidden_state.register_hook(lambda x: x * 0.5)
-            prediction.append((value, reward, pi))
 
-        # compute start step
-        value, reward, pi = prediction[0]
-        policy_loss = (-target_policy[:, 0] * torch.nn.LogSoftmax(dim=1)(pi)).sum(1)
-        value_loss = (-target_value[:, 0] * torch.log(value + 1e-6)).sum(1)
-        reward_loss = torch.zeros_like(value_loss, device=self.device)
+            policy_loss += -(target_policy[:, i] * pi).sum(1)
+            value_loss += -(target_value[:, i] * value).sum(1)
+            reward_loss += -(target_reward[:, i] * reward).sum(1)
 
-        # comput remain step
-        for i, (value, reward, pi) in enumerate(prediction[1:], start=1):
-            local_loss = (-target_policy[:, i] * torch.log(pi + 1e-6)).sum(1)
-            local_loss.register_hook(lambda x: x / gradient_scale[:, i])
-            policy_loss += local_loss
-            value_loss += (-target_value[:, i] * torch.log(value + 1e-6)).sum(1)
-            local_loss.register_hook(lambda x: x / gradient_scale[:, i])
-            value_loss += local_loss
-            reward_loss += (-target_reward[:, i] * torch.log(reward + 1e-6)).sum(1)
-            local_loss.register_hook(lambda x: x / gradient_scale[:, i])
-            reward_loss += local_loss
-
+        gradient_scale = 1 / self.num_unroll
         loss = (self.value_loss_weight * value_loss + policy_loss + reward_loss).mean()
+        loss.register_hook(lambda x: x * gradient_scale)
 
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -251,6 +234,8 @@ class Muzero(BaseAgent):
             "policy_loss": policy_loss.mean().item(),
             "value_loss": value_loss.mean().item(),
             "reward_loss": reward_loss.mean().item(),
+            "num_learn": self.num_learn,
+            "num_transitions": self.num_transitions,
         }
         return result
 
@@ -259,6 +244,7 @@ class Muzero(BaseAgent):
 
     def process(self, transitions, step):
         result = {}
+        self.num_transitions += len(transitions)
 
         # Process per step
         self.memory.store(transitions)
@@ -270,17 +256,9 @@ class Muzero(BaseAgent):
         ):
             result = self.learn()
             self.learning_rate_decay(step)
+            self.set_temperature(step)
 
         return result
-
-    def get_temperature(self, step):
-        if step < self.run_step * 0.5:
-            t = 1.0
-        elif step < self.run_step * 0.75:
-            t = 0.5
-        else:
-            t = 0.25
-        return t
 
     def interact_callback(self, transition):
         _transition = None
@@ -296,9 +274,7 @@ class Muzero(BaseAgent):
             self.trajectory_step_stamp = 0  # never self.trajectory_step_stamp -= period
             # TODO: if not terminal -> n-step calc
             self.trajectory["values"].append(np.zeros((1, 1)))
-            self.trajectory["policies"].append(
-                np.ones(self.action_size) / self.action_size
-            )
+            self.trajectory["policies"].append(np.zeros(self.action_size))
 
             _transition = {"trajectory": [self.trajectory]}
             self.trajectory = None
@@ -320,6 +296,25 @@ class Muzero(BaseAgent):
         checkpoint = torch.load(os.path.join(path, "ckpt"), map_location=self.device)
         self.network.load_state_dict(checkpoint["network"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
+
+    def set_temperature(self, step):
+        if step < self.run_step * 0.5:
+            self.mcts.temp_param = 1.0
+        elif step < self.run_step * 0.75:
+            self.mcts.temp_param = 0.5
+        else:
+            self.mcts.temp_param = 0.25
+
+    def sync_in(self, weights, temperature):
+        self.network.load_state_dict(weights)
+        self.mcts.temp_param = temperature
+
+    def sync_out(self, device="cpu"):
+        weights = self.network.state_dict()
+        for k, v in weights.items():
+            weights[k] = v.to(device)
+        sync_item = {"weights": weights, "temperature": self.mcts.temp_param}
+        return sync_item
 
 
 class MCTS:
@@ -393,7 +388,7 @@ class MCTS:
 
                 a_UCB = np.argmax(UCB_list)
                 node_id += (a_UCB,)
-                node_state, _ = self.d_fn(node_state, torch.FloatTensor([a_UCB]))
+                node_state, _ = self.d_fn(node_state, torch.tensor([a_UCB]))
             else:
                 break
 
@@ -404,13 +399,15 @@ class MCTS:
         for action_idx in range(self.action_size):
             child_id = leaf_id + (action_idx,)
 
-            action = np.ones((1, 1)) * action_idx
-            s_child, r_child = self.d_fn(leaf_state, torch.FloatTensor(action))
+            action = np.ones((1, 1), dtype=int) * action_idx
+            s_child, r_child = self.d_fn(leaf_state, torch.tensor(action))
+            r_child = torch.exp(r_child)
 
             # r_child를 scalar 형태로 변환 -> 네트워크에서 구현?
             r_child_scalar = self.network.converter.vector2scalar(r_child).item()
 
             p_child, _ = self.p_fn(s_child)
+            p_child = torch.exp(p_child)
 
             self.tree[child_id] = {
                 "child": [],
@@ -423,6 +420,7 @@ class MCTS:
             self.tree[leaf_id]["child"].append(action_idx)
 
         _, leaf_v = self.p_fn(leaf_state)
+        leaf_v = torch.exp(leaf_v)
         leaf_v = self.network.converter.vector2scalar(leaf_v).item()
 
         return leaf_v
@@ -467,6 +465,7 @@ class MCTS:
         root_id = (0,)
 
         p_root, _ = self.p_fn(root_state)
+        p_root = torch.exp(p_root)
 
         # init root node
         tree[root_id] = {"child": [], "n": 0.0, "q": 0.0, "p": p_root, "r": 0.0}
@@ -484,9 +483,8 @@ class MCTS:
             n_list.append(self.tree[child_idx]["n"])
 
         pi = np.asarray(n_list) / np.sum(n_list)
-        pi_temp = (np.asarray(n_list) ** (1 / self.temp_param)) / (
-            np.sum(n_list) ** (1 / self.temp_param)
-        )
+        pi_temp = np.asarray(n_list) ** (1 / self.temp_param)
+        pi_temp = pi_temp / np.sum(pi_temp)
 
         noise_probs = self.alpha * np.random.dirichlet(np.ones(self.action_size))
         pi_noise = pi_temp + noise_probs
@@ -510,7 +508,7 @@ class Trajectory(dict):
     def get_bootstrap_value(self, start, num_td_step, gamma):
         last = start + num_td_step
         value = self["values"][last] if last < len(self["values"]) else np.zeros((1, 1))
-        for reward in self["rewards"][start + 1 : last + 1]:
+        for reward in reversed(self["rewards"][start + 1 : last + 1]):
             value = reward + gamma * value
         return value
 
@@ -530,17 +528,15 @@ class Trajectory(dict):
 
 
 class TrajectoryGym(Trajectory):
-    def get_stacked_data(self, cur_idx, num_stack):
-        d_channel = self["states"][cur_idx].shape[1]
-        actions = np.zeros(num_stack)
-        states = np.zeros((num_stack + 1) * d_channel)
-        states[0:d_channel] = self["states"][cur_idx]
+    def get_stacked_data(self, cur, num_stack):
+        states, actions = [], []
+        start = cur - num_stack
+        states = [self["states"][0]] * -start if start < 0 else []
+        actions = [self["actions"][0]] * -start if start < 0 else []
+        start = max(0, start)
+        states.extend(self["states"][start : cur + 1])
+        actions.extend(self["actions"][start + 1 : cur + 1])
 
-        for i, state in enumerate(
-            self["states"][max(0, cur_idx - num_stack) : cur_idx]
-        ):
-            si = (i + 1) * d_channel
-            states[si : si + d_channel] = state
-            actions[i] = np.ones(1) * self["actions"][i]
+        assert len(states) == num_stack + 1
 
-        return states, actions
+        return np.array(states).flatten(), np.array(actions).flatten()
