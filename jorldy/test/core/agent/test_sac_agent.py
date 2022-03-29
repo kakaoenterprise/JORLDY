@@ -2,7 +2,7 @@ from core.agent.sac import SAC
 from .utils import check_interact, check_save_load, check_sync_in_out
 
 
-def test_dynamic_alpha_sac(MockEnv):
+def test_continuous_sac_dynamic_alpha_sac(MockEnv):
     state_size, action_size, action_type = 2, 3, "continuous"
     episode_len = 10
     env = MockEnv(state_size, action_size, action_type, episode_len)
@@ -16,6 +16,8 @@ def test_dynamic_alpha_sac(MockEnv):
         state_size=state_size,
         action_size=action_size,
         hidden_size=hidden_size,
+        actor="continuous_policy",
+        critic="sac_critic",
         buffer_size=buffer_size,
         batch_size=batch_size,
         start_train_step=start_train_step,
@@ -40,7 +42,7 @@ def test_dynamic_alpha_sac(MockEnv):
     check_sync_in_out(agent)
 
 
-def test_static_alpha_sac(MockEnv):
+def test_continuous_sac_static_alpha_sac(MockEnv):
     state_size, action_size, action_type = 2, 3, "continuous"
     episode_len = 10
     env = MockEnv(state_size, action_size, action_type, episode_len)
@@ -55,6 +57,8 @@ def test_static_alpha_sac(MockEnv):
         state_size=state_size,
         action_size=action_size,
         hidden_size=hidden_size,
+        actor="continuous_policy",
+        critic="sac_critic",
         buffer_size=buffer_size,
         batch_size=batch_size,
         start_train_step=start_train_step,
