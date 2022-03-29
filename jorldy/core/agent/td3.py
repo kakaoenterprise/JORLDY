@@ -218,7 +218,11 @@ class TD3(BaseAgent):
             if self.lr_decay:
                 self.learning_rate_decay(
                     step,
-                    [self.actor_optimizer, self.critic_optimizer1, self.critic_optimizer2],
+                    [
+                        self.actor_optimizer,
+                        self.critic_optimizer1,
+                        self.critic_optimizer2,
+                    ],
                 )
 
         return result
