@@ -13,6 +13,7 @@ agent = {
     "batch_size": 128,
     "start_train_step": 2000,
     "tau": 1e-3,
+    "lr_decay": True,
     # OU noise
     "mu": 0,
     "theta": 1e-3,

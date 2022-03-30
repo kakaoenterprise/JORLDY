@@ -17,6 +17,7 @@ agent = {
     "vf_coef": 1.0,
     "ent_coef": 0.01,
     "use_standardization": True,
+    "lr_decay": True,
 }
 
 optim = {

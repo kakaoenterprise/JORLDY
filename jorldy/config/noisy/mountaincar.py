@@ -13,6 +13,7 @@ agent = {
     "batch_size": 32,
     "start_train_step": 10000,
     "target_update_period": 200,
+    "lr_decay": True,
     # noisy
     "noise_type": "independent",  # [independent, factorized]
 }

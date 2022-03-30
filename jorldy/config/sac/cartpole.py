@@ -18,6 +18,7 @@ agent = {
     "start_train_step": 5000,
     "static_log_alpha": -2.0,
     "target_update_period": 500,
+    "lr_decay": True,
 }
 
 optim = {

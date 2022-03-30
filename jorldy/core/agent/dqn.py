@@ -35,7 +35,8 @@ class DQN(BaseAgent):
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
         run_step (int): the number of total steps.
-        num_workers: the number of agents in distributed learning
+        num_workers: the number of agents in distributed learning.
+        lr_decay: lr_decay option which apply decayed weight on parameters of network.
     """
 
     def __init__(
@@ -58,6 +59,7 @@ class DQN(BaseAgent):
         device=None,
         run_step=1e6,
         num_workers=1,
+        lr_decay=True,
         **kwargs,
     ):
         self.device = (
@@ -92,6 +94,7 @@ class DQN(BaseAgent):
         self.time_t = 0
         self.num_workers = num_workers
         self.run_step = run_step
+        self.lr_decay = lr_decay
 
     @torch.no_grad()
     def act(self, state, training=True):
@@ -161,7 +164,8 @@ class DQN(BaseAgent):
 
         if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:
             result = self.learn()
-            self.learning_rate_decay(step)
+            if self.lr_decay:
+                self.learning_rate_decay(step)
 
         # Process per step if train start
         if self.num_learn > 0:

@@ -219,7 +219,8 @@ class ICM_PPO(PPO):
         # Process per epi
         if self.learn_stamp >= self.n_step:
             result = self.learn()
-            # self.learning_rate_decay(step)
+            if self.lr_decay:
+                self.learning_rate_decay(step)
             self.learn_stamp -= self.n_step
 
         return result

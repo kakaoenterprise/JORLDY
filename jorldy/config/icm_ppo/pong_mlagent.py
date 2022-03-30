@@ -5,6 +5,7 @@ env = {"name": "pong_mlagent", "time_scale": 12.0}
 agent = {
     "name": "icm_ppo",
     "network": "discrete_policy_value",
+    "head": "mlp",
     "gamma": 0.99,
     "batch_size": 32,
     "n_step": 128,
@@ -14,6 +15,7 @@ agent = {
     "vf_coef": 1.0,
     "ent_coef": 0.1,
     "clip_grad_norm": 1.0,
+    "lr_decay": True,
     # Parameters for Curiosity-driven Exploration
     "icm_network": "icm_mlp",  # icm_mlp, icm_cnn, icm_multi
     "beta": 0.2,

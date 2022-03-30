@@ -8,7 +8,7 @@ env = {
 agent = {
     "name": "rnd_ppo",
     "network": "continuous_policy_separate_value",
-    "head": "cnn",
+    "head": "mlp",
     "gamma": 0.999,
     "batch_size": 32,
     "n_step": 128,
@@ -19,8 +19,9 @@ agent = {
     "ent_coef": 0.001,
     "clip_grad_norm": 1.0,
     "use_standardization": False,
+    "lr_decay": True,
     # Parameters for Random Network Distillation
-    "rnd_network": "rnd_cnn",  # rnd_mlp, rnd_cnn, rnd_multi
+    "rnd_network": "rnd_mlp",  # rnd_mlp, rnd_cnn, rnd_multi
     "gamma_i": 0.99,
     "extrinsic_coeff": 2.0,
     "intrinsic_coeff": 1.0,

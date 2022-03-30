@@ -29,8 +29,9 @@ class SAC(BaseAgent):
         batch_size (int): the number of samples in the one batch.
         start_train_step (int): steps to start learning.
         static_log_alpha (float): static value used as log alpha when use_dynamic_alpha is false.
-        run_step (int): the number of total steps.
         target_update_period (int): period to update the target network (for hard target update) (unit: step)
+        run_step (int): the number of total steps.
+        lr_decay: lr_decay option which apply decayed weight on parameters of network.
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
     """
@@ -60,6 +61,7 @@ class SAC(BaseAgent):
         static_log_alpha=-2.0,
         target_update_period=10000,
         run_step=1e6,
+        lr_decay=True,
         device=None,
         **kwargs,
     ):
@@ -106,6 +108,7 @@ class SAC(BaseAgent):
         self.batch_size = batch_size
         self.start_train_step = start_train_step
         self.run_step = run_step
+        self.lr_decay = lr_decay
         self.num_learn = 0
 
         self.target_update_stamp = 0
@@ -277,10 +280,16 @@ class SAC(BaseAgent):
 
         if self.memory.size > self.batch_size and step >= self.start_train_step:
             result = self.learn()
-            self.learning_rate_decay(
-                step,
-                [self.actor_optimizer, self.critic_optimizer1, self.critic_optimizer2],
-            )
+
+            if self.lr_decay:
+                self.learning_rate_decay(
+                    step,
+                    [
+                        self.actor_optimizer,
+                        self.critic_optimizer1,
+                        self.critic_optimizer2,
+                    ],
+                )
 
         if self.num_learn > 0:
             if self.action_type == "continuous":

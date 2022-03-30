@@ -34,6 +34,7 @@ class TD3(BaseAgent):
         target_noise_std (float): noise which use on calculating target-q.
         target_noise_clip (float): epsilon used on clipping.
         run_step (int): the number of total steps.
+        lr_decay: lr_decay option which apply decayed weight on parameters of network.
         device (str): device to use.
             (e.g. 'cpu' or 'gpu'. None can also be used, and in this case, the cpu is used.)
     """
@@ -63,6 +64,7 @@ class TD3(BaseAgent):
         target_noise_std=0.2,
         target_noise_clip=0.5,
         run_step=1e6,
+        lr_decay=True,
         device=None,
         **kwargs,
     ):
@@ -118,6 +120,7 @@ class TD3(BaseAgent):
         self.num_random_step = 0
         self.num_learn = 0
         self.run_step = run_step
+        self.lr_decay = lr_decay
 
         self.action_size = action_size
         self.update_delay = update_delay
@@ -212,10 +215,15 @@ class TD3(BaseAgent):
 
         if self.memory.size >= self.batch_size and step >= self.start_train_step:
             result = self.learn()
-            self.learning_rate_decay(
-                step,
-                [self.actor_optimizer, self.critic_optimizer1, self.critic_optimizer2],
-            )
+            if self.lr_decay:
+                self.learning_rate_decay(
+                    step,
+                    [
+                        self.actor_optimizer,
+                        self.critic_optimizer1,
+                        self.critic_optimizer2,
+                    ],
+                )
 
         return result
 
