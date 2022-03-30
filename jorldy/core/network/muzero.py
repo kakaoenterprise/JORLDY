@@ -9,9 +9,10 @@ from .head import Residualblock
 class Muzero_mlp(BaseNetwork):
     """mlp network"""
 
-    def __init__(self, D_in, D_out, in_channels, support, D_hidden=256, head="mlp"):
-        super(Muzero_mlp, self).__init__(in_channels, D_hidden, head)
+    def __init__(self, D_in, D_out, num_stack, support, D_hidden=256, head="mlp"):
+        super(Muzero_mlp, self).__init__(D_in*(num_stack+1)+D_out*num_stack, D_hidden, head)
         self.D_in = D_in
+        self.D_out = D_out
         self.D_hidden = D_hidden
         self.converter = Converter(support)
 
@@ -26,45 +27,42 @@ class Muzero_mlp(BaseNetwork):
         orthogonal_init(self.vd_l, "linear")
 
         # dynamics -> make reward and next hidden state
-        self.rd_l = torch.nn.Linear(D_hidden << 1, (support << 1) + 1)
-        self.next_hs_l = torch.nn.Linear(D_hidden << 1, D_hidden)
+        self.rd_l = torch.nn.Linear(D_hidden+D_out, (support << 1) + 1)
+        self.next_hs_l = torch.nn.Linear(D_hidden+D_out, D_hidden)
 
         orthogonal_init(self.rd_l, "linear")
 
     def representation(self, obs, a):
-        # hidden_state
-        obs_a = torch.cat([obs, a], dim=1)
+        a = F.one_hot(a.long(), num_classes=self.D_out).view([obs.size(0), -1])
+        obs_a = torch.cat([obs, a], dim=-1)
         hs = super(Muzero_mlp, self).forward(obs_a)
         hs = self.hs_l(hs)
-        hs = F.normalize(hs, dim=0)
         return hs
 
     def prediction(self, hs):
-        # flatten
-        hs = hs.reshape(hs.size(0), -1)
-
         # pi(action_distribution)
         pi = self.pi_l(hs)
-        pi = torch.exp(F.log_softmax(pi, dim=-1))
+        pi = F.relu(pi)
+        pi = F.log_softmax(pi, dim=-1)
 
         # value(action_distribution)
         vd = self.vd_l(hs)
-        vd = torch.exp(F.log_softmax(vd, dim=-1))
+        vd = F.relu(vd)
+        vd = F.log_softmax(vd, dim=-1)
         return pi, vd
 
     def dynamics(self, hs, a):
         # hidden_state + action
-        a = torch.broadcast_to(a, [hs.size(0), self.D_hidden])
-        hs_a = torch.cat([hs, a], dim=1).reshape(hs.size(0), -1)
+        a = F.one_hot(a.long(), num_classes=self.D_out).view([hs.size(0), -1])
+        hs_a = torch.cat([hs, a], dim=-1)
 
         # reward(action_distribution)
         rd = self.rd_l(hs_a)
-        rd = torch.exp(F.log_softmax(rd, dim=-1))
+        rd = F.relu(rd)
+        rd = F.log_softmax(rd, dim=-1)
 
         # next_hidden_state_normalized
         next_hs = self.next_hs_l(hs_a)
-        next_hs = F.normalize(next_hs, dim=-1)
-
         return next_hs, rd
 
 

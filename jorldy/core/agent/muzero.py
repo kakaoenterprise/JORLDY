@@ -20,6 +20,7 @@ class Muzero(BaseAgent):
 
     Args:
         -
+        lr_decay: lr_decay option which apply decayed weight on parameters of network.
     """
 
     def __init__(
@@ -43,6 +44,7 @@ class Muzero(BaseAgent):
         buffer_size=125000,
         device=None,
         run_step=1e6,
+        lr_decay=True,
         optim_config={
             "name": "adam",
             "lr": 5e-4,
@@ -60,18 +62,13 @@ class Muzero(BaseAgent):
             else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         )
 
-        if isinstance(state_size, Iterable):
-            self.trajectory_type = Trajectory
-            stack_dim = (state_size[0] + 1) * num_stack + state_size[0]
-        else:
-            self.trajectory_type = TrajectoryGym
-            stack_dim = (state_size + 1) * num_stack + state_size
+        self.trajectory_type = Trajectory if isinstance(state_size, Iterable) else TrajectoryGym
 
         self.network = Network(
             network,
             state_size,
             action_size,
-            stack_dim,
+            num_stack,
             num_support,
             D_hidden=hidden_size,
             head=head,
@@ -81,7 +78,7 @@ class Muzero(BaseAgent):
             network,
             state_size,
             action_size,
-            stack_dim,
+            num_stack,
             num_support,
             D_hidden=hidden_size,
             head=head,
@@ -107,6 +104,7 @@ class Muzero(BaseAgent):
         self.time_t = 0
         self.trajectory_step_stamp = 0
         self.run_step = run_step
+        self.lr_decay = lr_decay
         self.num_learn = 0
         self.num_transitions = 0
 
@@ -255,7 +253,8 @@ class Muzero(BaseAgent):
             and self.time_t >= self.start_train_step
         ):
             result = self.learn()
-            self.learning_rate_decay(step)
+            if self.lr_decay:
+                self.learning_rate_decay(step)
             self.set_temperature(step)
 
         return result

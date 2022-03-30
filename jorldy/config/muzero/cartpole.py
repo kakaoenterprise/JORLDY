@@ -25,6 +25,7 @@ agent = {
     "num_unroll": 5,
     "num_td_step": 5,
     "num_stack": 3,
+    "lr_decay": True,
 }
 
 optim = {

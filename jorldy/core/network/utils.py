@@ -158,8 +158,9 @@ class Converter:
     def scalar2vector(self, scalar):
         """initiate target distribution from scalar(batch-2D) & project to learn batch-data"""
         # reduce scale
+        eps = 0.001
         scalar = (
-                torch.sign(scalar) * (torch.sqrt(torch.abs(scalar) + 1) - 1) + 0.001 * scalar
+                torch.sign(scalar) * (torch.sqrt(torch.abs(scalar) + 1) - 1) + eps * scalar
         )
         scalar = torch.clamp(scalar, -self.support, self.support)
 
@@ -174,7 +175,7 @@ class Converter:
         )
 
         # target distribution projection(distribute probability for higher support)
-        idx = floor + self.support
+        idx = (floor + 1) + self.support
         prob = prob.masked_fill_((self.support << 1) < idx, 0.0)
         idx = idx.masked_fill_((self.support << 1) < idx, 0.0)
         dist.scatter_(-1, idx.long(), prob)
