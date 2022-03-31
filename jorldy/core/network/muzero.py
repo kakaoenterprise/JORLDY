@@ -10,44 +10,65 @@ class Muzero_mlp(BaseNetwork):
     """mlp network"""
 
     def __init__(self, D_in, D_out, num_stack, support, D_hidden=256, head="mlp"):
-        super(Muzero_mlp, self).__init__(D_in*(num_stack+1)+D_out*num_stack, D_hidden, head)
+        super(Muzero_mlp, self).__init__(D_in*(num_stack+1)+num_stack, D_hidden, head)
         self.D_in = D_in
         self.D_out = D_out
         self.D_hidden = D_hidden
         self.converter = Converter(support)
 
         # representation -> make hidden state
-        self.hs_l = torch.nn.Linear(D_hidden, D_hidden)
+        self.hs_l = torch.nn.Linear(D_hidden, D_in)
 
         # prediction -> make discrete policy and discrete value
-        self.pi_l = torch.nn.Linear(D_hidden, D_out)
-        self.vd_l = torch.nn.Linear(D_hidden, (support << 1) + 1)
+        self.pi_l1 = torch.nn.Linear(D_in, D_hidden)
+        self.pi_l2 = torch.nn.Linear(D_hidden, D_hidden)
+        self.pi_l3 = torch.nn.Linear(D_hidden, D_out)
+        self.vd_l1 = torch.nn.Linear(D_in, D_hidden)
+        self.vd_l2 = torch.nn.Linear(D_hidden, D_hidden)
+        self.vd_l3 = torch.nn.Linear(D_hidden, (support << 1) + 1)
 
-        orthogonal_init(self.pi_l, "policy")
-        orthogonal_init(self.vd_l, "linear")
+        orthogonal_init(self.pi_l1, "policy")
+        orthogonal_init(self.pi_l2, "policy")
+        orthogonal_init(self.pi_l3, "policy")
+        orthogonal_init(self.vd_l1, "linear")
+        orthogonal_init(self.vd_l2, "linear")
+        orthogonal_init(self.vd_l3, "linear")
 
         # dynamics -> make reward and next hidden state
-        self.rd_l = torch.nn.Linear(D_hidden+D_out, (support << 1) + 1)
-        self.next_hs_l = torch.nn.Linear(D_hidden+D_out, D_hidden)
+        self.rd_l1 = torch.nn.Linear(D_in+D_out, D_hidden)
+        self.rd_l2 = torch.nn.Linear(D_hidden, D_hidden)
+        self.rd_l3 = torch.nn.Linear(D_hidden, (support << 1) + 1)
+        self.next_hs_l1 = torch.nn.Linear(D_in+D_out, D_hidden)
+        self.next_hs_l2 = torch.nn.Linear(D_hidden, D_in)
 
-        orthogonal_init(self.rd_l, "linear")
+        orthogonal_init(self.rd_l1, "linear")
+        orthogonal_init(self.rd_l2, "linear")
+        orthogonal_init(self.rd_l3, "linear")
 
     def representation(self, obs, a):
-        a = F.one_hot(a.long(), num_classes=self.D_out).view([obs.size(0), -1])
+        # a = F.one_hot(a.long(), num_classes=self.D_out).view([obs.size(0), -1])
         obs_a = torch.cat([obs, a], dim=-1)
         hs = super(Muzero_mlp, self).forward(obs_a)
+        hs = torch.tanh(hs)
         hs = self.hs_l(hs)
-        return hs
+        hs = torch.tanh(hs)
+        return F.normalize(hs)
 
     def prediction(self, hs):
         # pi(action_distribution)
-        pi = self.pi_l(hs)
-        pi = F.relu(pi)
+        pi = self.pi_l1(hs)
+        pi = F.leaky_relu(pi)
+        pi = self.pi_l2(pi)
+        pi = F.leaky_relu(pi)
+        pi = self.pi_l3(pi)
         pi = F.log_softmax(pi, dim=-1)
 
         # value(action_distribution)
-        vd = self.vd_l(hs)
-        vd = F.relu(vd)
+        vd = self.vd_l1(hs)
+        vd = F.leaky_relu(vd)
+        vd = self.vd_l2(vd)
+        vd = F.leaky_relu(vd)
+        vd = self.vd_l3(vd)
         vd = F.log_softmax(vd, dim=-1)
         return pi, vd
 
@@ -57,13 +78,19 @@ class Muzero_mlp(BaseNetwork):
         hs_a = torch.cat([hs, a], dim=-1)
 
         # reward(action_distribution)
-        rd = self.rd_l(hs_a)
-        rd = F.relu(rd)
+        rd = self.rd_l1(hs_a)
+        rd = F.leaky_relu(rd)
+        rd = self.rd_l2(rd)
+        rd = F.leaky_relu(rd)
+        rd = self.rd_l3(rd)
         rd = F.log_softmax(rd, dim=-1)
 
         # next_hidden_state_normalized
-        next_hs = self.next_hs_l(hs_a)
-        return next_hs, rd
+        next_hs = self.next_hs_l1(hs_a)
+        next_hs = torch.tanh(next_hs)
+        next_hs = self.next_hs_l2(next_hs)
+        next_hs = torch.tanh(next_hs)
+        return F.normalize(next_hs), rd
 
 
 class Muzero_Resnet(BaseNetwork):

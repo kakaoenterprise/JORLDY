@@ -16,27 +16,27 @@ agent = {
     "epsilon_min": 0.01,
     "explore_ratio": 0.2,
     "buffer_size": 10000,
-    "batch_size": 8,
+    "batch_size": 32,
     "num_support": 20,
-    "start_train_step": 5000,
+    "start_train_step": 0,
     "trajectory_size": 1000,
-    "num_simulation": 50,
+    "num_simulation": 10,
     "value_loss_weight": 1.0,
     "num_unroll": 5,
     "num_td_step": 5,
     "num_stack": 3,
-    "lr_decay": True,
+    "lr_decay": False,
 }
 
 optim = {
     "name": "adam",
-    "lr": 0.01,
+    "lr": 1e-3,
 }
 
 train = {
     "training": True,
     "load_path": None,
-    "run_step": 100000,
+    "run_step": 1000000,
     "print_period": 1000,
     "save_period": 10000,
     "eval_iteration": 5,
