@@ -177,7 +177,7 @@ def sync_distributed_train(config_path, unknown):
         save_path = path_queue.get()
         step, print_stamp, save_stamp = 0, 0, 0
         while step < config.train.run_step:
-            transitions = distributed_manager.run(config.train.update_period)
+            transitions, _ = distributed_manager.run(config.train.update_period)
             step += config.train.update_period
             print_stamp += config.train.update_period
             save_stamp += config.train.update_period
