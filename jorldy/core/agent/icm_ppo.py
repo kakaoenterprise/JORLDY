@@ -74,7 +74,7 @@ class ICM_PPO(PPO):
             D_hidden=hidden_size,
         ).to(self.device)
         self.icm_optimizer = Optimizer(**optim_config, params=self.icm.parameters())
-        
+
         self.beta = beta
         self.lamb = lamb
         self.eta = eta
@@ -181,11 +181,8 @@ class ICM_PPO(PPO):
                     + self.vf_coef * critic_loss
                     + self.ent_coef * entropy_loss
                 )
-                
-                icm_loss = (
-                    self.beta * l_f
-                    + (1 - self.beta) * l_i
-                )
+
+                icm_loss = self.beta * l_f + (1 - self.beta) * l_i
 
                 self.optimizer.zero_grad(set_to_none=True)
                 loss.backward()
@@ -193,7 +190,7 @@ class ICM_PPO(PPO):
                     self.network.parameters(), self.clip_grad_norm
                 )
                 self.optimizer.step()
-                
+
                 self.icm_optimizer.zero_grad(set_to_none=True)
                 icm_loss.backward()
                 torch.nn.utils.clip_grad_norm_(

@@ -82,7 +82,6 @@ class RND_PPO(PPO):
         ).to(self.device)
         self.rnd_optimizer = Optimizer(**optim_config, params=self.rnd.parameters())
 
-
     @torch.no_grad()
     def act(self, state, training=True):
         self.network.train(training)
@@ -258,7 +257,7 @@ class RND_PPO(PPO):
                     self.network.parameters(), self.clip_grad_norm
                 )
                 self.optimizer.step()
-                
+
                 self.rnd_optimizer.zero_grad(set_to_none=True)
                 rnd_loss.backward()
                 torch.nn.utils.clip_grad_norm_(
