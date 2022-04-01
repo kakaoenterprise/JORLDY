@@ -12,13 +12,11 @@ def interact_process(
     update_period,
 ):
     distributed_manager = DistributedManager(*distributed_manager_config)
-    num_workers = distributed_manager.num_workers
     step = 0
     try:
         while step < run_step:
-            transitions = distributed_manager.run(update_period)
-            delta_t = len(transitions) / num_workers
-            step += delta_t
+            transitions, completed_ratio = distributed_manager.run(update_period)
+            step += update_period * completed_ratio
             trans_queue.put((step, transitions))
             if sync_queue.full():
                 distributed_manager.sync(sync_queue.get())
