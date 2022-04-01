@@ -96,13 +96,13 @@ class Muzero_mlp(BaseNetwork):
 class Muzero_Resnet(BaseNetwork):
     """residual network"""
 
-    def __init__(self, D_in, D_out, in_channels, support, D_hidden=256, head="residualblock"):
+    def __init__(self, D_in, D_out, num_stack, support, D_hidden=256, head="residualblock"):
         super(Muzero_Resnet, self).__init__(D_hidden, D_hidden, head)
         self.D_out = D_out
         self.converter = Converter(support)
 
         # representation -> make hidden state
-        self.hs_down = Downsample(in_channels)
+        self.hs_down = Downsample((num_stack << 1) + 1)
         self.hs_res = torch.nn.ModuleList([self.head for _ in range(16)])
 
         # prediction -> make discrete policy and discrete value
@@ -110,16 +110,32 @@ class Muzero_Resnet(BaseNetwork):
         self.pred_conv = torch.nn.Conv2d(
             in_channels=D_hidden, out_channels=D_hidden, kernel_size=(1, 1)
         )
-        self.pred_pi = torch.nn.Linear(
-            in_features=D_hidden * (6 * 6), out_features=D_out
+        self.pred_pi_1 = torch.nn.Linear(
+            in_features=D_hidden * (6 * 6), out_features=D_hidden
         )
-        self.pred_vd = torch.nn.Linear(
-            in_features=D_hidden * (6 * 6), out_features=(support << 1) + 1
+        self.pred_pi_2 = torch.nn.Linear(
+            in_features=D_hidden, out_features=D_hidden
+        )
+        self.pred_pi_3 = torch.nn.Linear(
+            in_features=D_hidden, out_features=D_out
+        )
+        self.pred_vd_1 = torch.nn.Linear(
+            in_features=D_hidden * (6 * 6), out_features=D_hidden
+        )
+        self.pred_vd_2 = torch.nn.Linear(
+            in_features=D_hidden, out_features=D_hidden
+        )
+        self.pred_vd_3 = torch.nn.Linear(
+            in_features=D_hidden, out_features=(support << 1) + 1
         )
 
         orthogonal_init(self.pred_conv, "conv2d")
-        orthogonal_init(self.pred_pi, "linear")
-        orthogonal_init(self.pred_vd, "linear")
+        orthogonal_init(self.pred_pi_1, "linear")
+        orthogonal_init(self.pred_pi_2, "linear")
+        orthogonal_init(self.pred_pi_3, "linear")
+        orthogonal_init(self.pred_vd_1, "linear")
+        orthogonal_init(self.pred_vd_2, "linear")
+        orthogonal_init(self.pred_vd_3, "linear")
 
         # dynamics -> make reward and next hidden state
         self.dy_conv = torch.nn.Conv2d(
@@ -129,18 +145,26 @@ class Muzero_Resnet(BaseNetwork):
             in_channels=D_hidden, out_channels=D_hidden, kernel_size=(1, 1)
         )
         self.dy_res = torch.nn.ModuleList([self.head for _ in range(16)])
-        self.dy_rd = torch.nn.Linear(
-            in_features=D_hidden * (6 * 6), out_features=(support << 1) + 1
+        self.dy_rd_1 = torch.nn.Linear(
+            in_features=D_hidden * (6 * 6), out_features=D_hidden
+        )
+        self.dy_rd_2 = torch.nn.Linear(
+            in_features=D_hidden, out_features=D_hidden
+        )
+        self.dy_rd_3 = torch.nn.Linear(
+            in_features=D_hidden, out_features=(support << 1) + 1
         )
 
         orthogonal_init(self.dy_conv, "conv2d")
         orthogonal_init(self.dy_conv_rd, "conv2d")
-        orthogonal_init(self.dy_rd, "linear")
+        orthogonal_init(self.dy_rd_1, "linear")
+        orthogonal_init(self.dy_rd_2, "linear")
+        orthogonal_init(self.dy_rd_3, "linear")
 
     def representation(self, obs, a):
         # observation, action : input -> normalize -> concatenate
-        obs = F.normalize(obs)
-        obs /= self.D_out
+        obs /= 255.0
+        a /= self.D_out
         obs_a = torch.cat([obs, a], dim=1)
 
         # downsample
@@ -162,17 +186,25 @@ class Muzero_Resnet(BaseNetwork):
         hs = hs.reshape(hs.size(0), -1)
 
         # pi(action_distribution)
-        pi = self.pred_pi(hs)
-        pi = torch.exp(F.log_softmax(pi, dim=-1))
+        pi = self.pred_pi_1(hs)
+        pi = F.leaky_relu(pi)
+        pi = self.pred_pi_2(pi)
+        pi = F.leaky_relu(pi)
+        pi = self.pred_pi_3(pi)
+        pi = F.log_softmax(pi, dim=-1)
 
         # value(distribution)
-        vd = self.pred_vd(hs)
-        vd = torch.exp(F.log_softmax(vd, dim=-1))
+        vd = self.pred_vd_1(hs)
+        vd = F.leaky_relu(vd)
+        vd = self.pred_vd_2(vd)
+        vd = F.leaky_relu(vd)
+        vd = self.pred_vd_3(vd)
+        vd = F.log_softmax(vd, dim=-1)
         return pi, vd
 
     def dynamics(self, hs, a):
         # hidden_state + action -> conv -> resnet
-        a = torch.broadcast_to(a.unsqueeze(dim=-1).unsqueeze(dim=-1), [a.size(0), 1, 6, 6])
+        a = torch.broadcast_to(a.unsqueeze(-1).unsqueeze(-1), [a.size(0), 1, 6, 6])
         hs_a = torch.cat([hs, a], dim=1)
         hs_a = self.dy_conv(hs_a)
         for block in self.dy_res:
@@ -183,8 +215,12 @@ class Muzero_Resnet(BaseNetwork):
 
         # conv -> flatten -> reward(distribution)
         hs_a = self.dy_conv_rd(hs_a).reshape(hs.size(0), -1)
-        rd = self.dy_rd(hs_a)
-        rd = torch.exp(F.log_softmax(rd, dim=-1))
+        rd = self.dy_rd_1(hs_a)
+        rd = F.leaky_relu(rd)
+        rd = self.dy_rd_2(rd)
+        rd = F.leaky_relu(rd)
+        rd = self.dy_rd_3(rd)
+        rd = F.log_softmax(rd, dim=-1)
         return next_hs, rd
 
 
