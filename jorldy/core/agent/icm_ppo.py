@@ -8,6 +8,7 @@ import numpy as np
 
 from .ppo import PPO
 from core.network import Network
+from core.optimizer import Optimizer
 
 
 class ICM_PPO(PPO):
@@ -17,6 +18,8 @@ class ICM_PPO(PPO):
         state_size (int): dimension of state.
         action_size (int): dimension of action.
         hidden_size (int): dimension of hidden unit.
+        optim_config (dict): dictionary of the optimizer info.
+            (key: 'name', value: name of optimizer)
         icm_network (str): key of network class in _network_dict.txt.
         beta (float): weight of the inverse model loss against the forward model loss.
         lamb (float): weight of the policy gradient loss against the intrinsic reward signal.
@@ -33,6 +36,7 @@ class ICM_PPO(PPO):
         state_size,
         action_size,
         hidden_size=512,
+        optim_config={"name": "adam"},
         # Parameters for Curiosity-driven Exploration
         icm_network="icm_mlp",
         beta=0.2,
@@ -49,6 +53,7 @@ class ICM_PPO(PPO):
             state_size=state_size,
             action_size=action_size,
             hidden_size=hidden_size,
+            optim_config=optim_config,
             **kwargs,
         )
         self.obs_normalize = obs_normalize
@@ -68,7 +73,7 @@ class ICM_PPO(PPO):
             batch_norm,
             D_hidden=hidden_size,
         ).to(self.device)
-        self.optimizer.add_param_group({"params": self.icm.parameters()})
+        self.icm_optimizer = Optimizer(**optim_config, params=self.icm.parameters())
 
         self.beta = beta
         self.lamb = lamb
@@ -171,16 +176,13 @@ class ICM_PPO(PPO):
                 # ICM
                 _, l_f, l_i = self.icm(_state, _action, _next_state)
 
-                loss_origin = (
+                loss = self.lamb * (
                     actor_loss
                     + self.vf_coef * critic_loss
                     + self.ent_coef * entropy_loss
                 )
-                loss = (
-                    self.lamb * loss_origin
-                    + (self.beta * l_f)
-                    + ((1 - self.beta) * l_i)
-                )
+
+                icm_loss = self.beta * l_f + (1 - self.beta) * l_i
 
                 self.optimizer.zero_grad(set_to_none=True)
                 loss.backward()
@@ -188,6 +190,13 @@ class ICM_PPO(PPO):
                     self.network.parameters(), self.clip_grad_norm
                 )
                 self.optimizer.step()
+
+                self.icm_optimizer.zero_grad(set_to_none=True)
+                icm_loss.backward()
+                torch.nn.utils.clip_grad_norm_(
+                    self.icm.parameters(), self.clip_grad_norm
+                )
+                self.icm_optimizer.step()
 
                 probs.append(log_prob.exp().min().item())
                 ratios.append(ratio.max().item())
@@ -208,23 +217,6 @@ class ICM_PPO(PPO):
         }
         return result
 
-    def process(self, transitions, step):
-        result = {}
-        # Process per step
-        self.memory.store(transitions)
-        delta_t = step - self.time_t
-        self.time_t = step
-        self.learn_stamp += delta_t
-
-        # Process per epi
-        if self.learn_stamp >= self.n_step:
-            result = self.learn()
-            if self.lr_decay:
-                self.learning_rate_decay(step)
-            self.learn_stamp -= self.n_step
-
-        return result
-
     def save(self, path):
         print(f"...Save model to {path}...")
         torch.save(
@@ -232,6 +224,7 @@ class ICM_PPO(PPO):
                 "network": self.network.state_dict(),
                 "icm": self.icm.state_dict(),
                 "optimizer": self.optimizer.state_dict(),
+                "icm_optimizer": self.icm_optimizer.state_dict(),
             },
             os.path.join(path, "ckpt"),
         )
@@ -242,3 +235,4 @@ class ICM_PPO(PPO):
         self.network.load_state_dict(checkpoint["network"])
         self.icm.load_state_dict(checkpoint["icm"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
+        self.icm_optimizer.load_state_dict(checkpoint["icm_optimizer"])
