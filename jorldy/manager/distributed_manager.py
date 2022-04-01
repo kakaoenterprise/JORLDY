@@ -28,6 +28,7 @@ class DistributedManager:
         if self.mode == "sync":
             items = ray.get([actor.run.remote(step) for actor in self.actors])
             transitions = reduce(lambda x, y: x + y, [item[1] for item in items])
+            completed_ratio = 1.0
         else:
             if len(self.running_ids) == 0:
                 self.running_ids = [actor.run.remote(step) for actor in self.actors]
