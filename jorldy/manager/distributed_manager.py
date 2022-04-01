@@ -41,7 +41,7 @@ class DistributedManager:
             items = ray.get(done_ids)
             transitions = reduce(lambda x, y: x + y, [item[1] for item in items])
             runned_ids = [item[0] for item in items]
-            succeed_ratio = len(items) / self.num_workers
+            completed_ratio = len(items) / self.num_workers
 
             if self.sync_item is not None:
                 ray.get(
@@ -49,7 +49,7 @@ class DistributedManager:
                 )
             self.running_ids += [self.actors[id].run.remote(step) for id in runned_ids]
 
-        return transitions, succeed_ratio
+        return transitions, completed_ratio
 
     def sync(self, sync_item):
         if self.mode == "sync":

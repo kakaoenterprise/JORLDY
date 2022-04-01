@@ -15,8 +15,8 @@ def interact_process(
     step = 0
     try:
         while step < run_step:
-            transitions, succeed_ratio = distributed_manager.run(update_period)
-            step += update_period * succeed_ratio
+            transitions, completed_ratio = distributed_manager.run(update_period)
+            step += update_period * completed_ratio
             trans_queue.put((step, transitions))
             if sync_queue.full():
                 distributed_manager.sync(sync_queue.get())
