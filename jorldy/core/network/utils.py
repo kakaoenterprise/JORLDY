@@ -122,3 +122,62 @@ def orthogonal_init(layer, nonlinearity="relu"):
     else:
         torch.nn.init.orthogonal_(layer.weight.data, gain)
         torch.nn.init.zeros_(layer.bias.data)
+
+
+class Converter:
+    def __init__(self, support):
+        self.support = support
+
+    # codes modified from https://github.com/werner-duvaud/muzero-general
+    def vector2scalar(self, prob):
+        """prediction value & dynamics reward output(vector:distribution) -> output(scalar:value)"""
+        # get supports
+        support = (
+            torch.tensor([x for x in range(-self.support, self.support+1)])
+            .expand(prob.shape)
+            .float()
+            .to(device=prob.device)
+        )
+
+        # convert to scalar
+        scalar = torch.sum(support * prob, dim=-1, keepdim=True)
+
+        # Invertible scaling
+        eps = 0.001
+        scalar = torch.sign(scalar) * (
+                (
+                        (torch.sqrt(1 + 4 * eps * (torch.abs(scalar) + 1 + eps)) - 1)
+                        / (2 * eps)
+                )
+                ** 2
+                - 1
+        )
+        return scalar
+
+    # codes modified from https://github.com/werner-duvaud/muzero-general
+    def scalar2vector(self, scalar):
+        """initiate target distribution from scalar(batch-2D) & project to learn batch-data"""
+        # reduce scale
+        eps = 0.001
+        scalar = (
+                torch.sign(scalar) * (torch.sqrt(torch.abs(scalar) + 1) - 1) + eps * scalar
+        )
+        scalar = torch.clamp(scalar, -self.support, self.support)
+
+        # target distribution projection(distribute probability for lower support)
+        floor = scalar.floor()
+        prob = scalar - floor
+        dist = torch.zeros(
+            scalar.shape[0], scalar.shape[1], (self.support << 1) + 1
+        ).to(scalar.device)
+        dist.scatter_(
+            -1, (floor + self.support).long(), (1 - prob)
+        )
+
+        # target distribution projection(distribute probability for higher support)
+        idx = (floor + 1) + self.support
+        prob = prob.masked_fill_((self.support << 1) < idx, 0.0)
+        idx = idx.masked_fill_((self.support << 1) < idx, 0.0)
+        dist.scatter_(-1, idx.long(), prob)
+
+        return dist

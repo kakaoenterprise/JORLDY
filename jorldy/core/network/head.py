@@ -192,6 +192,44 @@ class CNN_LSTM(torch.nn.Module):
         return x, hidden_in, hidden_out
 
 
+############################################################################################################
+# muzero atari head
+class Residualblock(torch.nn.Module):
+    def __init__(self, D_in, D_hidden=256):
+        super(Residualblock, self).__init__()
+        self.D_head_out = None
+
+        self.c1 = torch.nn.Conv2d(
+            in_channels=D_in,
+            out_channels=D_in,
+            kernel_size=(3, 3),
+            stride=(1, 1),
+            padding=(1, 1),
+            bias=False,
+        )
+        self.b1 = torch.nn.BatchNorm2d(num_features=D_in)
+        self.c2 = torch.nn.Conv2d(
+            in_channels=D_in,
+            out_channels=D_in,
+            kernel_size=(3, 3),
+            stride=(1, 1),
+            padding=(1, 1),
+            bias=False,
+        )
+        self.b2 = torch.nn.BatchNorm2d(num_features=D_in)
+
+    def forward(self, x):
+        x_res = self.c1(x)
+        x_res = self.b1(x_res)
+        x_res = F.relu(x_res)
+        x_res = self.c2(x_res)
+        x_res = self.b2(x_res)
+        x_res += x
+        x = F.relu(x_res)
+        return x
+############################################################################################################
+
+
 import os, sys, inspect, re
 from collections import OrderedDict
 
