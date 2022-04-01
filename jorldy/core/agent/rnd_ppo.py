@@ -8,6 +8,7 @@ import numpy as np
 
 from .ppo import PPO
 from core.network import Network
+from core.optimizer import Optimizer
 
 
 class RND_PPO(PPO):
@@ -17,6 +18,8 @@ class RND_PPO(PPO):
         state_size (int): dimension of state.
         action_size (int): dimension of action.
         hidden_size (int): dimension of hidden unit.
+        optim_config (dict): dictionary of the optimizer info.
+            (key: 'name', value: name of optimizer)
         rnd_network (str): key of network class in _network_dict.txt.
         gamma_i (float): discount factor of intrinsic reward.
         extrinsic_coeff (float): coefficient of extrinsic reward.
@@ -33,6 +36,7 @@ class RND_PPO(PPO):
         state_size,
         action_size,
         hidden_size=512,
+        optim_config={"name": "adam"},
         # Parameters for Random Network Distillation
         rnd_network="rnd_mlp",
         gamma_i=0.99,
@@ -49,6 +53,7 @@ class RND_PPO(PPO):
             state_size=state_size,
             action_size=action_size,
             hidden_size=hidden_size,
+            optim_config=optim_config,
             **kwargs,
         )
 
@@ -75,8 +80,8 @@ class RND_PPO(PPO):
             batch_norm,
             D_hidden=hidden_size,
         ).to(self.device)
+        self.rnd_optimizer = Optimizer(**optim_config, params=self.rnd.parameters())
 
-        self.optimizer.add_param_group({"params": self.rnd.parameters()})
 
     @torch.no_grad()
     def act(self, state, training=True):
@@ -238,7 +243,7 @@ class RND_PPO(PPO):
                 critic_loss = critic_e_loss + critic_i_loss
 
                 entropy_loss = -m.entropy().mean()
-                ppo_loss = (
+                loss = (
                     actor_loss
                     + self.vf_coef * critic_loss
                     + self.ent_coef * entropy_loss
@@ -247,17 +252,19 @@ class RND_PPO(PPO):
                 _r_i = self.rnd.forward(_next_state)
                 rnd_loss = _r_i.mean()
 
-                loss = ppo_loss + rnd_loss
-
                 self.optimizer.zero_grad(set_to_none=True)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(
                     self.network.parameters(), self.clip_grad_norm
                 )
+                self.optimizer.step()
+                
+                self.rnd_optimizer.zero_grad(set_to_none=True)
+                rnd_loss.backward()
                 torch.nn.utils.clip_grad_norm_(
                     self.rnd.parameters(), self.clip_grad_norm
                 )
-                self.optimizer.step()
+                self.rnd_optimizer.step()
 
                 probs.append(log_prob.exp().min().item())
                 ratios.append(ratio.max().item())
@@ -280,23 +287,6 @@ class RND_PPO(PPO):
         }
         return result
 
-    def process(self, transitions, step):
-        result = {}
-        # Process per step
-        self.memory.store(transitions)
-        delta_t = step - self.time_t
-        self.time_t = step
-        self.learn_stamp += delta_t
-
-        # Process per epi
-        if self.learn_stamp >= self.n_step:
-            result = self.learn()
-            if self.lr_decay:
-                self.learning_rate_decay(step)
-            self.learn_stamp -= self.n_step
-
-        return result
-
     def save(self, path):
         print(f"...Save model to {path}...")
         torch.save(
@@ -304,6 +294,7 @@ class RND_PPO(PPO):
                 "network": self.network.state_dict(),
                 "rnd": self.rnd.state_dict(),
                 "optimizer": self.optimizer.state_dict(),
+                "rnd_optimizer": self.rnd_optimizer.state_dict(),
             },
             os.path.join(path, "ckpt"),
         )
@@ -314,3 +305,4 @@ class RND_PPO(PPO):
         self.network.load_state_dict(checkpoint["network"])
         self.rnd.load_state_dict(checkpoint["rnd"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
+        self.rnd_optimizer.load_state_dict(checkpoint["rnd_optimizer"])
