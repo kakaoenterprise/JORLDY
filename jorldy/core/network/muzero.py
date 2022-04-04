@@ -109,17 +109,17 @@ class Muzero_mlp(BaseNetwork):
 class Muzero_Resnet(BaseNetwork):
     """residual network"""
 
-    def __init__(self, D_in, D_out, num_stack, support, D_hidden=256, head="residualblock"):
+    def __init__(self, D_in, D_out, num_stack, support, num_rb=16, D_hidden=256, head="residualblock"):
         super(Muzero_Resnet, self).__init__(D_hidden, D_hidden, head)
         self.D_out = D_out
         self.converter = Converter(support)
 
         # representation -> make hidden state
-        self.hs_down = Downsample((num_stack << 1) + 1)
-        self.hs_res = torch.nn.ModuleList([self.head for _ in range(16)])
+        self.hs_down = Downsample((num_stack << 1) + 1, num_rb)
+        self.hs_res = torch.nn.ModuleList([self.head for _ in range(num_rb)])
 
         # prediction -> make discrete policy and discrete value
-        self.pred_res = torch.nn.ModuleList([self.head for _ in range(16)])
+        self.pred_res = torch.nn.ModuleList([self.head for _ in range(num_rb)])
         self.pred_conv = torch.nn.Conv2d(
             in_channels=D_hidden, out_channels=D_hidden, kernel_size=(1, 1)
         )
@@ -157,7 +157,7 @@ class Muzero_Resnet(BaseNetwork):
         self.dy_conv_rd = torch.nn.Conv2d(
             in_channels=D_hidden, out_channels=D_hidden, kernel_size=(1, 1)
         )
-        self.dy_res = torch.nn.ModuleList([self.head for _ in range(16)])
+        self.dy_res = torch.nn.ModuleList([self.head for _ in range(num_rb)])
         self.dy_rd_1 = torch.nn.Linear(
             in_features=D_hidden * (6 * 6), out_features=D_hidden
         )
@@ -238,7 +238,7 @@ class Muzero_Resnet(BaseNetwork):
 
 
 class Downsample(torch.nn.Module):
-    def __init__(self, in_channels):
+    def __init__(self, in_channels, num_rb):
         super(Downsample, self).__init__()
 
         self.conv_1 = torch.nn.Conv2d(
@@ -259,12 +259,14 @@ class Downsample(torch.nn.Module):
         )
 
         # resnet
-        self.res_1 = torch.nn.ModuleList([Residualblock(128) for _ in range(2)])
+        self.res_1 = torch.nn.ModuleList(
+            [Residualblock(128) for _ in range(num_rb)]
+        )
         self.res_2 = torch.nn.ModuleList(
-            [Residualblock(256) for _ in range(3)]
+            [Residualblock(256) for _ in range(num_rb)]
         )
         self.res_3 = torch.nn.ModuleList(
-            [Residualblock(256) for _ in range(3)]
+            [Residualblock(256) for _ in range(num_rb)]
         )
 
     def forward(self, obs_a):

@@ -17,6 +17,7 @@ agent = {
     "name": "muzero",
     "network": "muzero_resnet",
     "head": "residualblock",
+    "num_rb": 16,
     "gamma": 0.997,
     "epsilon_init": 1.0,
     "epsilon_min": 0.1,

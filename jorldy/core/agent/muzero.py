@@ -20,6 +20,7 @@ class Muzero(BaseAgent):
 
     Args:
         -
+        num_rb: the number of residual block.
         lr_decay: lr_decay option which apply decayed weight on parameters of network.
     """
 
@@ -30,6 +31,7 @@ class Muzero(BaseAgent):
         action_size,
         network="muzero_resnet",
         head="residualblock",
+        num_rb=16,
         hidden_size=256,
         gamma=0.997,
         batch_size=16,
@@ -70,6 +72,7 @@ class Muzero(BaseAgent):
             action_size,
             num_stack,
             num_support,
+            num_rb=num_rb,
             D_hidden=hidden_size,
             head=head,
         ).to(self.device)
@@ -80,6 +83,7 @@ class Muzero(BaseAgent):
             action_size,
             num_stack,
             num_support,
+            num_rb=num_rb,
             D_hidden=hidden_size,
             head=head,
         ).to("cpu")
@@ -236,6 +240,7 @@ class Muzero(BaseAgent):
             "num_learn": self.num_learn,
             "num_transitions": self.num_transitions,
         }
+        print(num_rd)
         return result
 
     def update_target(self):
