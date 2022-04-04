@@ -9,7 +9,7 @@ from .head import Residualblock
 class Muzero_mlp(BaseNetwork):
     """mlp network"""
 
-    def __init__(self, D_in, D_out, num_stack, support, D_hidden=256, head="mlp_residualblock"):
+    def __init__(self, D_in, D_out, num_stack, support, num_rb=10, D_hidden=256, head="mlp_residualblock"):
         super(Muzero_mlp, self).__init__(D_hidden, D_hidden, head)
         self.D_in = D_in
         self.D_out = D_out
@@ -22,10 +22,10 @@ class Muzero_mlp(BaseNetwork):
         self.hs_l1 = torch.nn.Linear(D_stack, D_hidden)
         self.hs_ln1 = torch.nn.LayerNorm(D_hidden)
         
-        self.hs_res = torch.nn.Sequential(*[self.head for _ in range(10)])
+        self.hs_res = torch.nn.Sequential(*[self.head for _ in range(num_rb)])
                 
         # prediction -> make discrete policy and discrete value
-        self.pred_res = torch.nn.Sequential(*[self.head for _ in range(10)])
+        self.pred_res = torch.nn.Sequential(*[self.head for _ in range(num_rb)])
         
         self.pi_l1 = torch.nn.Linear(D_hidden, D_hidden)
         self.pi_l2 = torch.nn.Linear(D_hidden, D_hidden)
@@ -43,7 +43,7 @@ class Muzero_mlp(BaseNetwork):
 
         # dynamics -> make reward and next hidden state
         self.dy_l1 = torch.nn.Linear(D_hidden+D_out, D_hidden)
-        self.dy_res = torch.nn.Sequential(*[self.head for _ in range(10)])
+        self.dy_res = torch.nn.Sequential(*[self.head for _ in range(num_rb)])
         
         self.rd_l1 = torch.nn.Linear(D_hidden, D_hidden)
         self.rd_l2 = torch.nn.Linear(D_hidden, (support << 1) + 1)

@@ -31,7 +31,6 @@ class Muzero(BaseAgent):
         action_size,
         network="muzero_resnet",
         head="residualblock",
-        num_rb=16,
         hidden_size=256,
         gamma=0.997,
         batch_size=16,
@@ -43,6 +42,7 @@ class Muzero(BaseAgent):
         num_td_step=10,
         num_support=300,
         num_stack=32,
+        num_rb=16,
         buffer_size=125000,
         device=None,
         run_step=1e6,
@@ -240,7 +240,6 @@ class Muzero(BaseAgent):
             "num_learn": self.num_learn,
             "num_transitions": self.num_transitions,
         }
-        print(num_rd)
         return result
 
     def update_target(self):

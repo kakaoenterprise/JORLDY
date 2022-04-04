@@ -9,8 +9,7 @@ env = {
 agent = {
     "name": "muzero",
     "network": "muzero_mlp",
-    "head": "mlp",
-    "num_rb": 16,
+    "head": "mlp_residualblock",
     "hidden_size": 64,
     "gamma": 0.997,
     "epsilon_init": 1.0,
@@ -26,6 +25,7 @@ agent = {
     "num_unroll": 5,
     "num_td_step": 5,
     "num_stack": 5,
+    "num_rb": 5,
     "lr_decay": False,
 }
 
