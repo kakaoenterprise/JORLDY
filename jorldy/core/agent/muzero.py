@@ -36,8 +36,7 @@ class Muzero(BaseAgent):
         batch_size=16,
         start_train_step=2000,
         trajectory_size=200,
-        value_loss_weight=0.25,
-        num_simulation=50,
+        value_loss_weight=1.0,
         num_unroll=5,
         num_td_step=10,
         num_support=300,
@@ -46,6 +45,8 @@ class Muzero(BaseAgent):
         buffer_size=125000,
         device=None,
         run_step=1e6,
+        num_workers=1,
+        # Optim
         lr_decay=True,
         optim_config={
             "name": "adam",
@@ -56,6 +57,10 @@ class Muzero(BaseAgent):
         beta=0.4,
         learn_period=1,
         uniform_sample_prob=1e-3,
+        # MCTS
+        num_simulation=50,
+        mcts_alpha_max=1.0,
+        mcts_alpha_min=0.0,
         **kwargs,
     ):
         self.device = (
@@ -64,7 +69,9 @@ class Muzero(BaseAgent):
             else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         )
 
-        self.trajectory_type = Trajectory if isinstance(state_size, Iterable) else TrajectoryGym
+        self.trajectory_type = (
+            Trajectory if isinstance(state_size, Iterable) else TrajectoryGym
+        )
 
         self.network = Network(
             network,
@@ -100,7 +107,6 @@ class Muzero(BaseAgent):
         self.value_loss_weight = value_loss_weight
 
         self.trajectory_size = trajectory_size
-        self.num_simulation = num_simulation
         self.num_unroll = num_unroll
         self.num_td_step = num_td_step
         self.num_stack = num_stack
@@ -109,6 +115,7 @@ class Muzero(BaseAgent):
         self.trajectory_step_stamp = 0
         self.run_step = run_step
         self.lr_decay = lr_decay
+        self.num_workers = num_workers
         self.num_learn = 0
         self.num_transitions = 0
 
@@ -127,6 +134,11 @@ class Muzero(BaseAgent):
         self.buffer_size = buffer_size
         self.memory = ReplayBuffer(buffer_size)
         self.memory.first_store = False
+
+        # MCTS
+        self.num_simulation = num_simulation
+        self.mcts_alpha_max = mcts_alpha_max
+        self.mcts_alpha_min = mcts_alpha_min
 
         # MCTS
         self.mcts = MCTS(
@@ -300,6 +312,14 @@ class Muzero(BaseAgent):
         checkpoint = torch.load(os.path.join(path, "ckpt"), map_location=self.device)
         self.network.load_state_dict(checkpoint["network"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
+
+    def set_distributed(self, id):
+        assert self.num_workers > 1
+        self.mcts.alpha = (
+            id * (self.mcts_alpha_max - self.mcts_alpha_min) / (self.num_workers - 1)
+        )
+
+        return self
 
     def set_temperature(self, step):
         if step < self.run_step * 0.5:
