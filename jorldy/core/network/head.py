@@ -193,6 +193,25 @@ class CNN_LSTM(torch.nn.Module):
 
 
 ############################################################################################################
+# muzero mlp head
+class MLP_Residualblock(torch.nn.Module):
+    def __init__(self, D_in, D_hidden=256):
+        super(MLP_Residualblock, self).__init__()
+        self.D_head_out = None
+        
+        self.l1 = torch.nn.Linear(D_in, D_hidden)
+        self.ln1 = torch.nn.LayerNorm(D_hidden)
+        self.l2 = torch.nn.Linear(D_hidden, D_in)
+        self.ln2 = torch.nn.LayerNorm(D_hidden)
+    
+    def forward(self, x):
+        x_res = F.relu(self.ln1(self.l1(x)))
+        x_res = self.ln2(self.l2(x))
+        x_res += x
+        x = F.relu(x_res)
+        return x
+        
+
 # muzero atari head
 class Residualblock(torch.nn.Module):
     def __init__(self, D_in, D_hidden=256):

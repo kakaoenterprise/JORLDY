@@ -144,6 +144,7 @@ class Muzero(BaseAgent):
         states, actions = self.trajectory.get_stacked_data(
             self.trajectory_step_stamp, self.num_stack
         )
+
         self.device, swap = "cpu", self.device
         states = self.as_tensor(np.expand_dims(states, axis=0))
         actions = self.as_tensor(np.expand_dims(actions, axis=0))
