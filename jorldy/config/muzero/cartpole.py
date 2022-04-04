@@ -10,6 +10,7 @@ agent = {
     "name": "muzero",
     "network": "muzero_mlp",
     "head": "mlp",
+    "num_rb": 16,
     "hidden_size": 64,
     "gamma": 0.997,
     "epsilon_init": 1.0,
