@@ -426,27 +426,26 @@ class MCTS:
             action = np.ones((1, 1), dtype=int) * action_idx
             s_child, r_child = self.d_fn(leaf_state, torch.tensor(action))
             r_child = torch.exp(r_child)
-
-            # r_child를 scalar 형태로 변환 -> 네트워크에서 구현?
             r_child_scalar = self.network.converter.vector2scalar(r_child).item()
 
-            p_child, _ = self.p_fn(s_child)
+            p_child, v_child = self.p_fn(s_child)
             p_child = torch.exp(p_child)
-
+            v_child = torch.exp(v_child)
+            v_child_scalar = self.network.converter.vector2scalar(v_child).item()
+        
             self.tree[child_id] = {
                 "child": [],
                 "n": 0.0,
                 "q": 0.0,
                 "p": p_child,
+                "v": v_child_scalar,
                 "r": r_child_scalar,
             }
 
             self.tree[leaf_id]["child"].append(action_idx)
 
-        _, leaf_v = self.p_fn(leaf_state)
-        leaf_v = torch.exp(leaf_v)
-        leaf_v = self.network.converter.vector2scalar(leaf_v).item()
-
+        leaf_v = self.tree[leaf_id]["v"]
+        
         return leaf_v
 
     @torch.no_grad()
@@ -488,11 +487,13 @@ class MCTS:
         tree = {}
         root_id = (0,)
 
-        p_root, _ = self.p_fn(root_state)
+        p_root, v_root = self.p_fn(root_state)
         p_root = torch.exp(p_root)
-
+        v_root = torch.exp(v_root)
+        v_root_scalar = self.network.converter.vector2scalar(v_root).item()
+        
         # init root node
-        tree[root_id] = {"child": [], "n": 0.0, "q": 0.0, "p": p_root, "r": 0.0}
+        tree[root_id] = {"child": [], "n": 0.0, "q": 0.0, "p": p_root, "v": v_root_scalar, "r": 0.0}
 
         return tree
 
