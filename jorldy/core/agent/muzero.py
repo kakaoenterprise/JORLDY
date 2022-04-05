@@ -222,6 +222,8 @@ class Muzero(BaseAgent):
         # comput start step loss
         hidden_state = self.network.representation(stacked_state, stacked_action)
         pi, value = self.network.prediction(hidden_state)
+        max_reward = float("-inf")
+        max_V = torch.max(value).item()
 
         policy_loss = -(target_policy[:, 0] * pi).sum(1)
         value_loss = -(target_value[:, 0] * value).sum(1)
@@ -236,6 +238,8 @@ class Muzero(BaseAgent):
             policy_loss += -(target_policy[:, i] * pi).sum(1)
             value_loss += -(target_value[:, i] * value).sum(1)
             reward_loss += -(target_reward[:, i] * reward).sum(1)
+            max_reward = max(max_reward, torch.max(reward).item())
+            max_V = max(max_V, torch.max(value).item())
 
         gradient_scale = 1 / self.num_unroll
         loss = (self.value_loss_weight * value_loss + policy_loss + reward_loss).mean()
@@ -251,6 +255,8 @@ class Muzero(BaseAgent):
             "policy_loss": policy_loss.mean().item(),
             "value_loss": value_loss.mean().item(),
             "reward_loss": reward_loss.mean().item(),
+            "max_reward": max_reward,
+            "max_V": max_V,
             "num_learn": self.num_learn,
             "num_transitions": self.num_transitions,
         }
