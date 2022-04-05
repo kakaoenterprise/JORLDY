@@ -58,7 +58,8 @@ class Muzero(BaseAgent):
         learn_period=1,
         uniform_sample_prob=1e-3,
         # MCTS
-        num_simulation=50,
+        num_mcts=50,
+        num_eval_mcts=5,
         mcts_alpha_max=1.0,
         mcts_alpha_min=0.0,
         **kwargs,
@@ -136,15 +137,14 @@ class Muzero(BaseAgent):
         self.memory.first_store = False
 
         # MCTS
-        self.num_simulation = num_simulation
+        self.num_mcts = num_mcts
+        self.num_eval_mcts = num_eval_mcts
         self.mcts_alpha_max = mcts_alpha_max
         self.mcts_alpha_min = mcts_alpha_min
 
-        # MCTS
         self.mcts = MCTS(
             self.target_network,
             self.action_size,
-            self.num_simulation,
             self.num_unroll,
             self.gamma,
         )
@@ -166,7 +166,9 @@ class Muzero(BaseAgent):
         actions = self.as_tensor(np.expand_dims(actions, axis=0))
         self.device = swap
         root_state = self.target_network.representation(states, actions)
-        action, pi, value = self.mcts.run_mcts(root_state)
+        action, pi, value = self.mcts.run_mcts(
+            root_state, self.num_mcts if training else self.num_eval_mcts
+        )
         action = np.array(action if training else np.argmax(pi), ndmin=2)
 
         return {"action": action, "value": value, "pi": pi}
@@ -342,13 +344,12 @@ class Muzero(BaseAgent):
 
 
 class MCTS:
-    def __init__(self, network, action_size, n_mcts, n_unroll, gamma):
+    def __init__(self, network, action_size, n_unroll, gamma):
         self.network = network
         self.p_fn = network.prediction  # prediction function
         self.d_fn = network.dynamics  # dynamics function
 
         self.action_size = action_size
-        self.n_mcts = n_mcts
         self.n_unroll = n_unroll + 1
 
         self.gamma = gamma
@@ -365,10 +366,10 @@ class MCTS:
         self.tree = {}
 
     @torch.no_grad()
-    def run_mcts(self, root_state):
+    def run_mcts(self, root_state, num_mcts):
         self.tree = self.init_mcts(root_state)
 
-        for i in range(self.n_mcts):
+        for i in range(num_mcts):
             # selection
             leaf_id, leaf_state = self.selection(root_state)
 
@@ -432,7 +433,7 @@ class MCTS:
             p_child = torch.exp(p_child)
             v_child = torch.exp(v_child)
             v_child_scalar = self.network.converter.vector2scalar(v_child).item()
-        
+
             self.tree[child_id] = {
                 "child": [],
                 "s": s_child,
@@ -446,7 +447,7 @@ class MCTS:
             self.tree[leaf_id]["child"].append(action_idx)
 
         leaf_v = self.tree[leaf_id]["v"]
-        
+
         return leaf_v
 
     @torch.no_grad()
@@ -487,15 +488,22 @@ class MCTS:
     def init_mcts(self, root_state):
         tree = {}
         root_id = (0,)
-        
+
         p_root, v_root = self.p_fn(root_state)
         p_root = torch.exp(p_root)
         v_root = torch.exp(v_root)
         v_root_scalar = self.network.converter.vector2scalar(v_root).item()
-        
+
         # init root node
-        tree[root_id] = {"child": [], "s": root_state, "n": 0.0, "q": 0.0, 
-                         "p": p_root, "v": v_root_scalar, "r": 0.0}
+        tree[root_id] = {
+            "child": [],
+            "s": root_state,
+            "n": 0.0,
+            "q": 0.0,
+            "p": p_root,
+            "v": v_root_scalar,
+            "r": 0.0,
+        }
 
         return tree
 

@@ -24,13 +24,15 @@ agent = {
     "buffer_size": 125000,
     "batch_size": 32,
     "start_train_step": 100000,
-    "trajectory_size": 50,
-    "num_simulation": 20,
-    "value_loss_weight": 0.25,
+    "trajectory_size": 200,
+    "value_loss_weight": 1.0,
     "num_unroll": 5,
     "num_td_step": 10,
     "num_stack": 32,
     "num_rb": 16,
+    # MCTS
+    "num_mcts": 25,
+    "num_eval_mcts": 5,
 }
 
 optim = {
@@ -42,7 +44,7 @@ train = {
     "training": True,
     "load_path": None,
     "run_step": 100000000,
-    "print_period": 10,
+    "print_period": 2,
     "save_period": 100000,
     "eval_iteration": 5,
     "record": True,
