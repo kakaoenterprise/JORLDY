@@ -412,7 +412,7 @@ class MCTS:
 
                 a_UCB = np.argmax(UCB_list)
                 node_id += (a_UCB,)
-                node_state, _ = self.d_fn(node_state, torch.tensor([a_UCB]))
+                node_state = self.tree[node_id]["s"]
             else:
                 break
 
@@ -435,6 +435,7 @@ class MCTS:
         
             self.tree[child_id] = {
                 "child": [],
+                "s": s_child,
                 "n": 0.0,
                 "q": 0.0,
                 "p": p_child,
@@ -486,14 +487,15 @@ class MCTS:
     def init_mcts(self, root_state):
         tree = {}
         root_id = (0,)
-
+        
         p_root, v_root = self.p_fn(root_state)
         p_root = torch.exp(p_root)
         v_root = torch.exp(v_root)
         v_root_scalar = self.network.converter.vector2scalar(v_root).item()
         
         # init root node
-        tree[root_id] = {"child": [], "n": 0.0, "q": 0.0, "p": p_root, "v": v_root_scalar, "r": 0.0}
+        tree[root_id] = {"child": [], "s": root_state, "n": 0.0, "q": 0.0, 
+                         "p": p_root, "v": v_root_scalar, "r": 0.0}
 
         return tree
 
