@@ -212,23 +212,25 @@ class Muzero(BaseAgent):
         stacked_state = transitions["stacked_state"]
         stacked_action = transitions["stacked_action"]
         action = transitions["action"].long()
-        target_reward = transitions["reward"]
+        target_reward_s = transitions["reward"]
         target_policy = transitions["policy"]
-        target_value = transitions["value"]
-
-        target_reward = self.network.converter.scalar2vector(target_reward)
-        target_value = self.network.converter.scalar2vector(target_value)
+        target_value_s = transitions["value"]
+        
+        target_reward = self.network.converter.scalar2vector(target_reward_s)
+        target_value = self.network.converter.scalar2vector(target_value_s)
 
         # comput start step loss
         hidden_state = self.network.representation(stacked_state, stacked_action)
         pi, value = self.network.prediction(hidden_state)
-        max_reward = float("-inf")
+        max_R = float("-inf")
         max_V = torch.max(value).item()
-
+        
+        loss_CEL = torch.nn.CrossEntropyLoss(reduction='none')
+        
         policy_loss = -(target_policy[:, 0] * pi).sum(1)
         value_loss = -(target_value[:, 0] * value).sum(1)
         reward_loss = torch.zeros(self.batch_size, device=self.device)
-
+        
         # comput unroll step loss
         for i in range(1, self.num_unroll + 1):
             hidden_state, reward = self.network.dynamics(hidden_state, action[:, i])
@@ -238,13 +240,18 @@ class Muzero(BaseAgent):
             policy_loss += -(target_policy[:, i] * pi).sum(1)
             value_loss += -(target_value[:, i] * value).sum(1)
             reward_loss += -(target_reward[:, i] * reward).sum(1)
-            max_reward = max(max_reward, torch.max(reward).item())
-            max_V = max(max_V, torch.max(value).item())
-
+            
+            reward_s = self.network.converter.vector2scalar(torch.exp(reward))
+            value_s = self.network.converter.vector2scalar(torch.exp(value))
+            
+            max_R = max(max_R, torch.max(reward_s).item())
+            max_V = max(max_V, torch.max(value_s).item())
+            
         gradient_scale = 1 / self.num_unroll
+                
         loss = (self.value_loss_weight * value_loss + policy_loss + reward_loss).mean()
         loss.register_hook(lambda x: x * gradient_scale)
-
+        
         self.optimizer.zero_grad(set_to_none=True)
         loss.backward()
         self.optimizer.step()
@@ -252,10 +259,10 @@ class Muzero(BaseAgent):
 
         result = {
             "loss": loss.item(),
-            "policy_loss": policy_loss.mean().item(),
-            "value_loss": value_loss.mean().item(),
-            "reward_loss": reward_loss.mean().item(),
-            "max_reward": max_reward,
+            "P_loss": policy_loss.mean().item(),
+            "V_loss": value_loss.mean().item(),
+            "R_loss": reward_loss.mean().item(),
+            "max_R": max_R,
             "max_V": max_V,
             "num_learn": self.num_learn,
             "num_transitions": self.num_transitions,

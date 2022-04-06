@@ -11,10 +11,7 @@ agent = {
     "network": "muzero_mlp",
     "head": "mlp_residualblock",
     "hidden_size": 64,
-    "gamma": 0.997,
-    "epsilon_init": 1.0,
-    "epsilon_min": 0.01,
-    "explore_ratio": 0.2,
+    "gamma": 0.99,
     "buffer_size": 2000,
     "batch_size": 32,
     "num_support": 20,
@@ -24,9 +21,9 @@ agent = {
     "num_unroll": 5,
     "num_td_step": 5,
     "num_stack": 5,
-    "num_rb": 5,
+    "num_rb": 1,
     "lr_decay": False,
-    "num_mcts": 20,
+    "num_mcts": 25,
     "num_eval_mcts": 5,
 }
 
@@ -41,7 +38,7 @@ train = {
     "run_step": 1000000,
     "print_period": 1000,
     "save_period": 10000,
-    "eval_iteration": 5,
+    "eval_iteration": 3,
     # distributed setting
     "distributed_batch_size": 128,
     "update_period": 100,
