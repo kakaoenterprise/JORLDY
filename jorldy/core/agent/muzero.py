@@ -429,7 +429,10 @@ class MCTS:
 
     @torch.no_grad()
     def expansion(self, leaf_id, leaf_state):
-        leaf_state_repeat = leaf_state.repeat(self.action_size, 1)
+        repeat_size = [1]*len(leaf_state.shape)
+        repeat_size[0] = self.action_size
+        
+        leaf_state_repeat = leaf_state.repeat(repeat_size)
         action_child = torch.arange(0, self.action_size).unsqueeze(1)
                 
         s_child, r_child = self.d_fn(leaf_state_repeat, action_child)
