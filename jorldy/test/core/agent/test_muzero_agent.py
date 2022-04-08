@@ -1,9 +1,9 @@
-from core.agent.muzero import MuZero
+from core.agent.muzero import Muzero
 from .utils import check_interact, check_save_load, check_sync_in_out
 
 
 def test_muzero(MockEnv):
-    state_size, action_size, action_type = 2, 3, "discrete"
+    state_size, action_size, action_type = [3, 96, 96], 6, "discrete"
     episode_len = 10
     env = MockEnv(state_size, action_size, action_type, episode_len)
 
@@ -17,7 +17,7 @@ def test_muzero(MockEnv):
     alpha, beta = 0.6, 0.4
     learn_period, uniform_sample_prob = 4, 1e-3
 
-    agent = MuZero(
+    agent = Muzero(
         state_size=state_size,
         hidden_state_channel=hidden_state_channel,
         action_size=action_size,

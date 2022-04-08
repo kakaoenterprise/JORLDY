@@ -9,24 +9,33 @@ from .head import Residualblock
 class Muzero_mlp(BaseNetwork):
     """mlp network"""
 
-    def __init__(self, D_in, D_out, num_stack, support, num_rb=10, D_hidden=256, head="mlp_residualblock"):
+    def __init__(
+        self,
+        D_in,
+        D_out,
+        num_stack,
+        support,
+        num_rb=10,
+        D_hidden=256,
+        head="mlp_residualblock",
+    ):
         super(Muzero_mlp, self).__init__(D_hidden, D_hidden, head)
         self.D_in = D_in
         self.D_out = D_out
         self.D_hidden = D_hidden
         self.converter = Converter(support)
-        
-        D_stack = D_in*(num_stack+1)+num_stack
-        
+
+        D_stack = D_in * (num_stack + 1) + num_stack
+
         # representation -> make hidden state
         self.hs_l1 = torch.nn.Linear(D_stack, D_hidden)
         self.hs_ln1 = torch.nn.LayerNorm(D_hidden)
-        
+
         self.hs_res = torch.nn.Sequential(*[self.head for _ in range(num_rb)])
-                
+
         # prediction -> make discrete policy and discrete value
         self.pred_res = torch.nn.Sequential(*[self.head for _ in range(num_rb)])
-        
+
         self.pi_l1 = torch.nn.Linear(D_hidden, D_hidden)
         self.pi_l2 = torch.nn.Linear(D_hidden, D_hidden)
         self.pi_l3 = torch.nn.Linear(D_hidden, D_out)
@@ -42,14 +51,14 @@ class Muzero_mlp(BaseNetwork):
         orthogonal_init(self.vd_l3, "linear")
 
         # dynamics -> make reward and next hidden state
-        self.dy_l1 = torch.nn.Linear(D_hidden+D_out, D_hidden)
+        self.dy_l1 = torch.nn.Linear(D_hidden + D_out, D_hidden)
         self.dy_res = torch.nn.Sequential(*[self.head for _ in range(num_rb)])
-        
+
         self.rd_l1 = torch.nn.Linear(D_hidden, D_hidden)
         self.rd_l2 = torch.nn.Linear(D_hidden, (support << 1) + 1)
         self.next_hs_l1 = torch.nn.Linear(D_hidden, D_hidden)
         self.next_hs_l2 = torch.nn.Linear(D_hidden, D_hidden)
-        
+
         orthogonal_init(self.dy_l1, "linear")
         orthogonal_init(self.rd_l1, "linear")
         orthogonal_init(self.rd_l2, "linear")
@@ -57,7 +66,7 @@ class Muzero_mlp(BaseNetwork):
     def representation(self, obs, a):
         # a = F.one_hot(a.long(), num_classes=self.D_out).view([obs.size(0), -1])
         obs_a = torch.cat([obs, a], dim=-1)
-        
+
         hs = self.hs_l1(obs_a)
         hs = self.hs_ln1(hs)
         hs = self.hs_res(hs)
@@ -88,10 +97,10 @@ class Muzero_mlp(BaseNetwork):
         # hidden_state + action
         a = F.one_hot(a.long(), num_classes=self.D_out).view([hs.size(0), -1])
         hs_a = torch.cat([hs, a], dim=-1)
-        
+
         hs = F.relu(self.dy_l1(hs_a))
         hs = self.dy_res(hs)
-        
+
         # reward(action_distribution)
         rd = self.rd_l1(hs)
         rd = F.leaky_relu(rd)
@@ -109,35 +118,57 @@ class Muzero_mlp(BaseNetwork):
 class Muzero_Resnet(BaseNetwork):
     """residual network"""
 
-    def __init__(self, D_in, D_out, num_stack, support, num_rb=16, D_hidden=256, head="residualblock"):
+    def __init__(
+        self,
+        D_in,
+        D_out,
+        num_stack,
+        support,
+        num_rb=16,
+        D_hidden=256,
+        head="residualblock",
+    ):
         super(Muzero_Resnet, self).__init__(D_hidden, D_hidden, head)
         self.D_out = D_out
         self.converter = Converter(support)
 
+        D_stack = D_in[0] * ((num_stack << 1) + 1)
+        kernel_size = (1, 1)
+        padding = (0, 0)
+        stride = (1, 1)
+
+        assert D_in[1] == D_in[2], "Image width must have same size with height"
+
         # representation -> make hidden state
-        self.hs_down = Downsample((num_stack << 1) + 1, num_rb)
+        self.hs_down = Downsample(D_stack, num_rb, D_hidden)
         self.hs_res = torch.nn.ModuleList([self.head for _ in range(num_rb)])
 
         # prediction -> make discrete policy and discrete value
         self.pred_res = torch.nn.ModuleList([self.head for _ in range(num_rb)])
         self.pred_conv = torch.nn.Conv2d(
-            in_channels=D_hidden, out_channels=D_hidden, kernel_size=(1, 1)
+            in_channels=D_hidden,
+            out_channels=D_hidden,
+            kernel_size=kernel_size,
+            padding=padding,
+            stride=stride,
         )
         self.pred_pi_1 = torch.nn.Linear(
-            in_features=D_hidden * (6 * 6), out_features=D_hidden
+            in_features=(
+                (D_in[1] - kernel_size[0] + (padding[0] << 1)) // stride[0] + 1
+            )
+            ** 2,
+            out_features=D_hidden,
         )
-        self.pred_pi_2 = torch.nn.Linear(
-            in_features=D_hidden, out_features=D_hidden
-        )
-        self.pred_pi_3 = torch.nn.Linear(
-            in_features=D_hidden, out_features=D_out
-        )
+        self.pred_pi_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
+        self.pred_pi_3 = torch.nn.Linear(in_features=D_hidden, out_features=D_out)
         self.pred_vd_1 = torch.nn.Linear(
-            in_features=D_hidden * (6 * 6), out_features=D_hidden
+            in_features=(
+                (D_in[1] - kernel_size[0] + (padding[0] << 1)) // stride[0] + 1
+            )
+            ** 2,
+            out_features=D_hidden,
         )
-        self.pred_vd_2 = torch.nn.Linear(
-            in_features=D_hidden, out_features=D_hidden
-        )
+        self.pred_vd_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
         self.pred_vd_3 = torch.nn.Linear(
             in_features=D_hidden, out_features=(support << 1) + 1
         )
@@ -152,18 +183,28 @@ class Muzero_Resnet(BaseNetwork):
 
         # dynamics -> make reward and next hidden state
         self.dy_conv = torch.nn.Conv2d(
-            in_channels=D_hidden + 1, out_channels=D_hidden, kernel_size=(1, 1)
+            in_channels=D_hidden + 1,
+            out_channels=D_hidden,
+            kernel_size=(1, 1),
+            padding=padding,
+            stride=stride,
         )
         self.dy_conv_rd = torch.nn.Conv2d(
-            in_channels=D_hidden, out_channels=D_hidden, kernel_size=(1, 1)
+            in_channels=D_hidden,
+            out_channels=D_hidden,
+            kernel_size=(1, 1),
+            padding=padding,
+            stride=stride,
         )
         self.dy_res = torch.nn.ModuleList([self.head for _ in range(num_rb)])
         self.dy_rd_1 = torch.nn.Linear(
-            in_features=D_hidden * (6 * 6), out_features=D_hidden
+            in_features=(
+                (D_in[1] - kernel_size[0] + (padding[0] << 1)) // stride[0] + 1
+            )
+            ** 2,
+            out_features=D_hidden,
         )
-        self.dy_rd_2 = torch.nn.Linear(
-            in_features=D_hidden, out_features=D_hidden
-        )
+        self.dy_rd_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
         self.dy_rd_3 = torch.nn.Linear(
             in_features=D_hidden, out_features=(support << 1) + 1
         )
@@ -238,35 +279,39 @@ class Muzero_Resnet(BaseNetwork):
 
 
 class Downsample(torch.nn.Module):
-    def __init__(self, in_channels, num_rb):
+    def __init__(self, in_channels, num_rb, D_hidden):
         super(Downsample, self).__init__()
+
+        kernel_size = (3, 3)
+        stride = (2, 2)
+        padding = (1, 1)
 
         self.conv_1 = torch.nn.Conv2d(
             in_channels=in_channels,
-            out_channels=128,
-            kernel_size=(3, 3),
-            stride=(2, 2),
-            padding=(1, 1),
+            out_channels=(D_hidden >> 1),
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
             bias=False,
         )
         self.conv_2 = torch.nn.Conv2d(
-            in_channels=128,
-            out_channels=256,
-            kernel_size=(3, 3),
-            stride=(2, 2),
-            padding=(1, 1),
+            in_channels=(D_hidden >> 1),
+            out_channels=D_hidden,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
             bias=False,
         )
 
         # resnet
         self.res_1 = torch.nn.ModuleList(
-            [Residualblock(128) for _ in range(num_rb)]
+            [Residualblock(D_hidden >> 1) for _ in range(num_rb)]
         )
         self.res_2 = torch.nn.ModuleList(
-            [Residualblock(256) for _ in range(num_rb)]
+            [Residualblock(D_hidden) for _ in range(num_rb)]
         )
         self.res_3 = torch.nn.ModuleList(
-            [Residualblock(256) for _ in range(num_rb)]
+            [Residualblock(D_hidden) for _ in range(num_rb)]
         )
 
     def forward(self, obs_a):
