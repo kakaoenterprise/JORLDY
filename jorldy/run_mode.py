@@ -15,7 +15,6 @@ def single_train(config_path, unknown):
     agent_config = {
         "state_size": env.state_size,
         "action_size": env.action_size,
-        "gray_img": env.gray_img,
         "optim_config": config.optim,
         "run_step": config.train.run_step,
     }
