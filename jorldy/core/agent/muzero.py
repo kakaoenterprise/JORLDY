@@ -35,7 +35,7 @@ class Muzero(BaseAgent):
         gamma=0.997,
         batch_size=16,
         start_train_step=2000,
-        trajectory_size=200,
+        max_trajectory_size=200,
         value_loss_weight=1.0,
         num_unroll=5,
         num_td_step=10,
@@ -107,7 +107,7 @@ class Muzero(BaseAgent):
         self.start_train_step = start_train_step
         self.value_loss_weight = value_loss_weight
 
-        self.trajectory_size = trajectory_size
+        self.max_trajectory_size = max_trajectory_size
         self.num_unroll = num_unroll
         self.num_td_step = num_td_step
         self.num_stack = num_stack
@@ -229,7 +229,7 @@ class Muzero(BaseAgent):
         max_R = float("-inf")
         max_V = torch.max(value).item()
 
-        loss_CEL = torch.nn.CrossEntropyLoss(reduction="none")
+        # loss_CEL = torch.nn.CrossEntropyLoss(reduction="none")
 
         policy_loss = -(target_policy[:, 0] * pi).sum(1)
         value_loss = -(target_value[:, 0] * value).sum(1)
@@ -305,7 +305,7 @@ class Muzero(BaseAgent):
         self.trajectory["values"].append(transition["value"])
         self.trajectory["policies"].append(transition["pi"])
 
-        if transition["done"] or self.trajectory_step_stamp >= self.trajectory_size:
+        if transition["done"] or self.trajectory_step_stamp >= self.max_trajectory_size:
             self.trajectory_step_stamp = 0  # never self.trajectory_step_stamp -= period
             # TODO: if not terminal -> n-step calc
             self.trajectory["values"].append(np.zeros((1, 1)))
