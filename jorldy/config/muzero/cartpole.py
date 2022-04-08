@@ -16,7 +16,7 @@ agent = {
     "batch_size": 32,
     "num_support": 20,
     "start_train_step": 1000,
-    "trajectory_size": 1000,
+    "max_trajectory_size": 1000,
     "value_loss_weight": 1.0,
     "num_unroll": 5,
     "num_td_step": 5,
