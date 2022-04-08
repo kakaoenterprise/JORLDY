@@ -50,6 +50,7 @@ class Muzero(BaseAgent):
         lr_decay=True,
         optim_config={
             "name": "adam",
+            "weight_decay": 1e-4,
             "lr": 5e-4,
         },
         # PER
@@ -97,9 +98,10 @@ class Muzero(BaseAgent):
         ).to("cpu")
         self.target_network.load_state_dict(self.network.state_dict())
 
-        self.optimizer = Optimizer(
-            optim_config["name"], self.network.parameters(), lr=optim_config["lr"]
-        )
+        self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
+        b = self.optimizer.state
+        c = self.optimizer.param_groups
+        d = self.optimizer.defaults
 
         self.action_size = action_size
         self.gamma = gamma
