@@ -60,7 +60,7 @@ class Muzero(BaseAgent):
         # MCTS
         num_mcts=50,
         num_eval_mcts=5,
-        mcts_alpha_max=1.0,
+        mcts_alpha_max=2.0,
         mcts_alpha_min=0.0,
         **kwargs,
     ):
@@ -407,11 +407,6 @@ class MCTS:
                 UCB_list = []
                 total_n = self.tree[node_id]["n"]
 
-                # for action_idx in self.tree[node_id]['child']:
-                #     edge_id = node_id + (action_idx,)
-                #     n = self.tree[edge_id]['n']
-                #     total_n += n
-
                 for action_index in self.tree[node_id]["child"]:
                     child_id = node_id + (action_index,)
                     n = self.tree[child_id]["n"]
@@ -434,27 +429,32 @@ class MCTS:
 
     @torch.no_grad()
     def expansion(self, leaf_id, leaf_state):
+        repeat_size = [1]*len(leaf_state.shape)
+        repeat_size[0] = self.action_size
+        
+        leaf_state_repeat = leaf_state.repeat(repeat_size)
+        action_child = torch.arange(0, self.action_size).unsqueeze(1)
+                
+        s_child, r_child = self.d_fn(leaf_state_repeat, action_child)
+        r_child = torch.exp(r_child)
+        r_child_scalar = self.network.converter.vector2scalar(r_child)
+        
+        p_child, v_child = self.p_fn(s_child)
+        p_child = torch.exp(p_child)
+        v_child = torch.exp(v_child)
+        v_child_scalar = self.network.converter.vector2scalar(v_child)
+        
         for action_idx in range(self.action_size):
             child_id = leaf_id + (action_idx,)
-
-            action = np.ones((1, 1), dtype=int) * action_idx
-            s_child, r_child = self.d_fn(leaf_state, torch.tensor(action))
-            r_child = torch.exp(r_child)
-            r_child_scalar = self.network.converter.vector2scalar(r_child).item()
-
-            p_child, v_child = self.p_fn(s_child)
-            p_child = torch.exp(p_child)
-            v_child = torch.exp(v_child)
-            v_child_scalar = self.network.converter.vector2scalar(v_child).item()
-
+            
             self.tree[child_id] = {
                 "child": [],
-                "s": s_child,
+                "s": s_child[action_idx].unsqueeze(0),
                 "n": 0.0,
                 "q": 0.0,
-                "p": p_child,
-                "v": v_child_scalar,
-                "r": r_child_scalar,
+                "p": p_child[action_idx].unsqueeze(0),
+                "v": v_child_scalar[action_idx].item(),
+                "r": r_child_scalar[action_idx].item(),
             }
 
             self.tree[leaf_id]["child"].append(action_idx)
