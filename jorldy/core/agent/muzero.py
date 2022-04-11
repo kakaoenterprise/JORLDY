@@ -565,16 +565,17 @@ class Trajectory(dict):
         return value
 
     def get_stacked_data(self, cur_idx, num_stack):
-        shape = self["states"][cur_idx].shape[-2:]
-        actions = np.zeros((num_stack, *shape))
-        states = np.zeros((num_stack + 1, *shape))
-        states[0] = self["states"][cur_idx]
+        channel, *plane = self["states"][cur_idx].shape[1:]
+        actions = np.zeros((num_stack, *plane))
+        states = np.zeros(((num_stack + 1) * channel, *plane))
 
         for i, state in enumerate(
             self["states"][max(0, cur_idx - num_stack) : cur_idx]
         ):
-            states[i + 1] = state
-            actions[i] = np.ones(shape) * self["actions"][i]
+            j = i * channel
+            states[j : j + channel] = state
+            actions[i] = np.ones(plane) * self["actions"][i]
+        states[-channel:] = self["states"][cur_idx]
 
         return states, actions
 
