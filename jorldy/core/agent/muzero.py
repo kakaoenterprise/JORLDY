@@ -71,9 +71,6 @@ class Muzero(BaseAgent):
             else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         )
 
-        self.trajectory_type = (
-            Trajectory if isinstance(state_size, Iterable) else TrajectoryGym
-        )
         self.channel = state_size[0] if isinstance(state_size, Iterable) else state_size
 
         self.network = Network(
@@ -154,7 +151,7 @@ class Muzero(BaseAgent):
         self.target_network.train(training)
 
         if not self.trajectory:
-            self.trajectory = self.trajectory_type(state)
+            self.trajectory = Trajectory(state)
             self.update_target()
 
         states, actions = self.trajectory.get_stacked_data(
@@ -195,9 +192,11 @@ class Muzero(BaseAgent):
                 actions.append(np.random.choice(self.action_size, size=(1, 1)))
                 policies.append(np.zeros(self.action_size))
 
-            s, a = trajectory.get_stacked_data(start_idx + 1, self.num_stack + 1)
-            transitions["stacked_state"].append(s)
-            transitions["stacked_action"].append(a)
+            stacked_states, stacked_actions = trajectory.get_stacked_data(
+                last_idx - 1, self.num_stack + self.num_unroll
+            )
+            transitions["stacked_state"].append(stacked_states)
+            transitions["stacked_action"].append(stacked_actions)
             transitions["action"].append(actions)
             transitions["reward"].append(rewards)
             transitions["policy"].append(policies)
@@ -219,12 +218,13 @@ class Muzero(BaseAgent):
         target_reward = self.network.converter.scalar2vector(target_reward_s)
         target_value = self.network.converter.scalar2vector(target_value_s)
 
-        start_s, start_a = stacked_state[:, : -self.channel], stacked_action[:, :-1]
-        # 실제 다음 state에 대한 stacked observation
-        # next_s, next_a = stacked_state[:, -self.channel :], stacked_action[:, 1:]
+        t_s, t_a = (
+            stacked_state[:, : self.channel * (self.num_stack + 1)],
+            stacked_action[:, : self.num_stack],
+        )
 
         # comput start step loss
-        hidden_state = self.network.representation(start_s, start_a)
+        hidden_state = self.network.representation(t_s, t_a)
         pi, value = self.network.prediction(hidden_state)
         max_R = float("-inf")
         max_V = torch.max(value).item()
@@ -237,7 +237,16 @@ class Muzero(BaseAgent):
 
         # comput unroll step loss
         for i in range(1, self.num_unroll + 1):
+            t_s, t_a = (
+                stacked_state[
+                    :, self.channel * i : self.channel * (self.num_stack + i + 1)
+                ],
+                stacked_action[:, i : self.num_stack + i],
+            )
+            # 실제 unroll 스탭에 해당하는 stacked_observation으로 만든 hidden_state
+            # target_hidden_state = self.network.representation(t_s, t_a)
             hidden_state, reward = self.network.dynamics(hidden_state, action[:, i])
+
             pi, value = self.network.prediction(hidden_state)
             hidden_state.register_hook(lambda x: x * 0.5)
 
@@ -565,7 +574,7 @@ class Trajectory(dict):
         return value
 
     def get_stacked_data(self, cur_idx, num_stack):
-        channel, *plane = self["states"][cur_idx].shape[1:]
+        channel, *plane = self["states"][0].shape[1:]
         actions = np.zeros((num_stack, *plane))
         states = np.zeros(((num_stack + 1) * channel, *plane))
 
@@ -575,21 +584,8 @@ class Trajectory(dict):
             j = i * channel
             states[j : j + channel] = state
             actions[i] = np.ones(plane) * self["actions"][i]
-        states[-channel:] = self["states"][cur_idx]
+
+        if cur_idx < len(self["states"]):
+            states[-channel:] = self["states"][cur_idx]
 
         return states, actions
-
-
-class TrajectoryGym(Trajectory):
-    def get_stacked_data(self, cur, num_stack):
-        states, actions = [], []
-        start = cur - num_stack
-        states = [self["states"][0]] * -start if start < 0 else []
-        actions = [self["actions"][0]] * -start if start < 0 else []
-        start = max(0, start)
-        states.extend(self["states"][start : cur + 1])
-        actions.extend(self["actions"][start + 1 : cur + 1])
-
-        assert len(states) == num_stack + 1
-
-        return np.array(states).flatten(), np.array(actions).flatten()
