@@ -12,6 +12,7 @@ def interact_process(
     update_period,
 ):
     distributed_manager = DistributedManager(*distributed_manager_config)
+    distributed_manager.sync(sync_queue.get(), init=True)
     step = 0
     try:
         while step < run_step:
