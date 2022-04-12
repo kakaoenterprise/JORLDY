@@ -180,6 +180,8 @@ class Muzero(BaseAgent):
 
             # make target
             last_idx = start_idx + self.num_unroll + 1
+            stack_len = self.num_stack + self.num_unroll
+            stack_s, stack_a = trajectory.get_stacked_data(last_idx - 1, stack_len)
             actions = trajectory["actions"][start_idx:last_idx]
             policies = trajectory["policies"][start_idx:last_idx]
             rewards = trajectory["rewards"][start_idx:last_idx]
@@ -187,16 +189,14 @@ class Muzero(BaseAgent):
                 trajectory.get_bootstrap_value(i, self.num_td_step, self.gamma)
                 for i in range(start_idx, last_idx)
             ]
-            for _ in range(trajectory_len, last_idx):
+            for i in reversed(range(last_idx - trajectory_len)):
                 rewards.append(np.zeros((1, 1)))
-                actions.append(np.random.choice(self.action_size, size=(1, 1)))
                 policies.append(np.zeros(self.action_size))
+                actions.append(np.random.choice(self.action_size, size=(1, 1)))
+                stack_a[stack_len - i - 1] = actions[-1]
 
-            stacked_states, stacked_actions = trajectory.get_stacked_data(
-                last_idx - 1, self.num_stack + self.num_unroll
-            )
-            transitions["stacked_state"].append(stacked_states)
-            transitions["stacked_action"].append(stacked_actions)
+            transitions["stacked_state"].append(stack_s)
+            transitions["stacked_action"].append(stack_a)
             transitions["action"].append(actions)
             transitions["reward"].append(rewards)
             transitions["policy"].append(policies)
@@ -218,13 +218,13 @@ class Muzero(BaseAgent):
         target_reward = self.network.converter.scalar2vector(target_reward_s)
         target_value = self.network.converter.scalar2vector(target_value_s)
 
-        t_s, t_a = (
+        stack_s, stack_a = (
             stacked_state[:, : self.channel * (self.num_stack + 1)],
             stacked_action[:, : self.num_stack],
         )
 
         # comput start step loss
-        hidden_state = self.network.representation(t_s, t_a)
+        hidden_state = self.network.representation(stack_s, stack_a)
         pi, value = self.network.prediction(hidden_state)
         max_R = float("-inf")
         max_V = torch.max(value).item()
@@ -237,14 +237,13 @@ class Muzero(BaseAgent):
 
         # comput unroll step loss
         for i in range(1, self.num_unroll + 1):
-            t_s, t_a = (
-                stacked_state[
-                    :, self.channel * i : self.channel * (self.num_stack + i + 1)
-                ],
-                stacked_action[:, i : self.num_stack + i],
+            ei = self.num_stack + i
+            stack_s, stack_a = (
+                stacked_state[:, self.channel * i : self.channel * (ei + 1)],
+                stacked_action[:, i:ei],
             )
             # 실제 unroll 스탭에 해당하는 stacked_observation으로 만든 hidden_state
-            # target_hidden_state = self.network.representation(t_s, t_a)
+            # target_hidden_state = self.network.representation(stack_s, stack_a)
             hidden_state, reward = self.network.dynamics(hidden_state, action[:, i])
 
             pi, value = self.network.prediction(hidden_state)
@@ -574,18 +573,18 @@ class Trajectory(dict):
         return value
 
     def get_stacked_data(self, cur_idx, num_stack):
+        start = cur_idx - num_stack
+        cur_idx = min(len(self["states"]) - 1, cur_idx)
         channel, *plane = self["states"][0].shape[1:]
         actions = np.zeros((num_stack, *plane))
         states = np.zeros(((num_stack + 1) * channel, *plane))
 
-        for i, state in enumerate(
-            self["states"][max(0, cur_idx - num_stack) : cur_idx]
-        ):
-            j = i * channel
-            states[j : j + channel] = state
-            actions[i] = np.ones(plane) * self["actions"][i]
+        si = max(0, -start) * channel
+        for n, i in enumerate(range(max(0, start), cur_idx), max(0, -start)):
+            actions[n] = np.full(plane, self["actions"][i])
+            states[si : si + channel] = self["states"][i]
+            si += channel
 
-        if cur_idx < len(self["states"]):
-            states[-channel:] = self["states"][cur_idx]
+        states[si : si + channel] = self["states"][cur_idx]
 
         return states, actions
