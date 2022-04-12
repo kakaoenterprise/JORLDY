@@ -52,8 +52,8 @@ class DistributedManager:
 
         return transitions, completed_ratio
 
-    def sync(self, sync_item):
-        if self.mode == "sync":
+    def sync(self, sync_item, init=False):
+        if self.mode == "sync" or init:
             sync_item = ray.put(sync_item)
             ray.get([actor.sync.remote(sync_item) for actor in self.actors])
         else:
