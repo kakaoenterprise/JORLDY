@@ -173,6 +173,7 @@ def sync_distributed_train(config_path, unknown):
         assert agent.action_type == env.action_type
         if config.train.load_path:
             agent.load(config.train.load_path)
+        distributed_manager.sync(agent.sync_out())
 
         save_path = path_queue.get()
         step, print_stamp, save_stamp = 0, 0, 0
@@ -290,6 +291,7 @@ def async_distributed_train(config_path, unknown):
         assert agent.action_type == env.action_type
         if config.train.load_path:
             agent.load(config.train.load_path)
+        interact_sync_queue.put(agent.sync_out())
 
         save_path = path_queue.get()
         heap = {
