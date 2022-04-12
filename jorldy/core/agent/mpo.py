@@ -449,7 +449,6 @@ class MPO(BaseAgent):
 
         # Process per step
         self.memory.store(transitions)
-        delta_t = step - self.time_t
         self.time_t = step
 
         if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:
