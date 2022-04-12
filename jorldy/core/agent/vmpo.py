@@ -286,6 +286,6 @@ class VMPO(REINFORCE):
             result = self.learn()
             if self.lr_decay:
                 self.learning_rate_decay(step)
-            self.learn_stamp -= self.n_step
+            self.learn_stamp = 0
 
         return result
