@@ -61,8 +61,9 @@ class Muzero_mlp(BaseNetwork):
         hs = self.hs_l1(obs_a)
         hs = self.hs_ln1(hs)
         hs = self.hs_res(hs)
-
-        return F.normalize(hs)
+        
+        hs = F.normalize(hs)
+        return hs
 
     def prediction(self, hs):
         hs = self.pred_res(hs)
@@ -102,8 +103,9 @@ class Muzero_mlp(BaseNetwork):
         next_hs = self.next_hs_l1(hs)
         next_hs = torch.tanh(next_hs)
         next_hs = self.next_hs_l2(next_hs)
-        next_hs = torch.tanh(next_hs)
-        return F.normalize(next_hs), rd
+        next_hs = F.relu(next_hs)
+        next_hs = F.normalize(next_hs)
+        return next_hs, rd
 
 
 class Muzero_Resnet(BaseNetwork):
