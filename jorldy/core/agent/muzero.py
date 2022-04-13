@@ -195,7 +195,7 @@ class Muzero(BaseAgent):
                 policies.append(np.zeros(self.action_size))
                 actions.append(np.random.choice(self.action_size, size=(1, 1)))
                 stack_a[stack_len - i - 1] = actions[-1]
-            
+
             transitions["stacked_state"].append(stack_s)
             transitions["stacked_action"].append(stack_a)
             transitions["action"].append(actions)
