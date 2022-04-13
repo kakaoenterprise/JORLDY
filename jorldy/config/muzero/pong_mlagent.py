@@ -10,7 +10,7 @@ agent = {
     "gamma": 0.997,
     "buffer_size": 25000,
     "batch_size": 32,
-    "num_support": 5,
+    "num_support": 10,
     "start_train_step": 5000,
     "max_trajectory_size": 100,
     "value_loss_weight": 1.0,

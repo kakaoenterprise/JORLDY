@@ -21,7 +21,7 @@ agent = {
     "buffer_size": 125000,
     "batch_size": 32,
     "start_train_step": 100000,
-    "trajectory_size": 200,
+    "max_trajectory_size": 200,
     "value_loss_weight": 1.0,
     "num_unroll": 5,
     "num_td_step": 10,
