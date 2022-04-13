@@ -10,7 +10,7 @@ agent = {
     "gamma": 0.99,
     "buffer_size": 50000,
     "batch_size": 64,
-    "n_step": 4,
+    "n_step": 1,
     "start_train_step": 2000,
     "n_epoch": 64,
     "clip_grad_norm": 1.0,
