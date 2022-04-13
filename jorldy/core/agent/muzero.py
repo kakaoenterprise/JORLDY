@@ -154,15 +154,15 @@ class Muzero(BaseAgent):
             self.trajectory = Trajectory(state)
             self.update_target()
 
-        states, actions = self.trajectory.get_stacked_data(
+        stacked_s, stacked_a = self.trajectory.get_stacked_data(
             self.trajectory_step_stamp, self.num_stack
         )
 
         self.device, swap = "cpu", self.device
-        states = self.as_tensor(np.expand_dims(states, axis=0))
-        actions = self.as_tensor(np.expand_dims(actions, axis=0))
+        stacked_s = self.as_tensor(np.expand_dims(stacked_s, axis=0))
+        stacked_a = self.as_tensor(np.expand_dims(stacked_a, axis=0))
         self.device = swap
-        root_state = self.target_network.representation(states, actions)
+        root_state = self.target_network.representation(stacked_s, stacked_a)
         action, pi, value = self.mcts.run_mcts(
             root_state, self.num_mcts if training else self.num_eval_mcts
         )
@@ -179,22 +179,23 @@ class Muzero(BaseAgent):
             start_idx = np.random.choice(trajectory_len - 1)
 
             # make target
-            last_idx = start_idx + self.num_unroll + 1
+            end = start_idx + self.num_unroll + 1
             stack_len = self.num_stack + self.num_unroll
-            stack_s, stack_a = trajectory.get_stacked_data(last_idx - 1, stack_len)
-            actions = trajectory["actions"][start_idx:last_idx]
-            policies = trajectory["policies"][start_idx:last_idx]
-            rewards = trajectory["rewards"][start_idx:last_idx]
+            stack_s, stack_a = trajectory.get_stacked_data(end - 1, stack_len)
+
+            actions = trajectory["actions"][start_idx:end]
+            policies = trajectory["policies"][start_idx:end]
+            rewards = trajectory["rewards"][start_idx:end]
             values = [
                 trajectory.get_bootstrap_value(i, self.num_td_step, self.gamma)
-                for i in range(start_idx, last_idx)
+                for i in range(start_idx, end)
             ]
-            for i in reversed(range(last_idx - trajectory_len)):
+            for i in reversed(range(end - trajectory_len)):
                 rewards.append(np.zeros((1, 1)))
                 policies.append(np.zeros(self.action_size))
                 actions.append(np.random.choice(self.action_size, size=(1, 1)))
                 stack_a[stack_len - i - 1] = actions[-1]
-
+            
             transitions["stacked_state"].append(stack_s)
             transitions["stacked_action"].append(stack_a)
             transitions["action"].append(actions)
@@ -573,18 +574,24 @@ class Trajectory(dict):
         return value
 
     def get_stacked_data(self, cur_idx, num_stack):
-        start = cur_idx - num_stack
+        cut = max(0, num_stack - cur_idx)
+        start = max(0, cur_idx - num_stack)
         cur_idx = min(len(self["states"]) - 1, cur_idx)
         channel, *plane = self["states"][0].shape[1:]
-        actions = np.zeros((num_stack, *plane))
-        states = np.zeros(((num_stack + 1) * channel, *plane))
+        stacked_a = np.zeros((num_stack, 1, *plane), int)
+        stacked_s = np.zeros((num_stack + 1, channel, *plane), np.float32)
 
-        si = max(0, -start) * channel
-        for n, i in enumerate(range(max(0, start), cur_idx), max(0, -start)):
-            actions[n] = np.full(plane, self["actions"][i])
-            states[si : si + channel] = self["states"][i]
-            si += channel
+        stacked_s[:cut] = self["states"][0]
+        stacked_a[:cut] = self["actions"][0]
 
-        states[si : si + channel] = self["states"][cur_idx]
+        n = cut
+        for i in range(start, cur_idx):
+            stacked_a[n] = np.full((1, *plane), self["actions"][i + 1])
+            stacked_s[n] = self["states"][i]
+            n += 1
 
-        return states, actions
+        stacked_s[n] = self["states"][cur_idx]
+        stacked_s = stacked_s.reshape(((num_stack + 1) * channel, *plane))
+        stacked_a = stacked_a.reshape((num_stack, *plane))
+
+        return stacked_s, stacked_a
