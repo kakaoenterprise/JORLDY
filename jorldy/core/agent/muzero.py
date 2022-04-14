@@ -237,11 +237,10 @@ class Muzero(BaseAgent):
         reward_loss = torch.zeros(self.batch_size, device=self.device)
 
         # comput unroll step loss
-        for i in range(1, self.num_unroll + 1):
-            ei = self.num_stack + i
+        for stack_end, i in enumerate(range(1, self.num_unroll + 1), self.num_stack):
             stack_s, stack_a = (
-                stacked_state[:, self.channel * i : self.channel * (ei + 1)],
-                stacked_action[:, i:ei],
+                stacked_state[:, self.channel * i : self.channel * (stack_end + 1)],
+                stacked_action[:, i:stack_end],
             )
             # 실제 unroll 스탭에 해당하는 stacked_observation으로 만든 hidden_state
             # target_hidden_state = self.network.representation(stack_s, stack_a)
@@ -576,7 +575,7 @@ class Trajectory(dict):
     def get_stacked_data(self, cur_idx, num_stack):
         cut = max(0, num_stack - cur_idx)
         start = max(0, cur_idx - num_stack)
-        cur_idx = min(len(self["states"]) - 1, cur_idx)
+        end = min(len(self["states"]) - 1, cur_idx)
         channel, *plane = self["states"][0].shape[1:]
         stacked_a = np.zeros((num_stack, 1, *plane), int)
         stacked_s = np.zeros((num_stack + 1, channel, *plane), np.float32)
@@ -584,13 +583,11 @@ class Trajectory(dict):
         stacked_s[:cut] = self["states"][0]
         stacked_a[:cut] = self["actions"][0]
 
-        n = cut
-        for i in range(start, cur_idx):
+        for n, i in enumerate(range(start, end), start=cut):
             stacked_a[n] = np.full((1, *plane), self["actions"][i + 1])
             stacked_s[n] = self["states"][i]
-            n += 1
 
-        stacked_s[n] = self["states"][cur_idx]
+        stacked_s[cut + end - start] = self["states"][end]
         stacked_s = stacked_s.reshape(((num_stack + 1) * channel, *plane))
         stacked_a = stacked_a.reshape((num_stack, *plane))
 
