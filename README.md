@@ -106,12 +106,13 @@ python main.py --sync --config config.ppo.cartpole --train.num_workers 8
 
 ## :page_facing_up: Documentation
 
+- [Algorithm Descriptions](./docs/Algorithm_Descriptions.md)
+- [Benchmark](https://petite-balance-8cb.notion.site/Benchmark-09684f1adf764c84a5a331cb5690544f)
 - [Distributed Architecture](./docs/Distributed_Architecture.md)
-- [Role of Managers](./jorldy/manager/README.md)
 - [List of Contents](./docs/List_of_Contents.md)
 - [Naming Convention](./docs/Naming_convention.md)
-- [Benchmark](https://petite-balance-8cb.notion.site/Benchmark-09684f1adf764c84a5a331cb5690544f)
 - [Reference](./docs/Reference.md)
+- [Role of Managers](./jorldy/manager/README.md)
 
 
 ## :busts_in_silhouette: Contributors
