@@ -8,6 +8,7 @@ agent = {
     "name": "td3",
     "actor": "deterministic_policy",
     "critic": "continuous_q_network",
+    "hidden_size": 512,
     "gamma": 0.99,
     "buffer_size": 1000000,
     "batch_size": 128,
@@ -24,16 +25,16 @@ agent = {
 optim = {
     "actor": "adam",
     "critic": "adam",
-    "actor_lr": 1e-3,
-    "critic_lr": 1e-3,
+    "actor_lr": 3e-4,
+    "critic_lr": 3e-4,
 }
 
 train = {
     "training": True,
     "load_path": None,
     "run_step": 1000000,
-    "print_period": 5000,
-    "save_period": 10000,
+    "print_period": 10000,
+    "save_period": 100000,
     "eval_iteration": 10,
     # distributed setting
     "distributed_batch_size": 256,
