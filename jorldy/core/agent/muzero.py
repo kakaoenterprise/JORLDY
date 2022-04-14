@@ -237,10 +237,10 @@ class Muzero(BaseAgent):
         reward_loss = torch.zeros(self.batch_size, device=self.device)
 
         # comput unroll step loss
-        for stack_end, i in enumerate(range(1, self.num_unroll + 1), self.num_stack):
+        for j, i in enumerate(range(1, self.num_unroll + 1), self.num_stack + 1):
             stack_s, stack_a = (
-                stacked_state[:, self.channel * i : self.channel * (stack_end + 1)],
-                stacked_action[:, i:stack_end],
+                stacked_state[:, self.channel * i : self.channel * (j + 1)],
+                stacked_action[:, i:j],
             )
             # 실제 unroll 스탭에 해당하는 stacked_observation으로 만든 hidden_state
             # target_hidden_state = self.network.representation(stack_s, stack_a)
