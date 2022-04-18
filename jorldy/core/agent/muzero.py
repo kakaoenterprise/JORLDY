@@ -605,7 +605,7 @@ class Trajectory(dict):
 
         if enable_random_action:
             for n in range(cut):
-                stacked_a[n] = np.full((channel, *plane), np.random.randint(n_action))
+                stacked_a[n] = np.full((1, *plane), np.random.randint(n_action))
 
         for n, i in enumerate(range(start, end), start=cut):
             stacked_a[n] = np.full((1, *plane), self["actions"][i + 1])
