@@ -12,7 +12,7 @@ agent = {
     "head": "mlp_residualblock",
     "hidden_size": 64,
     "gamma": 0.99,
-    "buffer_size": 5000,
+    "buffer_size": 3000,
     "batch_size": 32,
     "num_support": 10,
     "start_train_step": 1000,
@@ -46,5 +46,5 @@ train = {
     # distributed setting
     "distributed_batch_size": 128,
     "update_period": 100,
-    "num_workers": 32,
+    "num_workers": 8,
 }
