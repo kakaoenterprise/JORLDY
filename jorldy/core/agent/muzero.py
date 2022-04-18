@@ -204,9 +204,9 @@ class Muzero(BaseAgent):
             for i in reversed(range(end - trajectory_len)):
                 rewards.append(np.zeros((1, 1)))
                 policies.append(
-                    np.zeros(self.action_size)
+                    np.full(self.action_size, 1 / self.action_size)
                     if self.enable_uniform_policy
-                    else np.full(self.action_size, 1 / self.action_size)
+                    else np.zeros(self.action_size)
                 )
                 if self.enable_random_action:
                     actions.append(np.random.choice(self.action_size, size=(1, 1)))
@@ -337,9 +337,9 @@ class Muzero(BaseAgent):
             # TODO: if not terminal -> n-step calc
             self.trajectory["values"].append(np.zeros((1, 1)))
             self.trajectory["policies"].append(
-                np.zeros(self.action_size)
+                np.full(self.action_size, 1 / self.action_size)
                 if self.enable_uniform_policy
-                else np.full(self.action_size, 1 / self.action_size)
+                else np.zeros(self.action_size)
             )
 
             _transition = {"trajectory": [self.trajectory]}
@@ -595,7 +595,7 @@ class Trajectory(dict):
             value = reward + gamma * value
         return value
 
-    def get_stacked_data(self, cur_idx, num_stack, n_action, enable_random_action=True):
+    def get_stacked_data(self, cur_idx, num_stack, n_action, enable_random_action):
         cut = max(0, num_stack - cur_idx)
         start = max(0, cur_idx - num_stack)
         end = min(len(self["states"]) - 1, cur_idx)
