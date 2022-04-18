@@ -261,6 +261,7 @@ class Muzero(BaseAgent):
         # comput start step loss
         hidden_state = self.network.representation(stack_s, stack_a)
         pi, value = self.network.prediction(hidden_state)
+
         value_s = self.network.converter.vector2scalar(torch.exp(value))
         max_V = torch.max(value_s).item()
         max_R = float("-inf")
