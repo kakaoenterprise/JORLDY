@@ -10,7 +10,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 
 from core.buffer import ReplayBuffer
-from core.buffer import PERBuffer
+from core.buffer import MuzeroPERBuffer
 from .base import BaseAgent
 
 
@@ -120,18 +120,18 @@ class Muzero(BaseAgent):
         self.trajectory = None
 
         # PER
-        # self.alpha = alpha
-        # self.beta = beta
-        # self.learn_period = learn_period
-        # self.learn_period_stamp = 0
-        # self.buffer_size = buffer_size
-        # self.uniform_sample_prob = uniform_sample_prob
-        # self.beta_add = (1 - beta) / run_step
-        # self.memory = PERBuffer(self.buffer_size, uniform_sample_prob)
-        # no priority
+        self.alpha = alpha
+        self.beta = beta
+        self.learn_period = learn_period
+        self.learn_period_stamp = 0
         self.buffer_size = buffer_size
-        self.memory = ReplayBuffer(buffer_size)
-        self.memory.first_store = False
+        self.uniform_sample_prob = uniform_sample_prob
+        self.beta_add = (1 - beta) / run_step
+        self.memory = MuzeroPERBuffer(self.buffer_size, uniform_sample_prob)
+        # no priority
+        # self.buffer_size = buffer_size
+        # self.memory = ReplayBuffer(buffer_size)
+        # self.memory.first_store = False
 
         # MCTS
         self.num_mcts = num_mcts
@@ -168,27 +168,28 @@ class Muzero(BaseAgent):
         )
         action = np.array(action if training else np.argmax(pi), ndmin=2)
 
-        return {"action": action, "value": value, "pi": pi}
+        return {"action": action, "value": np.array(value), "pi": pi}
 
     def learn(self):
-        trajectories = self.memory.sample(self.batch_size)
+        trajectories, starts, weights, indices, sampled_p, mean_p = self.memory.sample(
+            self.beta, self.batch_size
+        )
 
         transitions = defaultdict(list)
-        for trajectory in trajectories["trajectory"]:
+        for trajectory, start in zip(trajectories, starts):
             trajectory_len = len(trajectory["values"])
-            start_idx = np.random.choice(trajectory_len - 1)
 
             # make target
-            end = start_idx + self.num_unroll + 1
+            end = start + self.num_unroll + 1
             stack_len = self.num_stack + self.num_unroll
             stack_s, stack_a = trajectory.get_stacked_data(end - 1, stack_len)
 
-            actions = trajectory["actions"][start_idx:end]
-            policies = trajectory["policies"][start_idx:end]
-            rewards = trajectory["rewards"][start_idx:end]
+            actions = trajectory["actions"][start:end]
+            policies = trajectory["policies"][start:end]
+            rewards = trajectory["rewards"][start:end]
             values = [
                 trajectory.get_bootstrap_value(i, self.num_td_step, self.gamma)
-                for i in range(start_idx, end)
+                for i in range(start, end)
             ]
             for i in reversed(range(end - trajectory_len)):
                 rewards.append(np.zeros((1, 1)))
@@ -259,9 +260,11 @@ class Muzero(BaseAgent):
             max_R = max(max_R, torch.max(reward_s).item())
             max_V = max(max_V, torch.max(value_s).item())
 
-        gradient_scale = 1 / self.num_unroll
+        weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
+        loss = self.value_loss_weight * value_loss + policy_loss + reward_loss
+        loss = (weights * loss).mean()
 
-        loss = (self.value_loss_weight * value_loss + policy_loss + reward_loss).mean()
+        gradient_scale = 1 / self.num_unroll
         loss.register_hook(lambda x: x * gradient_scale)
 
         self.optimizer.zero_grad(set_to_none=True)
@@ -276,6 +279,8 @@ class Muzero(BaseAgent):
             "R_loss": reward_loss.mean().item(),
             "max_R": max_R,
             "max_V": max_V,
+            "sampled_p": sampled_p,
+            "mean_p": mean_p,
             "num_learn": self.num_learn,
             "num_transitions": self.num_transitions,
         }
@@ -315,11 +320,16 @@ class Muzero(BaseAgent):
 
         if transition["done"] or self.trajectory_step_stamp >= self.max_trajectory_size:
             self.trajectory_step_stamp = 0  # never self.trajectory_step_stamp -= period
-            # TODO: if not terminal -> n-step calc
-            self.trajectory["values"].append(np.zeros((1, 1)))
-            self.trajectory["policies"].append(np.zeros(self.action_size))
 
-            _transition = {"trajectory": [self.trajectory]}
+            # TODO: if not terminal -> n-step calc
+            self.trajectory["policies"].append(np.zeros(self.action_size))
+            self.trajectory["values"].append(np.zeros((1, 1)))
+            priorities = np.zeros(len(self.trajectory["values"]) - 1)
+            for i, v in enumerate(self.trajectory["values"][:-1]):
+                z = self.trajectory.get_bootstrap_value(i, self.num_unroll, self.gamma)
+                priorities[i] = abs(v - z)
+
+            _transition = {"trajectory": self.trajectory, "priorities": priorities}
             self.trajectory = None
 
         return _transition
@@ -562,8 +572,6 @@ class Trajectory(dict):
         self["rewards"] = [np.zeros((1, 1))]
         self["values"] = []
         self["policies"] = []
-        self["priorities"] = None
-        self["priority"] = None
 
     def get_bootstrap_value(self, start, num_td_step, gamma):
         last = start + num_td_step
