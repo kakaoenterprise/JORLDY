@@ -125,8 +125,16 @@ python main.py --sync --config config.ppo.cartpole --train.num_workers 8
 | <img src="./resrc/contributor_link.png" alt="link" width=100/> | <img src="./resrc/contributor_royce.png" alt="royce" width=100/> | <img src="./resrc/contributor_crest.png" alt="crest" width=100/> | <img src="./resrc/contributor_lisa.png" alt="lisa" width=100/> |
 |                  link.lee<br />(Hojoon Lee)                  |                royce.choi<br />(Jinwon Choi)                 |                 crest.son<br />(Sungho Son)                  |               lisa.ekkim<br />(Eunkyeong Kim)                |
 
+## :label: Citation
 
-
+```
+@article{min2022jorldy,
+  title={JORLDY: a fully customizable open source framework for reinforcement learning},
+  author={Min, Kyushik and Lee, Hyunho and Shin, Kwansu and Lee, Taehak and Lee, Hojoon and Choi, Jinwon and Son, Sungho},
+  journal={arXiv preprint arXiv:2204.04892},
+  year={2022}
+}
+```
 
 ## :copyright: License
 
