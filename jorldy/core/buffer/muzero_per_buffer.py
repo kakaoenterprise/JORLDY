@@ -1,32 +1,147 @@
 import numpy as np
-from bisect import bisect_left
 
 from .base import BaseBuffer
 
-
-def epsilon(a, b):
-    return abs(a - b) < 1e-6
-
-
+# Reference: https://github.com/LeejwUniverse/following_deepmid/tree/master/jungwoolee_pytorch/100%20Algorithm_For_RL/01%20sum_tree
 class MuzeroPERBuffer(BaseBuffer):
     def __init__(self, buffer_size, uniform_sample_prob=1e-3):
         super(MuzeroPERBuffer, self).__init__()
-        self.trajectories = []
-        self.traj_start = 0
-        self.traj_end = 0
-
         self.buffer_size = buffer_size
         self.buffer_counter = 0
-        self.buffer = np.zeros((buffer_size, 2), dtype=int)
-        self.priorities = np.zeros((buffer_size, 2))
-        self.tree_start = 0
-        self.tree_end = 0
-        self.sum_cur = 0.0
-        self.sum_start = 0.0
-        self.sum_last = 0.0
-        self.sum_priority = 0.0
+        self.tree_size = (self.buffer_size * 2) - 1
+        self.first_leaf_index = self.buffer_size - 1
 
+        self.tree_start = self.first_leaf_index
+        self.tree_end = self.first_leaf_index
+        self.sum_tree = np.zeros(self.tree_size)  # define sum tree
+        self.look_up = np.zeros((buffer_size, 2), dtype=int)
+
+        self.trajectories = []
+        self.traj_index = 0
+        self.traj_offset = 0
+
+        self.max_priority = 1.0
         self.uniform_sample_prob = uniform_sample_prob
+
+    def store(self, transitions):
+        if self.first_store:
+            self.check_dim(transitions[0])
+
+        for transition in transitions:
+            # TODO: if priority is None
+
+            num = len(transition["priorities"])
+            assert num < self.buffer_size
+
+            for i, new_priority in enumerate(transition["priorities"]):
+                self.add_tree_data(new_priority, i)
+
+            self.trajectories.append(transition["trajectory"])
+            self.traj_index += 1
+            self.buffer_counter = min(self.buffer_counter + num, self.buffer_size)
+
+        self.remove_to_fit()
+
+    def add_tree_data(self, new_priority, pos):
+        self.update_priority(new_priority, self.tree_end)
+        self.look_up[self.tree_end - self.first_leaf_index] = (self.traj_index, pos)
+
+        self.tree_end += 1
+        if self.tree_end == self.tree_size:
+            self.tree_end = self.first_leaf_index
+
+    def update_priority(self, new_priority, index):
+        ex_priority = self.sum_tree[index]
+        delta_priority = new_priority - ex_priority
+        self.sum_tree[index] = new_priority
+        self.update_tree(index, delta_priority)
+
+        self.max_priority = max(self.max_priority, new_priority)
+
+    def update_tree(self, index, delta_priority):
+        # index is a starting leaf node point.
+        while index > 0:
+            index = (index - 1) // 2  # parent node index.
+            self.sum_tree[index] += delta_priority
+
+    def remove_to_fit(self):
+        if self.buffer_counter < self.buffer_size:
+            return
+
+        self.tree_start = self.tree_end
+        new_offset, pos = self.look_up[self.tree_end - self.first_leaf_index]
+        if pos > 0:
+            n_traj = len(self.trajectories[new_offset - self.traj_offset]["rewards"])
+            new_start = self.tree_end + n_traj - pos - 1
+            if new_start >= self.tree_size:
+                self.remove_priorites(self.tree_start, self.tree_size)
+                self.tree_start = self.first_leaf_index
+                new_start -= self.buffer_size
+
+            self.remove_priorites(self.tree_start, new_start)
+            self.tree_start = new_start
+            new_offset += 1
+
+        del self.trajectories[: new_offset - self.traj_offset]
+        self.traj_offset = new_offset
+
+    def remove_priorites(self, start, end):
+        for i in range(start, end):
+            self.update_priority(0, i)
+
+        self.buffer_counter -= max(0, end - start)
+
+    def search_tree(self, num):
+        index = 0  # always start from root index.
+        while index < self.first_leaf_index:
+            left = (index * 2) + 1
+            right = (index * 2) + 2
+
+            if num <= self.sum_tree[left]:  # if child left node is over current value.
+                index = left  # go to the left direction.
+            else:
+                num -= self.sum_tree[left]  # if child left node is under current value.
+                index = right  # go to the right direction.
+
+        return index
+
+    def sample(self, beta, batch_size):
+        assert self.sum_tree[0] > 0.0
+        # TODO: reduce sampling calculation
+        uniform_sampling = np.random.uniform(size=batch_size) < self.uniform_sample_prob
+        uniform_size = np.sum(uniform_sampling) + 1
+        prioritized_size = batch_size - uniform_size
+
+        m = self.tree_end - self.first_leaf_index
+        trgs = np.random.randint(self.buffer_counter, size=uniform_size)
+        trgs[-1] = self.buffer_counter - 1
+        uniform_indices = list(
+            np.where(trgs < m, trgs + self.first_leaf_index, trgs + self.tree_start - m)
+        )
+
+        targets = np.random.uniform(size=prioritized_size) * self.sum_tree[0]
+        prioritized_indices = [self.search_tree(target) for target in targets]
+
+        indices = np.asarray(uniform_indices + prioritized_indices)
+        priorities = np.asarray([self.sum_tree[index] for index in indices])
+        assert len(indices) == len(priorities) == batch_size
+
+        uniform_probs = np.asarray(1.0 / self.buffer_counter)
+        prioritized_probs = priorities / self.sum_tree[0]
+
+        usp = self.uniform_sample_prob
+        sample_probs = (1.0 - usp) * prioritized_probs + usp * uniform_probs
+        weights = (uniform_probs / sample_probs) ** beta
+        weights /= np.max(weights)
+
+        transitions = [
+            (self.trajectories[traj_idx - self.traj_offset], start)
+            for traj_idx, start in self.look_up[indices - self.first_leaf_index]
+        ]
+
+        sampled_p = np.mean(priorities)
+        mean_p = self.sum_tree[0] / self.buffer_counter
+        return transitions, weights, indices, sampled_p, mean_p
 
     def check_dim(self, transition):
         print("########################################")
@@ -37,126 +152,6 @@ class MuzeroPERBuffer(BaseBuffer):
             print(f"{key}: {val.shape}")
         print("########################################")
         self.first_store = False
-
-    def store(self, transitions):
-        if self.first_store:
-            self.check_dim(transitions[0])
-
-        for transition in transitions:
-            # TODO: if priority is None
-            self.add_trajectory(transition["trajectory"], transition["priorities"])
-
-    def add_trajectory(self, trajectory, priorities):
-        self.trajectories.append(trajectory)
-
-        num_step = len(priorities)
-        new_end = num_step + self.tree_end
-        sum_last = self.sum_last
-        assert num_step <= self.buffer_size
-
-        if new_end <= self.buffer_size:
-            remove_traj, end_step = self.update_priority(
-                self.tree_end, new_end, priorities, range(num_step)
-            )
-        else:
-            cut = self.buffer_size - self.tree_end
-            self.update_priority(
-                self.tree_end, self.buffer_size, priorities[:cut], range(cut)
-            )
-            self.tree_end, self.sum_cur = 0, 0.0
-            self.sum_last = self.priorities[-1].sum()
-
-            new_end -= self.buffer_size
-            remove_traj, end_step = self.update_priority(
-                0, new_end, priorities[cut:num_step], range(cut, num_step)
-            )
-
-        if self.buffer_size < self.buffer_counter:
-            remove_end = remove_traj - self.traj_start
-            remove_end_step = len(self.trajectories[remove_end]["values"]) - 2
-            new_start = (new_end + remove_end_step - end_step) % self.buffer_size
-
-            if new_start < self.tree_start:
-                self.sum_priority -= sum_last - self.sum_start
-                self.buffer_counter -= self.buffer_size - self.tree_start
-                self.tree_start, self.sum_start = 0, 0.0
-
-            bb = self.tree_start
-            self.buffer_counter -= new_start - bb
-            self.tree_start = new_start
-
-            new_sum_start = self.priorities[self.tree_start][1]
-            self.sum_priority -= new_sum_start - self.sum_start
-            self.sum_start = new_sum_start
-
-            self.traj_start += remove_end + 1
-            del self.trajectories[: remove_end + 1]
-
-        self.tree_end = new_end
-        self.traj_end += 1
-        assert self.buffer_counter <= self.buffer_size
-
-    def update_priority(self, start, end, priorities, indices):
-        new_sum = self.sum_cur
-        for i, priority in zip(range(start, end), priorities):
-            self.priorities[i, 0] = priority
-            self.priorities[i, 1] = new_sum
-            new_sum += priority
-
-        self.buffer_counter += len(priorities)
-        self.sum_priority += new_sum - self.sum_cur
-        self.sum_cur = new_sum
-        remove_traj, end_step = self.buffer[end - 1]
-        self.buffer[start:end, 0] = self.traj_end
-        self.buffer[start:end, 1] = indices
-
-        return remove_traj, end_step
-
-    def search_tree(self, target):
-        if self.tree_start < self.tree_end:
-            start, end = self.tree_start, self.tree_end
-            target += self.sum_start
-        elif target > self.sum_cur:
-            start, end = self.tree_start, self.buffer_size
-            target += self.sum_start - self.sum_cur
-        else:
-            start, end = 0, self.tree_end
-
-        # TODO: refine BTS
-        return start + bisect_left(self.priorities[start:end, 1], target) - 1
-
-    def sample(self, beta, batch_size):
-        assert self.sum_priority > 0.0
-        # TODO: reduce sampling calculation
-        uniform_sampling = np.random.uniform(size=batch_size) < self.uniform_sample_prob
-        uniform_size = np.sum(uniform_sampling)
-        prioritized_size = batch_size - uniform_size
-
-        indices = np.random.randint(self.buffer_counter, size=batch_size)
-
-        targets = np.random.uniform(size=prioritized_size) * self.sum_priority
-        for i, target in zip(range(uniform_size, batch_size), targets):
-            indices[i] = self.search_tree(target)
-
-        priorities = np.asarray([self.priorities[index, 0] for index in indices])
-        assert len(indices) == len(priorities) == batch_size
-
-        uniform_probs = np.asarray(1.0 / self.buffer_counter)
-        prioritized_probs = priorities / self.sum_priority
-
-        usp = self.uniform_sample_prob
-        sample_probs = (1.0 - usp) * prioritized_probs + usp * uniform_probs
-        weights = (uniform_probs / sample_probs) ** beta
-        weights /= np.max(weights)
-        trajectories = [
-            self.trajectories[self.buffer[index, 0] - self.traj_start]
-            for index in indices
-        ]
-        starts = [self.buffer[index, 1] for index in indices]
-
-        sampled_p = np.mean(priorities)
-        mean_p = self.sum_priority / self.buffer_counter
-        return trajectories, starts, weights, indices, sampled_p, mean_p
 
     @property
     def size(self):

@@ -128,7 +128,7 @@ class Muzero(BaseAgent):
         self.uniform_sample_prob = uniform_sample_prob
         self.beta_add = (1 - beta) / run_step
         self.memory = MuzeroPERBuffer(self.buffer_size, uniform_sample_prob)
-        # no priority
+        # no PER
         # self.buffer_size = buffer_size
         # self.memory = ReplayBuffer(buffer_size)
         # self.memory.first_store = False
@@ -171,12 +171,12 @@ class Muzero(BaseAgent):
         return {"action": action, "value": np.array(value), "pi": pi}
 
     def learn(self):
-        trajectories, starts, weights, indices, sampled_p, mean_p = self.memory.sample(
+        transitions, weights, indices, sampled_p, mean_p = self.memory.sample(
             self.beta, self.batch_size
         )
 
-        transitions = defaultdict(list)
-        for trajectory, start in zip(trajectories, starts):
+        _transitions = defaultdict(list)
+        for trajectory, start in transitions:
             trajectory_len = len(trajectory["values"])
 
             # make target
@@ -197,25 +197,25 @@ class Muzero(BaseAgent):
                 actions.append(np.random.choice(self.action_size, size=(1, 1)))
                 stack_a[stack_len - i - 1] = actions[-1]
 
-            transitions["stacked_state"].append(stack_s)
-            transitions["stacked_action"].append(stack_a)
-            transitions["action"].append(actions)
-            transitions["reward"].append(rewards)
-            transitions["policy"].append(policies)
-            transitions["value"].append(values)
+            _transitions["stacked_state"].append(stack_s)
+            _transitions["stacked_action"].append(stack_a)
+            _transitions["action"].append(actions)
+            _transitions["reward"].append(rewards)
+            _transitions["policy"].append(policies)
+            _transitions["value"].append(values)
 
-        for key in transitions.keys():
-            value = np.stack(transitions[key], axis=0)
+        for key in _transitions.keys():
+            value = np.stack(_transitions[key], axis=0)
             if value.shape[-1] == 1:
                 value = value.squeeze(axis=-1)
-            transitions[key] = self.as_tensor(value)
+            _transitions[key] = self.as_tensor(value)
 
-        stacked_state = transitions["stacked_state"]
-        stacked_action = transitions["stacked_action"]
-        action = transitions["action"].long()
-        target_policy = transitions["policy"]
-        target_reward_s = transitions["reward"]
-        target_value_s = transitions["value"]
+        stacked_state = _transitions["stacked_state"]
+        stacked_action = _transitions["stacked_action"]
+        action = _transitions["action"].long()
+        target_policy = _transitions["policy"]
+        target_reward_s = _transitions["reward"]
+        target_value_s = _transitions["value"]
 
         target_reward = self.network.converter.scalar2vector(target_reward_s)
         target_value = self.network.converter.scalar2vector(target_value_s)
@@ -228,8 +228,16 @@ class Muzero(BaseAgent):
         # comput start step loss
         hidden_state = self.network.representation(stack_s, stack_a)
         pi, value = self.network.prediction(hidden_state)
+
+        value_s = self.network.converter.vector2scalar(torch.exp(value))
+        max_V = torch.max(value_s).item()
         max_R = float("-inf")
-        max_V = torch.max(value).item()
+
+        # Update sum tree
+        td_error = abs(value_s - target_value_s[:, 0])
+        p_j = torch.pow(td_error, self.alpha)
+        for i, p in zip(indices, p_j):
+            self.memory.update_priority(p.item(), i)
 
         # loss_CEL = torch.nn.CrossEntropyLoss(reduction="none")
 
