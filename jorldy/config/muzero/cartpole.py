@@ -16,15 +16,18 @@ agent = {
     "batch_size": 32,
     "num_support": 10,
     "start_train_step": 1000,
-    "max_trajectory_size": 100,
+    "max_trajectory_size": 1000,
     "value_loss_weight": 1.0,
     "num_unroll": 5,
     "num_td_step": 5,
-    "num_stack": 2,
+    "num_stack": 5,
     "num_rb": 1,
     "lr_decay": False,
+    # MCTS
     "num_mcts": 30,
     "num_eval_mcts": 15,
+    # Self Supervised Consistency Loss
+    "use_ssc_loss": True, 
 }
 
 optim = {
