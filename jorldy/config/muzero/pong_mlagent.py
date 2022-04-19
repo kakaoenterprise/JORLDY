@@ -19,6 +19,10 @@ agent = {
     "num_stack": 2,
     "num_rb": 1,
     "lr_decay": False,
+    # out of range state setting
+    "enable_after_random_action": True,
+    "enable_prev_random_action": False,
+    "enable_uniform_policy": True,
     # MCTS
     "num_mcts": 30,
     "num_eval_mcts": 15,
