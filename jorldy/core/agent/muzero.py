@@ -46,6 +46,10 @@ class Muzero(BaseAgent):
         device=None,
         run_step=1e6,
         num_workers=1,
+        # Out of range setting
+        enable_after_random_action=True,
+        enable_prev_random_action=True,
+        enable_uniform_policy=True,
         # Optim
         lr_decay=True,
         optim_config={
@@ -119,6 +123,10 @@ class Muzero(BaseAgent):
 
         self.trajectory = None
 
+        self.enable_after_random_action = enable_after_random_action
+        self.enable_prev_random_action = enable_prev_random_action
+        self.enable_uniform_policy = enable_uniform_policy
+
         # PER
         # self.alpha = alpha
         # self.beta = beta
@@ -155,7 +163,10 @@ class Muzero(BaseAgent):
             self.update_target()
 
         stacked_s, stacked_a = self.trajectory.get_stacked_data(
-            self.trajectory_step_stamp, self.num_stack
+            self.trajectory_step_stamp,
+            self.num_stack,
+            self.action_size,
+            self.enable_prev_random_action,
         )
 
         self.device, swap = "cpu", self.device
@@ -181,7 +192,9 @@ class Muzero(BaseAgent):
             # make target
             end = start_idx + self.num_unroll + 1
             stack_len = self.num_stack + self.num_unroll
-            stack_s, stack_a = trajectory.get_stacked_data(end - 1, stack_len)
+            stack_s, stack_a = trajectory.get_stacked_data(
+                end - 1, stack_len, self.action_size, self.enable_prev_random_action
+            )
 
             actions = trajectory["actions"][start_idx:end]
             policies = trajectory["policies"][start_idx:end]
@@ -192,9 +205,16 @@ class Muzero(BaseAgent):
             ]
             for i in reversed(range(end - trajectory_len)):
                 rewards.append(np.zeros((1, 1)))
-                policies.append(np.zeros(self.action_size))
-                actions.append(np.random.choice(self.action_size, size=(1, 1)))
-                stack_a[stack_len - i - 1] = actions[-1]
+                policies.append(
+                    np.full(self.action_size, 1 / self.action_size)
+                    if self.enable_uniform_policy
+                    else np.zeros(self.action_size)
+                )
+                if self.enable_after_random_action:
+                    actions.append(np.random.choice(self.action_size, size=(1, 1)))
+                    stack_a[stack_len - i - 1] = actions[-1]
+                else:
+                    actions.append(np.zeros((1, 1)))
 
             transitions["stacked_state"].append(stack_s)
             transitions["stacked_action"].append(stack_a)
@@ -227,8 +247,9 @@ class Muzero(BaseAgent):
         # comput start step loss
         hidden_state = self.network.representation(stack_s, stack_a)
         pi, value = self.network.prediction(hidden_state)
+        value_s = self.network.converter.vector2scalar(torch.exp(value))
+        max_V = torch.max(value_s).item()
         max_R = float("-inf")
-        max_V = torch.max(value).item()
 
         # loss_CEL = torch.nn.CrossEntropyLoss(reduction="none")
 
@@ -317,7 +338,11 @@ class Muzero(BaseAgent):
             self.trajectory_step_stamp = 0  # never self.trajectory_step_stamp -= period
             # TODO: if not terminal -> n-step calc
             self.trajectory["values"].append(np.zeros((1, 1)))
-            self.trajectory["policies"].append(np.zeros(self.action_size))
+            self.trajectory["policies"].append(
+                np.full(self.action_size, 1 / self.action_size)
+                if self.enable_uniform_policy
+                else np.zeros(self.action_size)
+            )
 
             _transition = {"trajectory": [self.trajectory]}
             self.trajectory = None
@@ -572,7 +597,7 @@ class Trajectory(dict):
             value = reward + gamma * value
         return value
 
-    def get_stacked_data(self, cur_idx, num_stack):
+    def get_stacked_data(self, cur_idx, num_stack, n_action, enable_random_action):
         cut = max(0, num_stack - cur_idx)
         start = max(0, cur_idx - num_stack)
         end = min(len(self["states"]) - 1, cur_idx)
@@ -580,8 +605,9 @@ class Trajectory(dict):
         stacked_a = np.zeros((num_stack, 1, *plane), int)
         stacked_s = np.zeros((num_stack + 1, channel, *plane), np.float32)
 
-        stacked_s[:cut] = self["states"][0]
-        stacked_a[:cut] = self["actions"][0]
+        if enable_random_action:
+            for n in range(cut):
+                stacked_a[n] = np.full((1, *plane), np.random.randint(n_action))
 
         for n, i in enumerate(range(start, end), start=cut):
             stacked_a[n] = np.full((1, *plane), self["actions"][i + 1])

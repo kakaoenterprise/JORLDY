@@ -27,6 +27,10 @@ agent = {
     "num_td_step": 10,
     "num_stack": 32,
     "num_rb": 16,
+    # out of range state setting
+    "enable_after_random_action": True,
+    "enable_prev_random_action": False,
+    "enable_uniform_policy": True,
     # MCTS
     "num_mcts": 25,
     "num_eval_mcts": 5,
