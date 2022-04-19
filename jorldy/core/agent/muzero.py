@@ -35,6 +35,7 @@ class Muzero(BaseAgent):
         gamma=0.997,
         batch_size=16,
         start_train_step=2000,
+        policy_train_delay=2000,
         max_trajectory_size=200,
         value_loss_weight=1.0,
         num_unroll=5,
@@ -108,6 +109,9 @@ class Muzero(BaseAgent):
         self.gamma = gamma
         self.batch_size = batch_size
         self.start_train_step = start_train_step
+        self.policy_train_delay = (
+            start_train_step + policy_train_delay if policy_train_delay > 0 else 0
+        )
         self.value_loss_weight = value_loss_weight
 
         self.max_trajectory_size = max_trajectory_size
@@ -154,8 +158,9 @@ class Muzero(BaseAgent):
             self.action_size,
             self.num_unroll,
             self.gamma,
+            self.policy_train_delay > 0,
         )
-        
+
         # Self Supervised Consistency Loss
         self.use_ssc_loss = use_ssc_loss
 
@@ -179,9 +184,12 @@ class Muzero(BaseAgent):
         stacked_a = self.as_tensor(np.expand_dims(stacked_a, axis=0))
         self.device = swap
         root_state = self.target_network.representation(stacked_s, stacked_a)
-        action, pi, value = self.mcts.run_mcts(
-            root_state, self.num_mcts if training else self.num_eval_mcts
-        )
+        if training:
+            n_mcts = self.num_mcts
+        else:
+            self.mcts.use_uniform_policy = False
+            n_mcts = self.num_eval_mcts
+        action, pi, value = self.mcts.run_mcts(root_state, n_mcts)
         action = np.array(action if training else np.argmax(pi), ndmin=2)
 
         return {"action": action, "value": np.array(value), "pi": pi}
@@ -249,9 +257,9 @@ class Muzero(BaseAgent):
             stacked_state[:, : self.channel * (self.num_stack + 1)],
             stacked_action[:, : self.num_stack],
         )
-        
+
         # comput start step loss
-        hidden_state = self.network.representation(stack_s, stack_a)        
+        hidden_state = self.network.representation(stack_s, stack_a)
         pi, value = self.network.prediction(hidden_state)
         value_s = self.network.converter.vector2scalar(torch.exp(value))
         max_V = torch.max(value_s).item()
@@ -267,9 +275,9 @@ class Muzero(BaseAgent):
         value_loss = -(target_value[:, 0] * value).sum(1)
         reward_loss = torch.zeros(self.batch_size, device=self.device)
         ssc_loss = torch.zeros(self.batch_size, device=self.device)
-        
+
         cos_sim = torch.nn.CosineSimilarity()
-        
+
         # comput unroll step loss
         for j, i in enumerate(range(1, self.num_unroll + 1), self.num_stack + 1):
             stack_s, stack_a = (
@@ -278,22 +286,26 @@ class Muzero(BaseAgent):
             )
 
             hidden_state, reward = self.network.dynamics(hidden_state, action[:, i])
-                                                        
+
             if self.use_ssc_loss:
                 # 실제 unroll 스탭에 해당하는 stacked_observation으로 만든 hidden_state
-                target_hidden_state = self.network.representation(stack_s, stack_a).detach()
-                ssc_loss -= (1/self.num_unroll)*cos_sim(target_hidden_state.flatten(1), hidden_state.flatten(1))
-   
+                target_hidden_state = self.network.representation(
+                    stack_s, stack_a
+                ).detach()
+                ssc_loss -= (1 / self.num_unroll) * cos_sim(
+                    target_hidden_state.flatten(1), hidden_state.flatten(1)
+                )
+
             pi, value = self.network.prediction(hidden_state)
             hidden_state.register_hook(lambda x: x * 0.5)
 
             policy_loss += -(target_policy[:, i] * pi).sum(1)
             value_loss += -(target_value[:, i] * value).sum(1)
             reward_loss += -(target_reward[:, i] * reward).sum(1)
-            
+
             reward_s = self.network.converter.vector2scalar(torch.exp(reward))
             value_s = self.network.converter.vector2scalar(torch.exp(value))
-            
+
             max_R = max(max_R, torch.max(reward_s).item())
             max_V = max(max_V, torch.max(value_s).item())
 
@@ -408,24 +420,30 @@ class Muzero(BaseAgent):
         else:
             self.mcts.temp_param = 0.25
 
-    def sync_in(self, weights, temperature):
+    def sync_in(self, weights, temperature, use_uniform_policy):
         self.network.load_state_dict(weights)
         self.mcts.temp_param = temperature
+        self.mcts.use_uniform_policy = use_uniform_policy
 
     def sync_out(self, device="cpu"):
         weights = self.network.state_dict()
         for k, v in weights.items():
             weights[k] = v.to(device)
-        sync_item = {"weights": weights, "temperature": self.mcts.temp_param}
+        sync_item = {
+            "weights": weights,
+            "temperature": self.mcts.temp_param,
+            "use_uniform_policy": self.policy_train_delay > self.time_t,
+        }
         return sync_item
 
 
 class MCTS:
-    def __init__(self, network, action_size, n_unroll, gamma):
+    def __init__(self, network, action_size, n_unroll, gamma, policy_train_delay):
         self.network = network
         self.p_fn = network.prediction  # prediction function
         self.d_fn = network.dynamics  # dynamics function
 
+        self.use_uniform_policy = policy_train_delay
         self.action_size = action_size
         self.n_unroll = n_unroll + 1
 
@@ -455,12 +473,12 @@ class MCTS:
 
             # backup
             self.backup(leaf_id, leaf_v)
-            
+
         root_value = self.tree[self.root_id]["q"]
         root_action, pi = self.select_root_action()
-        
+
         return root_action, pi, root_value
-    
+
     @torch.no_grad()
     def selection(self, root_state):
         node_id = self.root_id
@@ -504,8 +522,11 @@ class MCTS:
         r_child_scalar = self.network.converter.vector2scalar(r_child)
 
         p_child, v_child = self.p_fn(s_child)
-        p_child = torch.exp(p_child)
-        v_child = torch.exp(v_child)
+        p_child = (
+            torch.full((self.action_size, self.action_size), 1 / self.action_size)
+            if self.use_uniform_policy
+            else torch.exp(p_child)
+        )
         v_child_scalar = self.network.converter.vector2scalar(v_child)
 
         for action_idx in range(self.action_size):
@@ -560,14 +581,18 @@ class MCTS:
                 break
 
             reward_list.append(self.tree[node_id]["r"])
-    
+
     @torch.no_grad()
     def init_mcts(self, root_state):
         tree = {}
         root_id = (0,)
 
         p_root, v_root = self.p_fn(root_state)
-        p_root = torch.exp(p_root)
+        p_root = (
+            torch.full((1, self.action_size), 1 / self.action_size)
+            if self.use_uniform_policy
+            else torch.exp(p_root)
+        )
         v_root = torch.exp(v_root)
         v_root_scalar = self.network.converter.vector2scalar(v_root).item()
 
@@ -605,6 +630,7 @@ class MCTS:
         action_idx = np.random.choice(self.action_size, p=pi_noise)
 
         return action_idx, pi
+
 
 class Trajectory(dict):
     def __init__(self, state):
