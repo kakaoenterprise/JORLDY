@@ -21,6 +21,7 @@ agent = {
     "buffer_size": 125000,
     "batch_size": 32,
     "start_train_step": 10000,
+    "policy_train_delay": 5000,
     "max_trajectory_size": 200,
     "value_loss_weight": 1.0,
     "num_unroll": 5,
@@ -35,7 +36,7 @@ agent = {
     "num_mcts": 30,
     "num_eval_mcts": 15,
     # Self Supervised Consistency Loss
-    "use_ssc_loss": False, 
+    "use_ssc_loss": False,
 }
 
 optim = {

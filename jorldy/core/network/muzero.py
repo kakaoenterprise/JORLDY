@@ -9,7 +9,16 @@ from .head import Residualblock
 class Muzero_mlp(BaseNetwork):
     """mlp network"""
 
-    def __init__(self, D_in, D_out, num_stack, support, num_rb=10, D_hidden=256, head="mlp_residualblock"):
+    def __init__(
+        self,
+        D_in,
+        D_out,
+        num_stack,
+        support,
+        num_rb=10,
+        D_hidden=256,
+        head="mlp_residualblock",
+    ):
         super(Muzero_mlp, self).__init__(D_hidden, D_hidden, head)
         self.D_in = D_in
         self.D_out = D_out
@@ -61,7 +70,7 @@ class Muzero_mlp(BaseNetwork):
         hs = self.hs_l1(obs_a)
         hs = self.hs_ln1(hs)
         hs = self.hs_res(hs)
-        
+
         hs = F.normalize(hs)
         return hs
 
@@ -111,7 +120,16 @@ class Muzero_mlp(BaseNetwork):
 class Muzero_Resnet(BaseNetwork):
     """residual network"""
 
-    def __init__(self, D_in, D_out, num_stack, support, num_rb=16, D_hidden=256, head="residualblock"):
+    def __init__(
+        self,
+        D_in,
+        D_out,
+        num_stack,
+        support,
+        num_rb=16,
+        D_hidden=256,
+        head="residualblock",
+    ):
         super(Muzero_Resnet, self).__init__(D_hidden, D_hidden, head)
         self.D_out = D_out
         self.converter = Converter(support)
