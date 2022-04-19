@@ -47,7 +47,8 @@ class Muzero(BaseAgent):
         run_step=1e6,
         num_workers=1,
         # Out of range setting
-        enable_random_action=True,
+        enable_after_random_action=True,
+        enable_prev_random_action=True,
         enable_uniform_policy=True,
         # Optim
         lr_decay=True,
@@ -122,7 +123,8 @@ class Muzero(BaseAgent):
 
         self.trajectory = None
 
-        self.enable_random_action = enable_random_action
+        self.enable_after_random_action = enable_after_random_action
+        self.enable_prev_random_action = enable_prev_random_action
         self.enable_uniform_policy = enable_uniform_policy
 
         # PER
@@ -164,7 +166,7 @@ class Muzero(BaseAgent):
             self.trajectory_step_stamp,
             self.num_stack,
             self.action_size,
-            self.enable_random_action,
+            self.enable_prev_random_action,
         )
 
         self.device, swap = "cpu", self.device
@@ -191,7 +193,7 @@ class Muzero(BaseAgent):
             end = start_idx + self.num_unroll + 1
             stack_len = self.num_stack + self.num_unroll
             stack_s, stack_a = trajectory.get_stacked_data(
-                end - 1, stack_len, self.action_size, self.enable_random_action
+                end - 1, stack_len, self.action_size, self.enable_prev_random_action
             )
 
             actions = trajectory["actions"][start_idx:end]
@@ -208,7 +210,7 @@ class Muzero(BaseAgent):
                     if self.enable_uniform_policy
                     else np.zeros(self.action_size)
                 )
-                if self.enable_random_action:
+                if self.enable_after_random_action:
                     actions.append(np.random.choice(self.action_size, size=(1, 1)))
                     stack_a[stack_len - i - 1] = actions[-1]
                 else:
