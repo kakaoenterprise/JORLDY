@@ -133,7 +133,7 @@ class Converter:
         """prediction value & dynamics reward output(vector:distribution) -> output(scalar:value)"""
         # get supports
         support = (
-            torch.tensor([x for x in range(-self.support, self.support+1)])
+            torch.tensor([x for x in range(-self.support, self.support + 1)])
             .expand(prob.shape)
             .float()
             .to(device=prob.device)
@@ -145,12 +145,9 @@ class Converter:
         # Invertible scaling
         eps = 0.001
         scalar = torch.sign(scalar) * (
-                (
-                        (torch.sqrt(1 + 4 * eps * (torch.abs(scalar) + 1 + eps)) - 1)
-                        / (2 * eps)
-                )
-                ** 2
-                - 1
+            ((torch.sqrt(1 + 4 * eps * (torch.abs(scalar) + 1 + eps)) - 1) / (2 * eps))
+            ** 2
+            - 1
         )
         return scalar
 
@@ -160,7 +157,7 @@ class Converter:
         # reduce scale
         eps = 0.001
         scalar = (
-                torch.sign(scalar) * (torch.sqrt(torch.abs(scalar) + 1) - 1) + eps * scalar
+            torch.sign(scalar) * (torch.sqrt(torch.abs(scalar) + 1) - 1) + eps * scalar
         )
         scalar = torch.clamp(scalar, -self.support, self.support)
 
@@ -170,9 +167,7 @@ class Converter:
         dist = torch.zeros(
             scalar.shape[0], scalar.shape[1], (self.support << 1) + 1
         ).to(scalar.device)
-        dist.scatter_(
-            -1, (floor + self.support).long(), (1 - prob)
-        )
+        dist.scatter_(-1, (floor + self.support).long(), (1 - prob))
 
         # target distribution projection(distribute probability for higher support)
         idx = (floor + 1) + self.support
