@@ -9,7 +9,6 @@ from core.optimizer import Optimizer
 from collections import defaultdict
 from collections.abc import Iterable
 
-from core.buffer import ReplayBuffer
 from core.buffer import MuzeroPERBuffer
 from .base import BaseAgent
 
@@ -142,10 +141,6 @@ class Muzero(BaseAgent):
         self.uniform_sample_prob = uniform_sample_prob
         self.beta_add = (1 - beta) / run_step
         self.memory = MuzeroPERBuffer(self.buffer_size, uniform_sample_prob)
-        # no PER
-        # self.buffer_size = buffer_size
-        # self.memory = ReplayBuffer(buffer_size)
-        # self.memory.first_store = False
 
         # MCTS
         self.num_mcts = num_mcts
@@ -272,6 +267,8 @@ class Muzero(BaseAgent):
         for i, p in zip(indices, p_j):
             self.memory.update_priority(p.item(), i)
 
+        # loss_CEL = torch.nn.CrossEntropyLoss(reduction="none")
+
         policy_loss = -(target_policy[:, 0] * pi).sum(1)
         value_loss = -(target_value[:, 0] * value).sum(1)
         reward_loss = torch.zeros(self.batch_size, device=self.device)
@@ -345,17 +342,24 @@ class Muzero(BaseAgent):
         self.num_transitions += len(transitions)
 
         # Process per step
+        delta_t = step - self.time_t
         self.memory.store(transitions)
         self.time_t = step
+        self.learn_period_stamp += delta_t
+
+        # Annealing beta
+        self.beta = min(1.0, self.beta + (self.beta_add * delta_t))
 
         if (
-            self.memory.buffer_counter >= self.batch_size
+            self.learn_period_stamp >= self.learn_period
+            and self.memory.buffer_counter >= self.batch_size
             and self.time_t >= self.start_train_step
         ):
             result = self.learn()
             if self.lr_decay:
                 self.learning_rate_decay(step)
             self.set_temperature(step)
+            self.learn_period_stamp -= self.learn_period
 
         return result
 

@@ -109,14 +109,14 @@ class MuzeroPERBuffer(BaseBuffer):
         assert self.sum_tree[0] > 0.0
         # TODO: reduce sampling calculation
         uniform_sampling = np.random.uniform(size=batch_size) < self.uniform_sample_prob
-        uniform_size = np.sum(uniform_sampling) + 1
+        uniform_size = np.sum(uniform_sampling)
         prioritized_size = batch_size - uniform_size
 
-        m = self.tree_end - self.first_leaf_index
-        trgs = np.random.randint(self.buffer_counter, size=uniform_size)
-        trgs[-1] = self.buffer_counter - 1
+        targets = np.random.randint(
+            self.tree_start, self.tree_start + self.buffer_counter, size=uniform_size
+        )
         uniform_indices = list(
-            np.where(trgs < m, trgs + self.first_leaf_index, trgs + self.tree_start - m)
+            np.where(targets < self.tree_size, targets, targets - self.buffer_size)
         )
 
         targets = np.random.uniform(size=prioritized_size) * self.sum_tree[0]
