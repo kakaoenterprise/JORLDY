@@ -24,9 +24,13 @@ agent = {
     "max_trajectory_size": 200,
     "value_loss_weight": 1.0,
     "num_unroll": 5,
-    "num_td_step": 5,
-    "num_stack": 4,
-    "num_rb": 1,
+    "num_td_step": 10,
+    "num_stack": 32,
+    "num_rb": 16,
+    # out of range state setting
+    "enable_after_random_action": True,
+    "enable_prev_random_action": False,
+    "enable_uniform_policy": True,
     # MCTS
     "num_mcts": 30,
     "num_eval_mcts": 15,
