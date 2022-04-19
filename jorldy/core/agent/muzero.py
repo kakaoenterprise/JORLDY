@@ -513,6 +513,7 @@ class MCTS:
             if self.use_uniform_policy
             else torch.exp(p_child)
         )
+        v_child = torch.exp(v_child)
         v_child_scalar = self.network.converter.vector2scalar(v_child)
 
         for action_idx in range(self.action_size):
