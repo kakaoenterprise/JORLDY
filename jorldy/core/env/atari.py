@@ -58,7 +58,7 @@ class _Atari(BaseEnv):
         )
 
         self.env = gym.make(name)
-        self.state_size = [stack_frame, img_height, img_width]
+        self.state_size = [self.num_channel * stack_frame, img_height, img_width]
         self.action_size = self.env.action_space.n
         self.action_type = "discrete"
         self.score = 0
