@@ -20,7 +20,7 @@ agent = {
     "gamma": 0.997,
     "buffer_size": 125000,
     "batch_size": 32,
-    "start_train_step": 100000,
+    "start_train_step": 10000,
     "max_trajectory_size": 200,
     "value_loss_weight": 1.0,
     "num_unroll": 5,
@@ -32,8 +32,10 @@ agent = {
     "enable_prev_random_action": False,
     "enable_uniform_policy": True,
     # MCTS
-    "num_mcts": 25,
-    "num_eval_mcts": 5,
+    "num_mcts": 30,
+    "num_eval_mcts": 15,
+    # Self Supervised Consistency Loss
+    "use_ssc_loss": False, 
 }
 
 optim = {

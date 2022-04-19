@@ -30,6 +30,8 @@ agent = {
     # MCTS
     "num_mcts": 30,
     "num_eval_mcts": 15,
+    # Self Supervised Consistency Loss
+    "use_ssc_loss": True, 
 }
 
 optim = {

@@ -67,6 +67,8 @@ class Muzero(BaseAgent):
         num_eval_mcts=5,
         mcts_alpha_max=2.0,
         mcts_alpha_min=0.0,
+        # Self Supervised Consistency Loss
+        use_ssc_loss=False,
         **kwargs,
     ):
         self.device = (
@@ -153,6 +155,9 @@ class Muzero(BaseAgent):
             self.num_unroll,
             self.gamma,
         )
+        
+        # Self Supervised Consistency Loss
+        self.use_ssc_loss = use_ssc_loss
 
     @torch.no_grad()
     def act(self, state, training=True):
@@ -178,7 +183,7 @@ class Muzero(BaseAgent):
             root_state, self.num_mcts if training else self.num_eval_mcts
         )
         action = np.array(action if training else np.argmax(pi), ndmin=2)
-
+                
         return {"action": action, "value": value, "pi": pi}
 
     def learn(self):
@@ -243,46 +248,51 @@ class Muzero(BaseAgent):
             stacked_state[:, : self.channel * (self.num_stack + 1)],
             stacked_action[:, : self.num_stack],
         )
-
+        
         # comput start step loss
-        hidden_state = self.network.representation(stack_s, stack_a)
+        hidden_state = self.network.representation(stack_s, stack_a)        
         pi, value = self.network.prediction(hidden_state)
         value_s = self.network.converter.vector2scalar(torch.exp(value))
         max_V = torch.max(value_s).item()
         max_R = float("-inf")
 
-        # loss_CEL = torch.nn.CrossEntropyLoss(reduction="none")
-
         policy_loss = -(target_policy[:, 0] * pi).sum(1)
         value_loss = -(target_value[:, 0] * value).sum(1)
         reward_loss = torch.zeros(self.batch_size, device=self.device)
-
+        ssc_loss = torch.zeros(self.batch_size, device=self.device)
+        
+        cos_sim = torch.nn.CosineSimilarity()
+        
         # comput unroll step loss
         for j, i in enumerate(range(1, self.num_unroll + 1), self.num_stack + 1):
             stack_s, stack_a = (
                 stacked_state[:, self.channel * i : self.channel * (j + 1)],
                 stacked_action[:, i:j],
             )
-            # 실제 unroll 스탭에 해당하는 stacked_observation으로 만든 hidden_state
-            # target_hidden_state = self.network.representation(stack_s, stack_a)
-            hidden_state, reward = self.network.dynamics(hidden_state, action[:, i])
 
+            hidden_state, reward = self.network.dynamics(hidden_state, action[:, i])
+                                                        
+            if self.use_ssc_loss:
+                # 실제 unroll 스탭에 해당하는 stacked_observation으로 만든 hidden_state
+                target_hidden_state = self.network.representation(stack_s, stack_a).detach()
+                ssc_loss -= (1/self.num_unroll)*cos_sim(target_hidden_state.flatten(1), hidden_state.flatten(1))
+   
             pi, value = self.network.prediction(hidden_state)
             hidden_state.register_hook(lambda x: x * 0.5)
 
             policy_loss += -(target_policy[:, i] * pi).sum(1)
             value_loss += -(target_value[:, i] * value).sum(1)
             reward_loss += -(target_reward[:, i] * reward).sum(1)
-
+            
             reward_s = self.network.converter.vector2scalar(torch.exp(reward))
             value_s = self.network.converter.vector2scalar(torch.exp(value))
-
+            
             max_R = max(max_R, torch.max(reward_s).item())
             max_V = max(max_V, torch.max(value_s).item())
-
+                        
         gradient_scale = 1 / self.num_unroll
 
-        loss = (self.value_loss_weight * value_loss + policy_loss + reward_loss).mean()
+        loss = (self.value_loss_weight * value_loss + policy_loss + reward_loss).mean() + ssc_loss.mean()
         loss.register_hook(lambda x: x * gradient_scale)
 
         self.optimizer.zero_grad(set_to_none=True)
@@ -295,6 +305,7 @@ class Muzero(BaseAgent):
             "P_loss": policy_loss.mean().item(),
             "V_loss": value_loss.mean().item(),
             "R_loss": reward_loss.mean().item(),
+            "SSC_loss": ssc_loss.mean().item(),
             "max_R": max_R,
             "max_V": max_V,
             "num_learn": self.num_learn,
@@ -428,12 +439,12 @@ class MCTS:
 
             # backup
             self.backup(leaf_id, leaf_v)
-
+            
         root_value = self.tree[self.root_id]["q"]
         root_action, pi = self.select_root_action()
-
+        
         return root_action, pi, root_value
-
+    
     @torch.no_grad()
     def selection(self, root_state):
         node_id = self.root_id
@@ -533,7 +544,7 @@ class MCTS:
                 break
 
             reward_list.append(self.tree[node_id]["r"])
-
+    
     @torch.no_grad()
     def init_mcts(self, root_state):
         tree = {}
@@ -578,7 +589,6 @@ class MCTS:
         action_idx = np.random.choice(self.action_size, p=pi_noise)
 
         return action_idx, pi
-
 
 class Trajectory(dict):
     def __init__(self, state):
