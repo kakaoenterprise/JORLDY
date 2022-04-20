@@ -224,7 +224,6 @@ class Muzero(BaseAgent):
                     stack_a[stack_len - i - 1] = actions[-1]
                 else:
                     actions.append(np.zeros((1, 1)))
-
             _transitions["stacked_state"].append(stack_s)
             _transitions["stacked_action"].append(stack_a)
             _transitions["action"].append(actions)
@@ -266,8 +265,6 @@ class Muzero(BaseAgent):
         p_j = torch.pow(td_error, self.alpha)
         for i, p in zip(indices, p_j):
             self.memory.update_priority(p.item(), i)
-
-        # loss_CEL = torch.nn.CrossEntropyLoss(reduction="none")
 
         policy_loss = -(target_policy[:, 0] * pi).sum(1)
         value_loss = -(target_value[:, 0] * value).sum(1)
