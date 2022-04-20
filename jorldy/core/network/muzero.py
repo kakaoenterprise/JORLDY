@@ -98,21 +98,22 @@ class Muzero_mlp(BaseNetwork):
         # hidden_state + action
         a = F.one_hot(a.long(), num_classes=self.D_out).view([hs.size(0), -1])
         hs_a = torch.cat([hs, a], dim=-1)
-
-        hs = F.relu(self.dy_l1(hs_a))
-        hs = self.dy_res(hs)
+    
+        # next_hidden_state
+        next_hs = F.relu(self.dy_l1(hs_a))
+        next_hs = self.dy_res(next_hs)
+        next_hs = self.next_hs_l1(hs)
+        next_hs = torch.tanh(next_hs)
+        next_hs = self.next_hs_l2(next_hs)
+        next_hs = F.relu(next_hs)
 
         # reward(action_distribution)
-        rd = self.rd_l1(hs)
+        rd = self.rd_l1(next_hs)
         rd = F.leaky_relu(rd)
         rd = self.rd_l2(rd)
         rd = F.log_softmax(rd, dim=-1)
 
         # next_hidden_state_normalized
-        next_hs = self.next_hs_l1(hs)
-        next_hs = torch.tanh(next_hs)
-        next_hs = self.next_hs_l2(next_hs)
-        next_hs = F.relu(next_hs)
         next_hs = F.normalize(next_hs)
         return next_hs, rd
 
