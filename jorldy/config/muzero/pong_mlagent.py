@@ -12,12 +12,12 @@ agent = {
     "batch_size": 32,
     "num_support": 10,
     "start_train_step": 5000,
-    "policy_train_delay": 3000,
+    "policy_train_delay": 5000,
     "max_trajectory_size": 1000,
     "value_loss_weight": 1.0,
     "num_unroll": 5,
     "num_td_step": 5,
-    "num_stack": 2,
+    "num_stack": 1,
     "num_rb": 1,
     "lr_decay": False,
     # out of range state setting
@@ -44,8 +44,8 @@ optim = {
 train = {
     "training": True,
     "load_path": None,
-    "run_step": 10000000,
-    "print_period": 10000,
+    "run_step": 200000,
+    "print_period": 5000,
     "save_period": 50000,
     "eval_iteration": 3,
     # distributed setting
