@@ -18,7 +18,7 @@ agent = {
     "network": "muzero_resnet",
     "head": "residualblock",
     "gamma": 0.997,
-    "buffer_size": 125000,
+    "buffer_size": 1250000,
     "batch_size": 32,
     "start_train_step": 10000,
     "policy_train_delay": 10000,
