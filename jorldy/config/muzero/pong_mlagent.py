@@ -50,6 +50,6 @@ train = {
     "eval_iteration": 3,
     # distributed setting
     "distributed_batch_size": 128,
-    "update_period": 100,
+    "update_period": 500,
     "num_workers": 32,
 }

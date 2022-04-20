@@ -24,7 +24,7 @@ class MuzeroPERBuffer(BaseBuffer):
         self.uniform_sample_prob = uniform_sample_prob
 
     def store(self, transitions):
-        if self.first_store:
+        if self.first_store and transitions:
             self.check_dim(transitions[0])
 
         for transition in transitions:
