@@ -30,7 +30,7 @@ agent = {
     "num_rb": 16,
     # out of range state setting
     "enable_after_random_action": True,
-    "enable_prev_random_action": False,
+    "enable_prev_random_action": True,
     "enable_uniform_policy": True,
     # PER
     "alpha": 0.6,
