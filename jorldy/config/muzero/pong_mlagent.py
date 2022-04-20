@@ -8,7 +8,7 @@ agent = {
     "head": "mlp_residualblock",
     "hidden_size": 64,
     "gamma": 0.997,
-    "buffer_size": 25000,
+    "buffer_size": 100000,
     "batch_size": 32,
     "num_support": 10,
     "start_train_step": 5000,
@@ -22,13 +22,17 @@ agent = {
     "lr_decay": False,
     # out of range state setting
     "enable_after_random_action": True,
-    "enable_prev_random_action": False,
+    "enable_prev_random_action": True,
     "enable_uniform_policy": True,
+    # PER
+    "alpha": 0.6,
+    "beta": 0.4,
+    "uniform_sample_prob": 1e-3,
     # MCTS
     "num_mcts": 30,
     "num_eval_mcts": 15,
     # Self Supervised Consistency Loss
-    "use_ssc_loss": True,
+    "use_ssc_loss": False,
 }
 
 optim = {
