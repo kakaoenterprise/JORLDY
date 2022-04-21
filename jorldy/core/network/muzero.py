@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+import numpy as np
 
 from .base import BaseNetwork
 from .utils import orthogonal_init, Converter
@@ -227,8 +228,12 @@ class Muzero_Resnet(BaseNetwork):
             hs = block(hs)
 
         # hidden_state_normalized
-        hs = F.normalize(hs, dim=0)
-        return hs
+        hs_min = np.amin(np.array(hs.cpu().detach()))
+        hs_max = np.amax(np.array(hs.cpu().detach()))
+        hs_scale = torch.tensor(hs_max - hs_min)
+        hs_scale[hs_scale < 1e-5] += 1e-5
+        hs_norm = (hs - torch.tensor(hs_min)) / hs_scale
+        return hs_norm
 
     def prediction(self, hs):
         # resnet -> conv -> flatten
@@ -256,14 +261,18 @@ class Muzero_Resnet(BaseNetwork):
 
     def dynamics(self, hs, a):
         # hidden_state + action -> conv -> resnet
-        a = torch.broadcast_to(a.unsqueeze(-1).unsqueeze(-1), [a.size(0), 1, 6, 6])
+        a = torch.div(torch.broadcast_to(a.unsqueeze(-1).unsqueeze(-1), [a.size(0), 1, 6, 6]), self.D_out)
         hs_a = torch.cat([hs, a], dim=1)
         hs_a = self.dy_conv(hs_a)
         for block in self.dy_res:
             hs_a = block(hs_a)
 
         # next_hidden_state_normalized
-        next_hs = F.normalize(hs_a, dim=0)
+        next_hs_min = np.amin(np.array(hs_a.cpu().detach()))
+        next_hs_max = np.amax(np.array(hs_a.cpu().detach()))
+        next_hs_scale = torch.tensor(next_hs_max - next_hs_min)
+        next_hs_scale[next_hs_scale < 1e-5] += 1e-5
+        next_hs_norm = (hs_a - torch.tensor(next_hs_min)) / next_hs_scale
 
         # conv -> flatten -> reward(distribution)
         hs_a = self.dy_conv_rd(hs_a).reshape(hs.size(0), -1)
@@ -273,7 +282,7 @@ class Muzero_Resnet(BaseNetwork):
         rd = F.leaky_relu(rd)
         rd = self.dy_rd_3(rd)
         rd = F.log_softmax(rd, dim=-1)
-        return next_hs, rd
+        return next_hs_norm, rd
 
 
 class Downsample(torch.nn.Module):
