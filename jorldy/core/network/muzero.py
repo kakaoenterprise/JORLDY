@@ -126,6 +126,9 @@ class Muzero_Resnet(BaseNetwork):
         head="residualblock",
     ):
         super(Muzero_Resnet, self).__init__(D_hidden, D_hidden, head)
+        
+        assert D_in[1] >= 36 and D_in[2] >= 36
+        
         self.D_in = D_in
         self.D_out = D_out
         self.converter = Converter(support)
@@ -137,8 +140,6 @@ class Muzero_Resnet(BaseNetwork):
         kernel = (1, 1)
         padding = (0, 0)
         stride = (1, 1)
-
-        assert D_in[1] == D_in[2], "Image width must have same size with height"
 
         # representation -> make hidden state
         self.hs_down = Downsample(D_stack, num_rb, D_hidden)
@@ -253,18 +254,19 @@ class Muzero_Resnet(BaseNetwork):
         obs_a = torch.cat([obs, a], dim=1)
 
         # downsample
-        hs = self.hs_down(obs_a)
+        hs_a = self.hs_down(obs_a)
 
         # resnet
         for block in self.hs_res:
-            hs = block(hs)
+            hs_a = block(hs_a)
 
-        # hidden_state_normalized
-        hs_min = np.amin(np.array(hs.cpu().detach()))
-        hs_max = np.amax(np.array(hs.cpu().detach()))
-        hs_scale = torch.tensor(hs_max - hs_min)
+        # hidden_state_normalize
+        hs = hs_a.view([1, *hs_a.size()])
+        hs_max = torch.max(hs)
+        hs_min = torch.min(hs)
+        hs_scale = hs_max - hs_min
         hs_scale[hs_scale < 1e-5] += 1e-5
-        hs_norm = (hs - torch.tensor(hs_min)) / hs_scale
+        hs_norm = ((hs - hs_min) / hs_scale).view([*hs.size()[1:]])
 
         return hs_norm
 
@@ -302,16 +304,17 @@ class Muzero_Resnet(BaseNetwork):
         for block in self.dy_res:
             hs_a = block(hs_a)
 
-        # next_hidden_state_normalized
-        next_hs_min = np.amin(np.array(hs_a.cpu().detach()))
-        next_hs_max = np.amax(np.array(hs_a.cpu().detach()))
-        next_hs_scale = torch.tensor(next_hs_max - next_hs_min)
+        # next_hidden_state_normalize
+        next_hs = hs_a.view([1, *hs_a.size()])
+        next_hs_min = torch.min(next_hs)
+        next_hs_max = torch.max(next_hs)
+        next_hs_scale = next_hs_max - next_hs_min
         next_hs_scale[next_hs_scale < 1e-5] += 1e-5
-        next_hs_norm = (hs_a - torch.tensor(next_hs_min)) / next_hs_scale
+        next_hs_norm = ((next_hs - next_hs_min) / next_hs_scale).view([*next_hs.size()[1:]])
 
-        # conv -> flatten -> reward(distribution)
-        hs_a = self.dy_conv_rd(hs_a).reshape(hs.size(0), -1)
-        rd = self.dy_rd_1(hs_a)
+        # conv(norm) -> flatten -> reward(distribution)
+        rd = self.dy_conv_rd(next_hs_norm).reshape(next_hs_norm.size(0), -1)
+        rd = self.dy_rd_1(rd)
         rd = F.leaky_relu(rd)
         rd = self.dy_rd_2(rd)
         rd = F.leaky_relu(rd)
