@@ -40,11 +40,9 @@ class Tictactoe(BaseEnv):
         row = action//3
         column = action%3 
         
+        # Agent action 
         if self.gameboard[row, column] == 0: 
             self.gameboard[row, column] = 1       
-
-            # print(self.gameboard)
-
             reward, done = self.check_win(self.gameboard)
 
             # Opponent action 
@@ -61,17 +59,12 @@ class Tictactoe(BaseEnv):
                         self.gameboard[row, column] = -1
 
                 reward, done = self.check_win(self.gameboard)
-
-                # print(self.gameboard)
         else:
             reward, done = self.check_win(self.gameboard)
 
             if done == False:
                 reward = np.array([-0.1])
-    
-        # print(reward)
-        # print(done)
-        # print('-----------------')
+                done = True 
 
         next_state = self.state_processing(self.gameboard)
         self.score += reward[0]

@@ -1,21 +1,21 @@
 ### DQN TicTacToe Config ###
 
 env = {
-    "name": "tictactoe", "input_type": "vector",
+    "name": "tictactoe", "input_type": "image",
 }
 
 agent = {
     "name": "dqn",
     "network": "discrete_q_network",
-    "head": "mlp",
+    "head": "cnn",
     "gamma": 0.99,
     "epsilon_init": 1.0,
     "epsilon_min": 0.01,
     "explore_ratio": 0.2,
-    "buffer_size": 1000,
+    "buffer_size": 5000,
     "batch_size": 16,
-    "start_train_step": 200,
-    "target_update_period": 50,
+    "start_train_step": 1000,
+    "target_update_period": 100,
     "lr_decay": True,
 }
 
@@ -27,8 +27,8 @@ optim = {
 train = {
     "training": True,
     "load_path": None,
-    "run_step": 10000,
-    "print_period": 100,
+    "run_step": 20000,
+    "print_period": 1000,
     "save_period": 1000,
     "eval_iteration": 10,
     # distributed setting
