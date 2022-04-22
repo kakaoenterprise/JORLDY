@@ -135,6 +135,7 @@ class Muzero_Resnet(BaseNetwork):
         kernel_size = (1, 1)
         padding = (0, 0)
         stride = (1, 1)
+        Down_size = (6 * 6)
 
         assert D_in[1] == D_in[2], "Image width must have same size with height"
 
@@ -152,19 +153,13 @@ class Muzero_Resnet(BaseNetwork):
             stride=stride,
         )
         self.pred_pi_1 = torch.nn.Linear(
-            in_features=(
-                (D_in[1] - kernel_size[0] + (padding[0] << 1)) // stride[0] + 1
-            )
-            ** 2,
+            in_features=D_hidden * Down_size,
             out_features=D_hidden,
         )
         self.pred_pi_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
         self.pred_pi_3 = torch.nn.Linear(in_features=D_hidden, out_features=D_out)
         self.pred_vd_1 = torch.nn.Linear(
-            in_features=(
-                (D_in[1] - kernel_size[0] + (padding[0] << 1)) // stride[0] + 1
-            )
-            ** 2,
+            in_features=D_hidden * Down_size,
             out_features=D_hidden,
         )
         self.pred_vd_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
@@ -184,23 +179,20 @@ class Muzero_Resnet(BaseNetwork):
         self.dy_conv = torch.nn.Conv2d(
             in_channels=D_hidden + 1,
             out_channels=D_hidden,
-            kernel_size=(1, 1),
+            kernel_size=kernel_size,
             padding=padding,
             stride=stride,
         )
         self.dy_conv_rd = torch.nn.Conv2d(
             in_channels=D_hidden,
             out_channels=D_hidden,
-            kernel_size=(1, 1),
+            kernel_size=kernel_size,
             padding=padding,
             stride=stride,
         )
         self.dy_res = torch.nn.ModuleList([self.head for _ in range(num_rb)])
         self.dy_rd_1 = torch.nn.Linear(
-            in_features=(
-                (D_in[1] - kernel_size[0] + (padding[0] << 1)) // stride[0] + 1
-            )
-            ** 2,
+            in_features=D_hidden * Down_size,
             out_features=D_hidden,
         )
         self.dy_rd_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
@@ -233,6 +225,7 @@ class Muzero_Resnet(BaseNetwork):
         hs_scale = torch.tensor(hs_max - hs_min)
         hs_scale[hs_scale < 1e-5] += 1e-5
         hs_norm = (hs - torch.tensor(hs_min)) / hs_scale
+        
         return hs_norm
 
     def prediction(self, hs):
@@ -257,6 +250,7 @@ class Muzero_Resnet(BaseNetwork):
         vd = F.leaky_relu(vd)
         vd = self.pred_vd_3(vd)
         vd = F.log_softmax(vd, dim=-1)
+        
         return pi, vd
 
     def dynamics(self, hs, a):
@@ -282,6 +276,7 @@ class Muzero_Resnet(BaseNetwork):
         rd = F.leaky_relu(rd)
         rd = self.dy_rd_3(rd)
         rd = F.log_softmax(rd, dim=-1)
+        
         return next_hs_norm, rd
 
 
