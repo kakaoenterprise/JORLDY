@@ -102,13 +102,13 @@ class Muzero_mlp(BaseNetwork):
 
         # next_hidden_state_normalized
         next_hs = F.normalize(hs_a)
-        
+
         # reward(action_distribution)
         rd = self.rd_l1(hs_a)
         rd = F.leaky_relu(rd)
         rd = self.rd_l2(rd)
         rd = F.log_softmax(rd, dim=-1)
-        
+
         return next_hs, rd
 
 
@@ -126,16 +126,17 @@ class Muzero_Resnet(BaseNetwork):
         head="residualblock",
     ):
         super(Muzero_Resnet, self).__init__(D_hidden, D_hidden, head)
+        self.D_in = D_in
         self.D_out = D_out
         self.converter = Converter(support)
         self.state_channel = D_in[0]
         self.action_channel = 1
 
         D_stack = self.state_channel * (num_stack + 1) + self.action_channel * num_stack
-        kernel_size = (1, 1)
+
+        kernel = (1, 1)
         padding = (0, 0)
         stride = (1, 1)
-        Down_size = (6 * 6)
 
         assert D_in[1] == D_in[2], "Image width must have same size with height"
 
@@ -143,23 +144,58 @@ class Muzero_Resnet(BaseNetwork):
         self.hs_down = Downsample(D_stack, num_rb, D_hidden)
         self.hs_res = torch.nn.ModuleList([self.head for _ in range(num_rb)])
 
+        filter_info = self.hs_down.get_filter_info()
+        dim1 = (
+            (
+                (D_in[-2] - filter_info["kernel"][0] + (filter_info["padding"][0] << 1))
+                // filter_info["stride"][0]
+                + 1
+            ),
+            (
+                (D_in[-1] - filter_info["kernel"][1] + (filter_info["padding"][1] << 1))
+                // filter_info["stride"][1]
+                + 1
+            ),
+        )
+        dim2 = (
+            (
+                (dim1[0] - filter_info["kernel"][0] + (filter_info["padding"][0] << 1))
+                // filter_info["stride"][0]
+                + 1
+            ),
+            (
+                (dim1[1] - filter_info["kernel"][1] + (filter_info["padding"][1] << 1))
+                // filter_info["stride"][1]
+                + 1
+            ),
+        )
+        dim3 = (
+            dim2[0] // filter_info["stride"][0],
+            dim2[1] // filter_info["stride"][0],
+        )
+        dim4 = (
+            dim3[0] // filter_info["stride"][1],
+            dim3[1] // filter_info["stride"][1],
+        )
+        self.down_size = (dim4[0], dim4[1])
+
         # prediction -> make discrete policy and discrete value
         self.pred_res = torch.nn.ModuleList([self.head for _ in range(num_rb)])
         self.pred_conv = torch.nn.Conv2d(
             in_channels=D_hidden,
             out_channels=D_hidden,
-            kernel_size=kernel_size,
+            kernel_size=kernel,
             padding=padding,
             stride=stride,
         )
         self.pred_pi_1 = torch.nn.Linear(
-            in_features=D_hidden * Down_size,
+            in_features=D_hidden * (self.down_size[0] * self.down_size[1]),
             out_features=D_hidden,
         )
         self.pred_pi_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
         self.pred_pi_3 = torch.nn.Linear(in_features=D_hidden, out_features=D_out)
         self.pred_vd_1 = torch.nn.Linear(
-            in_features=D_hidden * Down_size,
+            in_features=D_hidden * (self.down_size[0] * self.down_size[1]),
             out_features=D_hidden,
         )
         self.pred_vd_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
@@ -179,20 +215,20 @@ class Muzero_Resnet(BaseNetwork):
         self.dy_conv = torch.nn.Conv2d(
             in_channels=D_hidden + 1,
             out_channels=D_hidden,
-            kernel_size=kernel_size,
+            kernel_size=kernel,
             padding=padding,
             stride=stride,
         )
         self.dy_conv_rd = torch.nn.Conv2d(
             in_channels=D_hidden,
             out_channels=D_hidden,
-            kernel_size=kernel_size,
+            kernel_size=kernel,
             padding=padding,
             stride=stride,
         )
         self.dy_res = torch.nn.ModuleList([self.head for _ in range(num_rb)])
         self.dy_rd_1 = torch.nn.Linear(
-            in_features=D_hidden * Down_size,
+            in_features=D_hidden * (self.down_size[0] * self.down_size[1]),
             out_features=D_hidden,
         )
         self.dy_rd_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
@@ -207,9 +243,13 @@ class Muzero_Resnet(BaseNetwork):
         orthogonal_init(self.dy_rd_3, "linear")
 
     def representation(self, obs, a):
-        # observation, action : input -> normalize -> concatenate
+        # observation, action : normalize -> concatenate -> input
         obs /= 255.0
-        a /= self.D_out
+        # TODO: original
+        a = torch.div(a, self.D_out)
+        # TODO: correction
+        # a = torch.div(a, self.D_out).view([*a.size()[:2], 1, 1])
+        # a = torch.broadcast_to(a, [*a.size()[:2], *self.D_in[1:]])
         obs_a = torch.cat([obs, a], dim=1)
 
         # downsample
@@ -225,7 +265,7 @@ class Muzero_Resnet(BaseNetwork):
         hs_scale = torch.tensor(hs_max - hs_min)
         hs_scale[hs_scale < 1e-5] += 1e-5
         hs_norm = (hs - torch.tensor(hs_min)) / hs_scale
-        
+
         return hs_norm
 
     def prediction(self, hs):
@@ -250,12 +290,13 @@ class Muzero_Resnet(BaseNetwork):
         vd = F.leaky_relu(vd)
         vd = self.pred_vd_3(vd)
         vd = F.log_softmax(vd, dim=-1)
-        
+
         return pi, vd
 
     def dynamics(self, hs, a):
         # hidden_state + action -> conv -> resnet
-        a = torch.div(torch.broadcast_to(a.unsqueeze(-1).unsqueeze(-1), [a.size(0), 1, 6, 6]), self.D_out)
+        a = torch.div(a, self.D_out).view([*a.size()[:2], 1, 1])
+        a = torch.broadcast_to(a, [*a.size()[:2], *self.down_size])
         hs_a = torch.cat([hs, a], dim=1)
         hs_a = self.dy_conv(hs_a)
         for block in self.dy_res:
@@ -276,7 +317,7 @@ class Muzero_Resnet(BaseNetwork):
         rd = F.leaky_relu(rd)
         rd = self.dy_rd_3(rd)
         rd = F.log_softmax(rd, dim=-1)
-        
+
         return next_hs_norm, rd
 
 
@@ -284,24 +325,25 @@ class Downsample(torch.nn.Module):
     def __init__(self, in_channels, num_rb, D_hidden):
         super(Downsample, self).__init__()
 
-        kernel_size = (3, 3)
-        stride = (2, 2)
-        padding = (1, 1)
+        self.kernel = (3, 3)
+        self.stride = (2, 2)
+        self.padding = (1, 1)
 
+        # conv
         self.conv_1 = torch.nn.Conv2d(
             in_channels=in_channels,
             out_channels=(D_hidden >> 1),
-            kernel_size=kernel_size,
-            stride=stride,
-            padding=padding,
+            kernel_size=self.kernel,
+            stride=self.stride,
+            padding=self.padding,
             bias=False,
         )
         self.conv_2 = torch.nn.Conv2d(
             in_channels=(D_hidden >> 1),
             out_channels=D_hidden,
-            kernel_size=kernel_size,
-            stride=stride,
-            padding=padding,
+            kernel_size=self.kernel,
+            stride=self.stride,
+            padding=self.padding,
             bias=False,
         )
 
@@ -324,8 +366,19 @@ class Downsample(torch.nn.Module):
         obs_a = self.conv_2(obs_a)
         for block in self.res_2:
             obs_a = block(obs_a)
-        obs_a = F.avg_pool2d(obs_a, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        obs_a = F.avg_pool2d(
+            obs_a, kernel_size=self.kernel, stride=self.stride, padding=self.padding
+        )
         for block in self.res_3:
             obs_a = block(obs_a)
-        obs_a = F.avg_pool2d(obs_a, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        obs_a = F.avg_pool2d(
+            obs_a, kernel_size=self.kernel, stride=self.stride, padding=self.padding
+        )
         return obs_a
+
+    def get_filter_info(self):
+        return {
+            "kernel": self.kernel,
+            "stride": self.stride,
+            "padding": self.padding,
+        }
