@@ -1,6 +1,7 @@
 import os
 import torch
 import numpy as np
+import torch.nn.functional as F
 
 torch.backends.cudnn.benchmark = True
 
@@ -164,14 +165,11 @@ class Muzero(BaseAgent):
         self.target_network.train(training)
 
         if not self.trajectory:
-            self.trajectory = Trajectory(state)
+            self.init_trajectory(state)
             self.update_target()
 
-        stacked_s, stacked_a = self.trajectory.get_stacked_data(
-            self.trajectory_step_stamp,
-            self.num_stack,
-            self.action_size,
-            self.enable_prev_random_action,
+        stacked_s, stacked_a = self.get_stacked_data(
+            self.trajectory, self.trajectory_step_stamp, self.num_stack
         )
 
         self.device, swap = "cpu", self.device
@@ -179,6 +177,7 @@ class Muzero(BaseAgent):
         stacked_a = self.as_tensor(np.expand_dims(stacked_a, axis=0))
         self.device = swap
         root_state = self.target_network.representation(stacked_s, stacked_a)
+
         if training:
             n_mcts = self.num_mcts
         else:
@@ -201,35 +200,29 @@ class Muzero(BaseAgent):
             # make target
             end = start + self.num_unroll + 1
             stack_len = self.num_stack + self.num_unroll
-            stack_s, stack_a = trajectory.get_stacked_data(
-                end - 1, stack_len, self.action_size, self.enable_prev_random_action
-            )
+            state, action = self.get_stacked_data(trajectory, end - 1, stack_len)
 
-            actions = trajectory["actions"][start:end]
-            policies = trajectory["policies"][start:end]
-            rewards = trajectory["rewards"][start:end]
-            values = [
-                trajectory.get_bootstrap_value(i, self.num_td_step, self.gamma)
-                for i in range(start, end)
-            ]
+            policy = trajectory["policies"][start:end]
+            reward = trajectory["rewards"][start:end]
+            value = [self.get_bootstrap_value(trajectory, i) for i in range(start, end)]
+
             for i in reversed(range(end - trajectory_len)):
-                rewards.append(np.zeros((1, 1)))
-                policies.append(
+                reward.append(np.zeros((1, 1)))
+                policy.append(
                     np.full(self.action_size, 1 / self.action_size)
                     if self.enable_uniform_policy
                     else np.zeros(self.action_size)
                 )
                 if self.enable_after_random_action:
-                    actions.append(np.random.choice(self.action_size, size=(1, 1)))
-                    stack_a[stack_len - i - 1] = actions[-1]
-                else:
-                    actions.append(np.zeros((1, 1)))
-            _transitions["stacked_state"].append(stack_s)
-            _transitions["stacked_action"].append(stack_a)
-            _transitions["action"].append(actions)
-            _transitions["reward"].append(rewards)
-            _transitions["policy"].append(policies)
-            _transitions["value"].append(values)
+                    action[stack_len - i - 1] = np.random.randint(
+                        self.action_size, size=(1, 1)
+                    )
+
+            _transitions["state"].append(state)
+            _transitions["action"].append(action)
+            _transitions["reward"].append(reward)
+            _transitions["policy"].append(policy)
+            _transitions["value"].append(value)
 
         for key in _transitions.keys():
             value = np.stack(_transitions[key], axis=0)
@@ -237,9 +230,9 @@ class Muzero(BaseAgent):
                 value = value.squeeze(axis=-1)
             _transitions[key] = self.as_tensor(value)
 
-        stacked_state = _transitions["stacked_state"]
-        stacked_action = _transitions["stacked_action"]
-        action = _transitions["action"].long()
+        state = _transitions["state"]
+        action = _transitions["action"]
+        selected_action = action[:, -self.num_unroll :]
         target_policy = _transitions["policy"]
         target_reward_s = _transitions["reward"]
         target_value_s = _transitions["value"]
@@ -248,8 +241,8 @@ class Muzero(BaseAgent):
         target_value = self.network.converter.scalar2vector(target_value_s)
 
         stack_s, stack_a = (
-            stacked_state[:, : self.channel * (self.num_stack + 1)],
-            stacked_action[:, : self.num_stack],
+            state[:, : self.channel * (self.num_stack + 1)],
+            action[:, : self.num_stack],
         )
 
         # comput start step loss
@@ -258,7 +251,9 @@ class Muzero(BaseAgent):
 
         value_s = self.network.converter.vector2scalar(torch.exp(value))
         max_V = torch.max(value_s).item()
+        min_V = torch.min(value_s).item()
         max_R = float("-inf")
+        min_R = float("inf")
 
         # Update sum tree
         td_error = abs(value_s - target_value_s[:, 0])
@@ -271,25 +266,21 @@ class Muzero(BaseAgent):
         reward_loss = torch.zeros(self.batch_size, device=self.device)
         ssc_loss = torch.zeros(self.batch_size, device=self.device)
 
-        cos_sim = torch.nn.CosineSimilarity()
-
         # comput unroll step loss
-        for j, i in enumerate(range(1, self.num_unroll + 1), self.num_stack + 1):
+        for end, i in enumerate(range(1, self.num_unroll + 1), self.num_stack + 1):
             stack_s, stack_a = (
-                stacked_state[:, self.channel * i : self.channel * (j + 1)],
-                stacked_action[:, i:j],
+                state[:, self.channel * i : self.channel * (end + 1)],
+                action[:, i:end],
             )
 
-            hidden_state, reward = self.network.dynamics(hidden_state, action[:, i])
+            hidden_state, reward = self.network.dynamics(
+                hidden_state, selected_action[:, i - 1 : i]
+            )
 
             if self.use_ssc_loss:
-                # 실제 unroll 스탭에 해당하는 stacked_observation으로 만든 hidden_state
-                target_hidden_state = self.network.representation(
-                    stack_s, stack_a
-                ).detach()
-                ssc_loss -= (1 / self.num_unroll) * cos_sim(
-                    target_hidden_state.flatten(1), hidden_state.flatten(1)
-                )
+                with torch.no_grad():
+                    y = self.network.representation(stack_s, stack_a)
+                ssc_loss -= F.cosine_similarity(y.flatten(1), hidden_state.flatten(1))
 
             pi, value = self.network.prediction(hidden_state)
             hidden_state.register_hook(lambda x: x * 0.5)
@@ -301,8 +292,10 @@ class Muzero(BaseAgent):
             reward_s = self.network.converter.vector2scalar(torch.exp(reward))
             value_s = self.network.converter.vector2scalar(torch.exp(value))
 
-            max_R = max(max_R, torch.max(reward_s).item())
             max_V = max(max_V, torch.max(value_s).item())
+            min_V = min(min_V, torch.min(value_s).item())
+            max_R = max(max_R, torch.max(reward_s).item())
+            min_R = min(min_R, torch.min(reward_s).item())
 
         weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
         loss = self.value_loss_weight * value_loss + policy_loss + reward_loss
@@ -322,8 +315,10 @@ class Muzero(BaseAgent):
             "V_loss": value_loss.mean().item(),
             "R_loss": reward_loss.mean().item(),
             "SSC_loss": ssc_loss.mean().item(),
-            "max_R": max_R,
             "max_V": max_V,
+            "min_V": min_V,
+            "max_R": max_R,
+            "min_R": min_R,
             "sampled_p": sampled_p,
             "mean_p": mean_p,
             "num_learn": self.num_learn,
@@ -382,13 +377,53 @@ class Muzero(BaseAgent):
             )
             priorities = np.zeros(len(self.trajectory["values"]) - 1)
             for i, v in enumerate(self.trajectory["values"][:-1]):
-                z = self.trajectory.get_bootstrap_value(i, self.num_unroll, self.gamma)
+                z = self.get_bootstrap_value(self.trajectory, i)
                 priorities[i] = abs(v - z)
 
             _transition = {"trajectory": self.trajectory, "priorities": priorities}
             self.trajectory = None
 
         return _transition
+
+    def init_trajectory(self, state):
+        self.trajectory = {
+            "states": [state],
+            "actions": [np.zeros((1, 1), dtype=int)],
+            "rewards": [np.zeros((1, 1))],
+            "values": [],
+            "policies": [],
+        }
+
+    def get_bootstrap_value(self, trajectory, start):
+        end = start + self.num_td_step
+        values = trajectory["values"]
+        value = values[end] if end < len(values) else np.zeros((1, 1))
+
+        for reward in reversed(trajectory["rewards"][start + 1 : end + 1]):
+            value = reward + self.gamma * value
+
+        return value
+
+    def get_stacked_data(self, trajectory, cur_idx, num_stack):
+        cut = max(0, num_stack - cur_idx)
+        start = max(0, cur_idx - num_stack)
+        end = min(len(trajectory["states"]) - 1, cur_idx)
+        shape = trajectory["states"][start].shape[1:]
+        stacked_a = np.zeros(num_stack, int)
+        stacked_s = np.zeros((num_stack + 1, *shape), np.float32)
+
+        if self.enable_prev_random_action:
+            stacked_a[:cut] = np.random.randint(self.action_size, size=cut)
+
+        for n, i in enumerate(range(start, end), start=cut):
+            stacked_a[n] = trajectory["actions"][i + 1]
+            stacked_s[n] = trajectory["states"][i]
+
+        stacked_s[cut + end - start] = trajectory["states"][end]
+        stacked_s = stacked_s.reshape(((num_stack + 1) * shape[0], *shape[1:]))
+        stacked_a = stacked_a.reshape((num_stack))
+
+        return stacked_s, stacked_a
 
     def save(self, path):
         print(f"...Save model to {path}...")
@@ -633,41 +668,3 @@ class MCTS:
         action_idx = np.random.choice(self.action_size, p=pi_noise)
 
         return action_idx, pi
-
-
-class Trajectory(dict):
-    def __init__(self, state):
-        self["states"] = [state]
-        self["actions"] = [np.zeros((1, 1), dtype=int)]
-        self["rewards"] = [np.zeros((1, 1))]
-        self["values"] = []
-        self["policies"] = []
-
-    def get_bootstrap_value(self, start, num_td_step, gamma):
-        last = start + num_td_step
-        value = self["values"][last] if last < len(self["values"]) else np.zeros((1, 1))
-        for reward in reversed(self["rewards"][start + 1 : last + 1]):
-            value = reward + gamma * value
-        return value
-
-    def get_stacked_data(self, cur_idx, num_stack, n_action, enable_random_action):
-        cut = max(0, num_stack - cur_idx)
-        start = max(0, cur_idx - num_stack)
-        end = min(len(self["states"]) - 1, cur_idx)
-        channel, *plane = self["states"][0].shape[1:]
-        stacked_a = np.zeros((num_stack, 1, *plane), int)
-        stacked_s = np.zeros((num_stack + 1, channel, *plane), np.float32)
-
-        if enable_random_action:
-            for n in range(cut):
-                stacked_a[n] = np.full((1, *plane), np.random.randint(n_action))
-
-        for n, i in enumerate(range(start, end), start=cut):
-            stacked_a[n] = np.full((1, *plane), self["actions"][i + 1])
-            stacked_s[n] = self["states"][i]
-
-        stacked_s[cut + end - start] = self["states"][end]
-        stacked_s = stacked_s.reshape(((num_stack + 1) * channel, *plane))
-        stacked_a = stacked_a.reshape((num_stack, *plane))
-
-        return stacked_s, stacked_a
