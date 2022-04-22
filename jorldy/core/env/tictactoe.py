@@ -71,11 +71,8 @@ class Tictactoe(BaseEnv):
 
                 reward, done = self.check_win(self.gameboard)
         else:
-            reward, done = self.check_win(self.gameboard)
-
-            if done == False:
-                reward = np.array([-0.1])
-                done = True
+            reward = np.array([-0.1])
+            done = True
 
         next_state = self.state_processing(self.gameboard)
         self.score += reward[0]
