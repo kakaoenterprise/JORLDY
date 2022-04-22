@@ -1,6 +1,7 @@
 import numpy as np
 from .base import BaseEnv
 
+
 class Tictactoe(BaseEnv):
     """TicTacToe environment.
 
@@ -13,16 +14,26 @@ class Tictactoe(BaseEnv):
         opponent_policy (str): Policy of the opponent (random)
     """
 
-    def __init__(self, render=False, input_type='image', img_width=40, img_height=40, opponent_policy="random", **kwargs):
+    def __init__(
+        self,
+        render=False,
+        input_type="image",
+        img_width=40,
+        img_height=40,
+        opponent_policy="random",
+        **kwargs
+    ):
         self.render = render
-        self.input_type = input_type 
+        self.input_type = input_type
         self.img_width = img_width
         self.img_height = img_height
         self.opponent_policy = opponent_policy
 
         self.score = 0
 
-        self.state_size = [1, img_height, img_width] if self.input_type=="image" else 9
+        self.state_size = (
+            [1, img_height, img_width] if self.input_type == "image" else 9
+        )
         self.action_size = 9
         self.action_type = "discrete"
 
@@ -37,22 +48,22 @@ class Tictactoe(BaseEnv):
         return state
 
     def step(self, action):
-        row = action//3
-        column = action%3 
-        
-        # Agent action 
-        if self.gameboard[row, column] == 0: 
-            self.gameboard[row, column] = 1       
+        row = action // 3
+        column = action % 3
+
+        # Agent action
+        if self.gameboard[row, column] == 0:
+            self.gameboard[row, column] = 1
             reward, done = self.check_win(self.gameboard)
 
-            # Opponent action 
+            # Opponent action
             if done == False:
                 if self.opponent_policy == "random":
                     legal_idx = np.argwhere(self.gameboard == 0)
 
                     if len(legal_idx) > 0:
                         rand_idx = np.random.randint(legal_idx.shape[0])
-                        
+
                         row = legal_idx[rand_idx][0]
                         column = legal_idx[rand_idx][1]
 
@@ -64,7 +75,7 @@ class Tictactoe(BaseEnv):
 
             if done == False:
                 reward = np.array([-0.1])
-                done = True 
+                done = True
 
         next_state = self.state_processing(self.gameboard)
         self.score += reward[0]
@@ -77,17 +88,17 @@ class Tictactoe(BaseEnv):
             gameboard_img = np.zeros([self.img_height, self.img_width])
             gameboard_img[:3, :3] = gameboard
             state = np.expand_dims(gameboard_img, axis=(0, 1)) * 255
-        else: 
+        else:
             state = np.reshape(gameboard, (1, -1))
-        return state 
+        return state
 
     def close(self):
         pass
 
     def check_win(self, gameboard):
         reward = np.array([0])
-        done = False 
-        
+        done = False
+
         legal_idx = np.argwhere(gameboard == 0)
 
         sum_row = np.sum(gameboard, axis=0)
@@ -100,10 +111,10 @@ class Tictactoe(BaseEnv):
             done = True
         elif -3 in sum_row or -3 in sum_col or sum_diag1 == -3 or sum_diag2 == -3:
             reward = np.array([-1])
-            done = True 
+            done = True
 
         if len(legal_idx) == 0 and done == False:
             reward = np.array([0.1])
-            done = True 
+            done = True
 
         return (reward, done)

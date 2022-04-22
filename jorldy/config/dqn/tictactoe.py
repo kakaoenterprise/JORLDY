@@ -1,7 +1,8 @@
 ### DQN TicTacToe Config ###
 
 env = {
-    "name": "tictactoe", "input_type": "image",
+    "name": "tictactoe",
+    "input_type": "image",
 }
 
 agent = {
