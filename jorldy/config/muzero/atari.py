@@ -9,7 +9,7 @@ env = {
     "stack_frame": 1,
     "no_op": True,
     "skip_frame": 4,
-    "reward_clip": True,
+    "reward_clip": False,
     "episodic_life": True,
 }
 
@@ -17,11 +17,9 @@ agent = {
     "name": "muzero",
     "network": "muzero_resnet",
     "head": "residualblock",
-    "hidden_size": 64,
     "gamma": 0.997,
-    "buffer_size": 1250000,
+    "buffer_size": 1000000,
     "batch_size": 32,
-    "num_support": 10,
     "start_train_step": 10000,
     "policy_train_delay": 10000,
     "max_trajectory_size": 200,
@@ -30,18 +28,19 @@ agent = {
     "num_td_step": 5,
     "num_stack": 4,
     "num_rb": 1,
-    # out of range state setting
-    "enable_after_random_action": True,
-    "enable_prev_random_action": True,
-    "enable_uniform_policy": True,
     # PER
-    "alpha": 0.6,
-    "beta": 0.4,
+    "alpha": 1.0,
+    "beta": 1.0,
     "uniform_sample_prob": 1e-3,
     # MCTS
     "num_mcts": 30,
     "num_eval_mcts": 15,
-    # Self Supervised Consistency Loss
+    "mcts_alpha_max": 0.4,
+    "mcts_alpha_min": 0.0,
+    # Optional Feature
+    "use_prev_rand_action": True,
+    "use_over_rand_action": True,
+    "use_uniform_policy": True,
     "use_ssc_loss": False,
 }
 
@@ -54,13 +53,14 @@ optim = {
 train = {
     "training": True,
     "load_path": None,
-    "run_step": 100000000,
+    "run_step": 10000000,
     "print_period": 1000,
     "save_period": 100000,
-    "eval_iteration": 5,
+    "eval_iteration": 2,
     "record": True,
     "record_period": 500000,
     # distributed setting
+    "distributed_batch_size": 512,
     "update_period": 200,
-    "num_workers": 32,
+    "num_workers": 64,
 }

@@ -20,10 +20,6 @@ agent = {
     "num_stack": 1,
     "num_rb": 1,
     "lr_decay": False,
-    # out of range state setting
-    "enable_after_random_action": True,
-    "enable_prev_random_action": True,
-    "enable_uniform_policy": True,
     # PER
     "alpha": 0.6,
     "beta": 0.4,
@@ -31,7 +27,12 @@ agent = {
     # MCTS
     "num_mcts": 30,
     "num_eval_mcts": 15,
-    # Self Supervised Consistency Loss
+    "mcts_alpha_max": 1.0,
+    "mcts_alpha_min": 0.0,
+    # Optional Feature
+    "use_prev_rand_action": True,
+    "use_over_rand_action": True,
+    "use_uniform_policy": True,
     "use_ssc_loss": False,
 }
 

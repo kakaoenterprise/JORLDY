@@ -47,10 +47,6 @@ class Muzero(BaseAgent):
         device=None,
         run_step=1e6,
         num_workers=1,
-        # Out of range setting
-        enable_after_random_action=True,
-        enable_prev_random_action=True,
-        enable_uniform_policy=True,
         # Optim
         lr_decay=True,
         optim_config={
@@ -59,16 +55,19 @@ class Muzero(BaseAgent):
             "lr": 5e-4,
         },
         # PER
-        alpha=0.6,
-        beta=0.4,
+        alpha=1.0,
+        beta=1.0,
         learn_period=1,
         uniform_sample_prob=1e-3,
         # MCTS
         num_mcts=50,
-        num_eval_mcts=5,
-        mcts_alpha_max=2.0,
+        num_eval_mcts=15,
+        mcts_alpha_max=0.5,
         mcts_alpha_min=0.0,
-        # Self Supervised Consistency Loss
+        # Optional Feature
+        use_prev_rand_action=True,
+        use_over_rand_action=True,
+        use_uniform_policy=True,
         use_ssc_loss=False,
         **kwargs,
     ):
@@ -129,9 +128,9 @@ class Muzero(BaseAgent):
 
         self.trajectory = None
 
-        self.enable_after_random_action = enable_after_random_action
-        self.enable_prev_random_action = enable_prev_random_action
-        self.enable_uniform_policy = enable_uniform_policy
+        self.use_over_rand_action = use_over_rand_action
+        self.use_prev_rand_action = use_prev_rand_action
+        self.use_uniform_policy = use_uniform_policy
 
         # PER
         self.alpha = alpha
@@ -210,10 +209,10 @@ class Muzero(BaseAgent):
                 reward.append(np.zeros((1, 1)))
                 policy.append(
                     np.full(self.action_size, 1 / self.action_size)
-                    if self.enable_uniform_policy
+                    if self.use_uniform_policy
                     else np.zeros(self.action_size)
                 )
-                if self.enable_after_random_action:
+                if self.use_over_rand_action:
                     action[stack_len - i - 1] = np.random.randint(
                         self.action_size, size=(1, 1)
                     )
@@ -299,18 +298,19 @@ class Muzero(BaseAgent):
 
         weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
         loss = self.value_loss_weight * value_loss + policy_loss + reward_loss
-        loss = (weights * (loss.mean(-1) + ssc_loss)).mean()
+        weighted_loss = (weights * (loss.mean(-1) + ssc_loss)).mean()
 
         gradient_scale = 1 / self.num_unroll
-        loss.register_hook(lambda x: x * gradient_scale)
+        weighted_loss.register_hook(lambda x: x * gradient_scale)
 
         self.optimizer.zero_grad(set_to_none=True)
-        loss.backward()
+        weighted_loss.backward()
         self.optimizer.step()
         self.num_learn += 1
 
         result = {
-            "loss": loss.item(),
+            "loss": loss.mean().item(),
+            "weighted_loss": weighted_loss.item(),
             "P_loss": policy_loss.mean().item(),
             "V_loss": value_loss.mean().item(),
             "R_loss": reward_loss.mean().item(),
@@ -372,13 +372,13 @@ class Muzero(BaseAgent):
             self.trajectory["values"].append(np.zeros((1, 1)))
             self.trajectory["policies"].append(
                 np.full(self.action_size, 1 / self.action_size)
-                if self.enable_uniform_policy
+                if self.use_uniform_policy
                 else np.zeros(self.action_size)
             )
             priorities = np.zeros(len(self.trajectory["values"]) - 1)
             for i, v in enumerate(self.trajectory["values"][:-1]):
                 z = self.get_bootstrap_value(self.trajectory, i)
-                priorities[i] = abs(v - z)
+                priorities[i] = abs(v - z) ** self.alpha
 
             _transition = {"trajectory": self.trajectory, "priorities": priorities}
             self.trajectory = None
@@ -412,7 +412,7 @@ class Muzero(BaseAgent):
         stacked_a = np.zeros(num_stack, int)
         stacked_s = np.zeros((num_stack + 1, *shape), np.float32)
 
-        if self.enable_prev_random_action:
+        if self.use_prev_rand_action:
             stacked_a[:cut] = np.random.randint(self.action_size, size=cut)
 
         for n, i in enumerate(range(start, end), start=cut):
@@ -443,9 +443,9 @@ class Muzero(BaseAgent):
 
     def set_distributed(self, id):
         assert self.num_workers > 1
-        self.mcts.alpha = (
-            id * (self.mcts_alpha_max - self.mcts_alpha_min) / (self.num_workers - 1)
-        )
+        self.mcts.alpha = self.mcts_alpha_min + id * (
+            self.mcts_alpha_max - self.mcts_alpha_min
+        ) / (self.num_workers - 1)
 
         return self
 
@@ -475,12 +475,12 @@ class Muzero(BaseAgent):
 
 
 class MCTS:
-    def __init__(self, network, action_size, n_unroll, gamma, policy_train_delay):
+    def __init__(self, network, action_size, n_unroll, gamma, use_uniform_policy):
         self.network = network
         self.p_fn = network.prediction  # prediction function
         self.d_fn = network.dynamics  # dynamics function
 
-        self.use_uniform_policy = policy_train_delay
+        self.use_uniform_policy = use_uniform_policy
         self.action_size = action_size
         self.n_unroll = n_unroll + 1
 
