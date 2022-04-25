@@ -254,18 +254,24 @@ class Muzero_Resnet(BaseNetwork):
         obs_a = torch.cat([obs, a], dim=1)
 
         # downsample
-        hs = self.hs_down(obs_a)
+        hs_a = self.hs_down(obs_a)
 
         # resnet
         for block in self.hs_res:
-            hs = block(hs)
+            hs_a = block(hs_a)
 
         # hidden_state_normalize
-        hs_max = hs.max(-1)[0].max(-1)[0].max(-1)[0].view([-1, 1, 1, 1]).broadcast_to([*hs.size()])
-        hs_min = hs.min(-1)[0].min(-1)[0].min(-1)[0].view([-1, 1, 1, 1]).broadcast_to([*hs.size()])
+        original_size = hs.size()
+        hs = hs.view([original_size[0], -1])
+        hs_max = hs.max(1)[0].view(original_size[0], -1)
+        hs_min = hs.min(1)[0].view(original_size[0], -1)
         hs_scale = hs_max - hs_min
         hs_scale[hs_scale < 1e-5] += 1e-5
+        hs_max = hs_max.broadcast_to([-1, hs.size(-1)])
+        hs_min = hs_min.broadcast_to([-1, hs.size(-1)])
         hs_norm = (hs - hs_min) / hs_scale
+        hs_norm = hs_norm.view(original_size)
+        hs = hs.view(original_size)
 
         return hs_norm
 
@@ -306,11 +312,17 @@ class Muzero_Resnet(BaseNetwork):
             next_hs = block(next_hs)
 
         # next_hidden_state_normalize
-        next_hs_max = next_hs.max(-1)[0].max(-1)[0].max(-1)[0].view([-1, 1, 1, 1]).broadcast_to([*next_hs.size()])
-        next_hs_min = next_hs.min(-1)[0].min(-1)[0].min(-1)[0].view([-1, 1, 1, 1]).broadcast_to([*next_hs.size()])
+        original_size = next_hs.size()
+        next_hs = next_hs.view([original_size[0], -1])
+        next_hs_max = next_hs.max(1)[0].view(original_size[0], -1)
+        next_hs_min = next_hs.min(1)[0].view(original_size[0], -1)
         next_hs_scale = next_hs_max - next_hs_min
         next_hs_scale[next_hs_scale < 1e-5] += 1e-5
+        next_hs_max = next_hs_max.broadcast_to([-1, next_hs.size(-1)])
+        next_hs_min = next_hs_min.broadcast_to([-1, next_hs.size(-1)])
         next_hs_norm = (next_hs - next_hs_min) / next_hs_scale
+        next_hs_norm = next_hs_norm.view(original_size)
+        next_hs = next_hs.view(original_size)
 
         # conv(norm) -> flatten -> reward(distribution)
         rd = self.dy_conv_rd(next_hs_norm).view(next_hs_norm.size(0), -1)
@@ -321,7 +333,7 @@ class Muzero_Resnet(BaseNetwork):
         # rd = F.leaky_relu(rd)
         # rd = self.dy_rd_3(rd)
         rd = F.log_softmax(rd, dim=-1)
-       
+        
         return next_hs_norm, rd
 
 
@@ -377,14 +389,13 @@ class Downsample(torch.nn.Module):
         obs_a = F.avg_pool2d(
             obs_a, kernel_size=self.kernel, stride=self.stride, padding=self.padding
         )
-        obs_a = F.leaky_relu(obs_a)
         for block in self.res_3:
             obs_a = block(obs_a)
+            
         obs_a = F.avg_pool2d(
             obs_a, kernel_size=self.kernel, stride=self.stride, padding=self.padding
         )
-        obs_a = F.leaky_relu(obs_a)
-        
+
         return obs_a
 
     def get_filter_info(self):
