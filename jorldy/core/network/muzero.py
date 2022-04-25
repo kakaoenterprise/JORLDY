@@ -127,7 +127,7 @@ class Muzero_Resnet(BaseNetwork):
     ):
         super(Muzero_Resnet, self).__init__(D_hidden, D_hidden, head)
         
-        assert D_in[1] >= 36 and D_in[2] >= 36
+        assert D_in[1] >= 16 and D_in[2] >= 16
         
         self.D_in = D_in
         self.D_out = D_out
@@ -193,24 +193,24 @@ class Muzero_Resnet(BaseNetwork):
             in_features=D_hidden * (self.down_size[0] * self.down_size[1]),
             out_features=D_hidden,
         )
-        self.pred_pi_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
-        self.pred_pi_3 = torch.nn.Linear(in_features=D_hidden, out_features=D_out)
+        self.pred_pi_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_out)
+        # self.pred_pi_3 = torch.nn.Linear(in_features=D_hidden, out_features=D_out)
         self.pred_vd_1 = torch.nn.Linear(
             in_features=D_hidden * (self.down_size[0] * self.down_size[1]),
             out_features=D_hidden,
         )
-        self.pred_vd_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
-        self.pred_vd_3 = torch.nn.Linear(
-            in_features=D_hidden, out_features=(support << 1) + 1
-        )
+        self.pred_vd_2 = torch.nn.Linear(in_features=D_hidden, out_features=(support << 1) + 1)
+        # self.pred_vd_3 = torch.nn.Linear(
+        #     in_features=D_hidden, out_features=(support << 1) + 1
+        # )
 
         orthogonal_init(self.pred_conv, "conv2d")
         orthogonal_init(self.pred_pi_1, "linear")
         orthogonal_init(self.pred_pi_2, "linear")
-        orthogonal_init(self.pred_pi_3, "linear")
+        # orthogonal_init(self.pred_pi_3, "linear")
         orthogonal_init(self.pred_vd_1, "linear")
         orthogonal_init(self.pred_vd_2, "linear")
-        orthogonal_init(self.pred_vd_3, "linear")
+        # orthogonal_init(self.pred_vd_3, "linear")
 
         # dynamics -> make reward and next hidden state
         self.dy_conv = torch.nn.Conv2d(
@@ -232,16 +232,16 @@ class Muzero_Resnet(BaseNetwork):
             in_features=D_hidden * (self.down_size[0] * self.down_size[1]),
             out_features=D_hidden,
         )
-        self.dy_rd_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
-        self.dy_rd_3 = torch.nn.Linear(
-            in_features=D_hidden, out_features=(support << 1) + 1
-        )
+        self.dy_rd_2 = torch.nn.Linear(in_features=D_hidden, out_features=(support << 1) + 1)
+        # self.dy_rd_3 = torch.nn.Linear(
+        #     in_features=D_hidden, out_features=(support << 1) + 1
+        # )
 
         orthogonal_init(self.dy_conv, "conv2d")
         orthogonal_init(self.dy_conv_rd, "conv2d")
         orthogonal_init(self.dy_rd_1, "linear")
         orthogonal_init(self.dy_rd_2, "linear")
-        orthogonal_init(self.dy_rd_3, "linear")
+        # orthogonal_init(self.dy_rd_3, "linear")
 
     def representation(self, obs, a):
         # observation, action : normalize -> concatenate -> input
@@ -254,19 +254,18 @@ class Muzero_Resnet(BaseNetwork):
         obs_a = torch.cat([obs, a], dim=1)
 
         # downsample
-        hs_a = self.hs_down(obs_a)
+        hs = self.hs_down(obs_a)
 
         # resnet
         for block in self.hs_res:
-            hs_a = block(hs_a)
+            hs = block(hs)
 
         # hidden_state_normalize
-        hs = hs_a.view([1, *hs_a.size()])
-        hs_max = torch.max(hs)
-        hs_min = torch.min(hs)
+        hs_max = hs.max(-1)[0].max(-1)[0].max(-1)[0].view([-1, 1, 1, 1]).broadcast_to([*hs.size()])
+        hs_min = hs.min(-1)[0].min(-1)[0].min(-1)[0].view([-1, 1, 1, 1]).broadcast_to([*hs.size()])
         hs_scale = hs_max - hs_min
         hs_scale[hs_scale < 1e-5] += 1e-5
-        hs_norm = ((hs - hs_min) / hs_scale).view([*hs.size()[1:]])
+        hs_norm = (hs - hs_min) / hs_scale
 
         return hs_norm
 
@@ -275,22 +274,23 @@ class Muzero_Resnet(BaseNetwork):
         for block in self.pred_res:
             hs = block(hs)
         hs = self.pred_conv(hs)
-        hs = hs.reshape(hs.size(0), -1)
+        hs = F.leaky_relu(hs)
+        hs = hs.view(hs.size(0), -1)
 
         # pi(action_distribution)
         pi = self.pred_pi_1(hs)
         pi = F.leaky_relu(pi)
         pi = self.pred_pi_2(pi)
-        pi = F.leaky_relu(pi)
-        pi = self.pred_pi_3(pi)
+        # pi = F.leaky_relu(pi)
+        # pi = self.pred_pi_3(pi)
         pi = F.log_softmax(pi, dim=-1)
 
         # value(distribution)
         vd = self.pred_vd_1(hs)
         vd = F.leaky_relu(vd)
         vd = self.pred_vd_2(vd)
-        vd = F.leaky_relu(vd)
-        vd = self.pred_vd_3(vd)
+        # vd = F.leaky_relu(vd)
+        # vd = self.pred_vd_3(vd)
         vd = F.log_softmax(vd, dim=-1)
 
         return pi, vd
@@ -300,27 +300,28 @@ class Muzero_Resnet(BaseNetwork):
         a = torch.div(a, self.D_out).view([*a.size()[:2], 1, 1])
         a = torch.broadcast_to(a, [*a.size()[:2], *self.down_size])
         hs_a = torch.cat([hs, a], dim=1)
-        hs_a = self.dy_conv(hs_a)
+        next_hs = self.dy_conv(hs_a)
+        next_hs = F.leaky_relu(next_hs)
         for block in self.dy_res:
-            hs_a = block(hs_a)
+            next_hs = block(next_hs)
 
         # next_hidden_state_normalize
-        next_hs = hs_a.view([1, *hs_a.size()])
-        next_hs_min = torch.min(next_hs)
-        next_hs_max = torch.max(next_hs)
+        next_hs_max = next_hs.max(-1)[0].max(-1)[0].max(-1)[0].view([-1, 1, 1, 1]).broadcast_to([*next_hs.size()])
+        next_hs_min = next_hs.min(-1)[0].min(-1)[0].min(-1)[0].view([-1, 1, 1, 1]).broadcast_to([*next_hs.size()])
         next_hs_scale = next_hs_max - next_hs_min
         next_hs_scale[next_hs_scale < 1e-5] += 1e-5
-        next_hs_norm = ((next_hs - next_hs_min) / next_hs_scale).view([*next_hs.size()[1:]])
+        next_hs_norm = (next_hs - next_hs_min) / next_hs_scale
 
         # conv(norm) -> flatten -> reward(distribution)
-        rd = self.dy_conv_rd(next_hs_norm).reshape(next_hs_norm.size(0), -1)
+        rd = self.dy_conv_rd(next_hs_norm).view(next_hs_norm.size(0), -1)
+        rd = F.leaky_relu(rd)
         rd = self.dy_rd_1(rd)
         rd = F.leaky_relu(rd)
         rd = self.dy_rd_2(rd)
-        rd = F.leaky_relu(rd)
-        rd = self.dy_rd_3(rd)
+        # rd = F.leaky_relu(rd)
+        # rd = self.dy_rd_3(rd)
         rd = F.log_softmax(rd, dim=-1)
-
+       
         return next_hs_norm, rd
 
 
@@ -364,19 +365,26 @@ class Downsample(torch.nn.Module):
     def forward(self, obs_a):
         # down-sampling : conv -> resnet -> pooling
         obs_a = self.conv_1(obs_a)
+        obs_a = F.leaky_relu(obs_a)
         for block in self.res_1:
             obs_a = block(obs_a)
+            
         obs_a = self.conv_2(obs_a)
+        obs_a = F.leaky_relu(obs_a)
         for block in self.res_2:
             obs_a = block(obs_a)
+            
         obs_a = F.avg_pool2d(
             obs_a, kernel_size=self.kernel, stride=self.stride, padding=self.padding
         )
+        obs_a = F.leaky_relu(obs_a)
         for block in self.res_3:
             obs_a = block(obs_a)
         obs_a = F.avg_pool2d(
             obs_a, kernel_size=self.kernel, stride=self.stride, padding=self.padding
         )
+        obs_a = F.leaky_relu(obs_a)
+        
         return obs_a
 
     def get_filter_info(self):
