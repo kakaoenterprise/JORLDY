@@ -248,9 +248,6 @@ class Muzero_Resnet(BaseNetwork):
         obs /= 255.0
         a = torch.div(a, self.D_out).view([*a.size()[:2], 1, 1])
         a = torch.broadcast_to(a, [*a.size()[:2], *self.D_in[1:]])
-
-        a = torch.div(a, self.D_out).view([*a.size()[:2], 1, 1])
-        a = torch.broadcast_to(a, [*a.size()[:2], *self.D_in[1:]])
         obs_a = torch.cat([obs, a], dim=1)
 
         # downsample
