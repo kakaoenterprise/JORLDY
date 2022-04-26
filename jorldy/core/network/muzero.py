@@ -254,11 +254,11 @@ class Muzero_Resnet(BaseNetwork):
         obs_a = torch.cat([obs, a], dim=1)
 
         # downsample
-        hs_a = self.hs_down(obs_a)
+        hs = self.hs_down(obs_a)
 
         # resnet
         for block in self.hs_res:
-            hs_a = block(hs_a)
+            hs = block(hs)
 
         # hidden_state_normalize
         original_size = hs.size()
@@ -267,11 +267,8 @@ class Muzero_Resnet(BaseNetwork):
         hs_min = hs.min(1)[0].view(original_size[0], -1)
         hs_scale = hs_max - hs_min
         hs_scale[hs_scale < 1e-5] += 1e-5
-        hs_max = hs_max.broadcast_to([-1, hs.size(-1)])
-        hs_min = hs_min.broadcast_to([-1, hs.size(-1)])
         hs_norm = (hs - hs_min) / hs_scale
         hs_norm = hs_norm.view(original_size)
-        hs = hs.view(original_size)
 
         return hs_norm
 
@@ -318,11 +315,8 @@ class Muzero_Resnet(BaseNetwork):
         next_hs_min = next_hs.min(1)[0].view(original_size[0], -1)
         next_hs_scale = next_hs_max - next_hs_min
         next_hs_scale[next_hs_scale < 1e-5] += 1e-5
-        next_hs_max = next_hs_max.broadcast_to([-1, next_hs.size(-1)])
-        next_hs_min = next_hs_min.broadcast_to([-1, next_hs.size(-1)])
         next_hs_norm = (next_hs - next_hs_min) / next_hs_scale
         next_hs_norm = next_hs_norm.view(original_size)
-        next_hs = next_hs.view(original_size)
 
         # conv(norm) -> flatten -> reward(distribution)
         rd = self.dy_conv_rd(next_hs_norm).view(next_hs_norm.size(0), -1)
