@@ -149,7 +149,7 @@ class MPO(BaseAgent):
         )
 
         self.gamma = gamma
-        self.tmp_buffer = deque(maxlen=n_step)
+        self.tmp_buffer = deque(maxlen=self.n_step)
         self.memory = ReplayBuffer(buffer_size)
         self.run_step = run_step
         self.lr_decay = lr_decay
@@ -449,7 +449,6 @@ class MPO(BaseAgent):
 
         # Process per step
         self.memory.store(transitions)
-        delta_t = step - self.time_t
         self.time_t = step
 
         if self.memory.size >= self.batch_size and self.time_t >= self.start_train_step:

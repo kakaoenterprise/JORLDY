@@ -11,7 +11,7 @@ agent = {
     "gamma": 0.99,
     "buffer_size": 50000,
     "batch_size": 128,
-    "start_train_step": 2000,
+    "start_train_step": 1000,
     "tau": 1e-3,
     "lr_decay": True,
     # OU noise
@@ -30,9 +30,9 @@ optim = {
 train = {
     "training": True,
     "load_path": None,
-    "run_step": 300000,
-    "print_period": 5000,
-    "save_period": 10000,
+    "run_step": 1000000,
+    "print_period": 10000,
+    "save_period": 100000,
     "eval_iteration": 10,
     # distributed setting
     "distributed_batch_size": 256,
