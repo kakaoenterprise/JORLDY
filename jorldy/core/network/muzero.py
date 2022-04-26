@@ -246,11 +246,8 @@ class Muzero_Resnet(BaseNetwork):
     def representation(self, obs, a):
         # observation, action : normalize -> concatenate -> input
         obs /= 255.0
-        # TODO: original
-        a = torch.div(a, self.D_out)
-        # TODO: correction
-        # a = torch.div(a, self.D_out).view([*a.size()[:2], 1, 1])
-        # a = torch.broadcast_to(a, [*a.size()[:2], *self.D_in[1:]])
+        a = torch.div(a, self.D_out).view([*a.size()[:2], 1, 1])
+        a = torch.broadcast_to(a, [*a.size()[:2], *self.D_in[1:]])
         obs_a = torch.cat([obs, a], dim=1)
 
         # downsample
@@ -327,7 +324,7 @@ class Muzero_Resnet(BaseNetwork):
         # rd = F.leaky_relu(rd)
         # rd = self.dy_rd_3(rd)
         rd = F.log_softmax(rd, dim=-1)
-        
+
         return next_hs_norm, rd
 
 
