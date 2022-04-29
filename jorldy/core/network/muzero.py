@@ -4,7 +4,6 @@ import numpy as np
 
 from .base import BaseNetwork
 from .utils import orthogonal_init, Converter
-from .head import Residualblock
 
 
 class Muzero_mlp(BaseNetwork):
@@ -21,6 +20,10 @@ class Muzero_mlp(BaseNetwork):
         head="mlp_residualblock",
     ):
         super(Muzero_mlp, self).__init__(D_hidden, D_hidden, head)
+        self.representation_rb = MLP_Residualblock(D_hidden, D_hidden)
+        self.prediction_rb = MLP_Residualblock(D_hidden, D_hidden)
+        self.dynamics_rb = MLP_Residualblock(D_hidden, D_hidden)
+        
         self.D_in = D_in
         self.D_out = D_out
         self.D_hidden = D_hidden
@@ -32,10 +35,10 @@ class Muzero_mlp(BaseNetwork):
         self.hs_l1 = torch.nn.Linear(D_stack, D_hidden)
         self.hs_ln1 = torch.nn.LayerNorm(D_hidden)
 
-        self.hs_res = torch.nn.Sequential(*[self.head for _ in range(num_rb)])
+        self.hs_res = torch.nn.Sequential(*[self.representation_rb for _ in range(num_rb)])
 
         # prediction -> make discrete policy and discrete value
-        self.pred_res = torch.nn.Sequential(*[self.head for _ in range(num_rb)])
+        self.pred_res = torch.nn.Sequential(*[self.prediction_rb for _ in range(num_rb)])
 
         self.pi_l1 = torch.nn.Linear(D_hidden, D_hidden)
         self.pi_l2 = torch.nn.Linear(D_hidden, D_hidden)
@@ -53,7 +56,7 @@ class Muzero_mlp(BaseNetwork):
 
         # dynamics -> make reward and next hidden state
         self.dy_l1 = torch.nn.Linear(D_hidden + D_out, D_hidden)
-        self.dy_res = torch.nn.Sequential(*[self.head for _ in range(num_rb)])
+        self.dy_res = torch.nn.Sequential(*[self.dynamics_rb for _ in range(num_rb)])
 
         self.rd_l1 = torch.nn.Linear(D_hidden, D_hidden)
         self.rd_l2 = torch.nn.Linear(D_hidden, (support << 1) + 1)
@@ -126,6 +129,9 @@ class Muzero_Resnet(BaseNetwork):
         head="residualblock",
     ):
         super(Muzero_Resnet, self).__init__(D_hidden, D_hidden, head)
+        self.representation_rb = CONV_Residualblock(D_hidden, D_hidden)
+        self.prediction_rb = CONV_Residualblock(D_hidden, D_hidden)
+        self.dynamics_rb = CONV_Residualblock(D_hidden, D_hidden)
         
         assert D_in[1] >= 16 and D_in[2] >= 16
         
@@ -143,7 +149,7 @@ class Muzero_Resnet(BaseNetwork):
 
         # representation -> make hidden state
         self.hs_down = Downsample(D_stack, num_rb, D_hidden)
-        self.hs_res = torch.nn.ModuleList([self.head for _ in range(num_rb)])
+        self.hs_res = torch.nn.ModuleList([self.representation_rb for _ in range(num_rb)])
 
         filter_info = self.hs_down.get_filter_info()
         dim1 = (
@@ -181,7 +187,7 @@ class Muzero_Resnet(BaseNetwork):
         self.down_size = (dim4[0], dim4[1])
 
         # prediction -> make discrete policy and discrete value
-        self.pred_res = torch.nn.ModuleList([self.head for _ in range(num_rb)])
+        self.pred_res = torch.nn.ModuleList([self.prediction_rb for _ in range(num_rb)])
         self.pred_conv = torch.nn.Conv2d(
             in_channels=D_hidden,
             out_channels=D_hidden,
@@ -227,7 +233,7 @@ class Muzero_Resnet(BaseNetwork):
             padding=padding,
             stride=stride,
         )
-        self.dy_res = torch.nn.ModuleList([self.head for _ in range(num_rb)])
+        self.dy_res = torch.nn.ModuleList([self.dynamics_rb for _ in range(num_rb)])
         self.dy_rd_1 = torch.nn.Linear(
             in_features=D_hidden * (self.down_size[0] * self.down_size[1]),
             out_features=D_hidden,
@@ -245,7 +251,7 @@ class Muzero_Resnet(BaseNetwork):
 
     def representation(self, obs, a):
         # observation, action : normalize -> concatenate -> input
-        obs /= 255.0
+        obs = torch.div(obs, 255.0)
         a = torch.div(a, self.D_out).view([*a.size()[:2], 1, 1])
         a = torch.broadcast_to(a, [*a.size()[:2], *self.D_in[1:]])
         obs_a = torch.cat([obs, a], dim=1)
@@ -356,13 +362,13 @@ class Downsample(torch.nn.Module):
 
         # resnet
         self.res_1 = torch.nn.ModuleList(
-            [Residualblock(D_hidden >> 1) for _ in range(num_rb)]
+            [CONV_Residualblock(D_hidden >> 1) for _ in range(num_rb)]
         )
         self.res_2 = torch.nn.ModuleList(
-            [Residualblock(D_hidden) for _ in range(num_rb)]
+            [CONV_Residualblock(D_hidden) for _ in range(num_rb)]
         )
         self.res_3 = torch.nn.ModuleList(
-            [Residualblock(D_hidden) for _ in range(num_rb)]
+            [CONV_Residualblock(D_hidden) for _ in range(num_rb)]
         )
 
     def forward(self, obs_a):
@@ -395,3 +401,55 @@ class Downsample(torch.nn.Module):
             "stride": self.stride,
             "padding": self.padding,
         }
+    
+
+class MLP_Residualblock(torch.nn.Module):
+    def __init__(self, D_in, D_hidden=256):
+        super(MLP_Residualblock, self).__init__()
+
+        self.l1 = torch.nn.Linear(D_in, D_hidden)
+        self.ln1 = torch.nn.LayerNorm(D_hidden)
+        self.l2 = torch.nn.Linear(D_hidden, D_in)
+        self.ln2 = torch.nn.LayerNorm(D_hidden)
+
+    def forward(self, x):
+        x_res = F.relu(self.ln1(self.l1(x)))
+        x_res = self.ln2(self.l2(x))
+        x_res += x
+        x = F.relu(x_res)
+        return x
+
+
+# muzero atari head
+class CONV_Residualblock(torch.nn.Module):
+    def __init__(self, D_in, D_hidden=256):
+        super(CONV_Residualblock, self).__init__()
+
+        self.c1 = torch.nn.Conv2d(
+            in_channels=D_in,
+            out_channels=D_in,
+            kernel_size=(3, 3),
+            stride=(1, 1),
+            padding=(1, 1),
+            bias=False,
+        )
+        self.b1 = torch.nn.BatchNorm2d(num_features=D_in)
+        self.c2 = torch.nn.Conv2d(
+            in_channels=D_in,
+            out_channels=D_in,
+            kernel_size=(3, 3),
+            stride=(1, 1),
+            padding=(1, 1),
+            bias=False,
+        )
+        self.b2 = torch.nn.BatchNorm2d(num_features=D_in)
+
+    def forward(self, x):
+        x_res = self.c1(x)
+        x_res = self.b1(x_res)
+        x_res = F.relu(x_res)
+        x_res = self.c2(x_res)
+        x_res = self.b2(x_res)
+        x_res += x
+        x = F.relu(x_res)
+        return x
