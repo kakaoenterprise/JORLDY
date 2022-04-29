@@ -162,11 +162,11 @@ class Muzero(BaseAgent):
     @torch.no_grad()
     def act(self, state, training=True):
         self.target_network.train(training)
-
+        
         if not self.trajectory:
             self.init_trajectory(state)
             self.update_target()
-
+            
         stacked_s, stacked_a = self.get_stacked_data(
             self.trajectory, self.trajectory_step_stamp, self.num_stack
         )
@@ -182,7 +182,7 @@ class Muzero(BaseAgent):
         else:
             self.mcts.use_uniform_policy = False
             n_mcts = self.num_eval_mcts
-        action, pi, value = self.mcts.run_mcts(root_state, n_mcts)
+        action, pi, value = self.mcts.run_mcts(root_state, n_mcts, training)
         action = np.array(action if training else np.argmax(pi), ndmin=2)
 
         return {"action": action, "value": np.array(value), "pi": pi}
@@ -264,7 +264,7 @@ class Muzero(BaseAgent):
         value_loss = -(target_value[:, 0] * value).sum(1)
         reward_loss = torch.zeros(self.batch_size, device=self.device)
         ssc_loss = torch.zeros(self.batch_size, device=self.device)
-
+        
         # comput unroll step loss
         for end, i in enumerate(range(1, self.num_unroll + 1), self.num_stack + 1):
             stack_s, stack_a = (
@@ -290,7 +290,7 @@ class Muzero(BaseAgent):
 
             reward_s = self.network.converter.vector2scalar(torch.exp(reward))
             value_s = self.network.converter.vector2scalar(torch.exp(value))
-
+            
             max_V = max(max_V, torch.max(value_s).item())
             min_V = min(min_V, torch.min(value_s).item())
             max_R = max(max_R, torch.max(reward_s).item())
@@ -488,8 +488,10 @@ class MCTS:
         self.temp_param = 1.0
 
         self.c1 = 1.25
-        self.c2 = 19652
+        self.c2 = 19625
         self.alpha = 0.3
+        
+        self.c_ucb = 1.0
 
         self.q_min = 0
         self.q_max = 0
@@ -498,8 +500,8 @@ class MCTS:
         self.tree = {}
 
     @torch.no_grad()
-    def run_mcts(self, root_state, num_mcts):
-        self.tree = self.init_mcts(root_state)
+    def run_mcts(self, root_state, num_mcts, training):
+        self.tree = self.init_mcts(root_state, training)
 
         for i in range(num_mcts):
             # selection
@@ -510,22 +512,22 @@ class MCTS:
 
             # backup
             self.backup(leaf_id, leaf_v)
-
+        
         root_value = self.tree[self.root_id]["q"]
         root_action, pi = self.select_root_action()
-
+        
         return root_action, pi, root_value
 
     @torch.no_grad()
     def selection(self, root_state):
         node_id = self.root_id
         node_state = root_state
-
+        
         while self.tree[node_id]["n"] > 0:
             if len(node_id) <= self.n_unroll:
                 UCB_list = []
                 total_n = self.tree[node_id]["n"]
-
+                
                 for action_index in self.tree[node_id]["child"]:
                     child_id = node_id + (action_index,)
                     n = self.tree[child_id]["n"]
@@ -536,9 +538,14 @@ class MCTS:
                     u = (p * np.sqrt(total_n) / (n + 1)) * (
                         self.c1 + np.log((total_n + self.c2 + 1) / self.c2)
                     )
-                    UCB_list.append((q + u).cpu())
-
-                a_UCB = np.argmax(UCB_list)
+                    UCB_list.append((q + self.c_ucb*u).cpu())
+                    
+                    # UCB_list.append((q + u).cpu())
+                
+                max_UCB = np.max(UCB_list)
+                max_list = [a for a, v in enumerate(UCB_list) if v == max_UCB]
+                a_UCB = np.random.choice(max_list)
+                
                 node_id += (a_UCB,)
                 node_state = self.tree[node_id]["s"]
             else:
@@ -603,6 +610,9 @@ class MCTS:
             G = discount_sum_r + ((self.gamma ** (n + 1)) * node_v)
 
             # Update Q and N
+            # if self.tree[node_id]["n"] == 0:
+            #     self.tree[node_id]["q"] = 0
+            
             q = (self.tree[node_id]["n"] * self.tree[node_id]["q"] + G) / (
                 self.tree[node_id]["n"] + 1
             )
@@ -621,16 +631,27 @@ class MCTS:
             reward_list.append(self.tree[node_id]["r"])
 
     @torch.no_grad()
-    def init_mcts(self, root_state):
+    def init_mcts(self, root_state, training):
         tree = {}
         root_id = (0,)
 
         p_root, v_root = self.p_fn(root_state)
-        p_root = (
-            torch.full((1, self.action_size), 1 / self.action_size)
-            if self.use_uniform_policy
-            else torch.exp(p_root)
-        )
+        # p_root = (
+        #     torch.full((1, self.action_size), 1 / self.action_size)
+        #     if self.use_uniform_policy
+        #     else torch.exp(p_root)
+        # )
+        
+        if self.use_uniform_policy:
+            p_root = torch.full((1, self.action_size), 1 / self.action_size)
+        else:
+            p_root = torch.exp(p_root)
+            
+            if training:
+                noise_probs = np.random.dirichlet(self.alpha * np.ones(self.action_size))
+                p_root = p_root * 0.75 + noise_probs * 0.25
+                p_root = p_root / torch.sum(p_root)
+            
         v_root = torch.exp(v_root)
         v_root_scalar = self.network.converter.vector2scalar(v_root).item()
 
@@ -661,10 +682,10 @@ class MCTS:
         pi_temp = np.asarray(n_list) ** (1 / self.temp_param)
         pi_temp = pi_temp / np.sum(pi_temp)
 
-        noise_probs = self.alpha * np.random.dirichlet(np.ones(self.action_size))
-        pi_noise = pi_temp + noise_probs
-        pi_noise = pi_noise / np.sum(pi_noise)
+        # noise_probs = self.alpha * np.random.dirichlet(np.ones(self.action_size))
+        # pi_noise = pi_temp + noise_probs
+        # pi_noise = pi_noise / np.sum(pi_noise)
 
-        action_idx = np.random.choice(self.action_size, p=pi_noise)
+        action_idx = np.random.choice(self.action_size, p=pi_temp)
 
-        return action_idx, pi
+        return action_idx, pi_temp
