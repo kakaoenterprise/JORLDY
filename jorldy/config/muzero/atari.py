@@ -35,7 +35,7 @@ agent = {
     "beta": 1.0,
     "uniform_sample_prob": 1e-3,
     # MCTS
-    "num_mcts": 30,
+    "num_mcts": 2, # 30,
     "num_eval_mcts": 15,
     "mcts_alpha_max": 0.4,
     "mcts_alpha_min": 0.0,
