@@ -16,7 +16,7 @@ env = {
 agent = {
     "name": "muzero",
     "network": "muzero_resnet",
-    "head": "residualblock",
+    "head": "mlp",
     "hidden_size": 64,
     "gamma": 0.997,
     "buffer_size": 1000000,
