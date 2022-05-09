@@ -161,7 +161,7 @@ class Muzero(BaseAgent):
 
     @torch.no_grad()
     def act(self, state, training=True):
-        self.target_network.train(training)
+        self.target_network.eval()
         
         if not self.trajectory:
             self.init_trajectory(state)
@@ -531,9 +531,12 @@ class MCTS:
                 for action_index in self.tree[node_id]["child"]:
                     child_id = node_id + (action_index,)
                     n = self.tree[child_id]["n"]
-                    q = (self.tree[child_id]["q"] - self.q_min) / (
-                        self.q_max - self.q_min
+                    q = (
+                        self.tree[child_id]["q"]
+                        if n > 0
+                        else self.tree[child_id]["v"] * 0.8
                     )
+                    q = (q - self.q_min) / (self.q_max - self.q_min)
                     p = self.tree[node_id]["p"][0, action_index]
                     u = (p * np.sqrt(total_n) / (n + 1)) * (
                         self.c1 + np.log((total_n + self.c2 + 1) / self.c2)
