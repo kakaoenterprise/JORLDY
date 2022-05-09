@@ -55,8 +55,11 @@ __- Atari and Super Mario Bros__
 atari and super-mario-bros need to be installed manually due to licensing issues
 
 ```
-# To use atari
+# To use atari(linux, windows)
 pip install --upgrade gym[atari,accept-rom-license]
+
+# To use atari(mac)
+pip install --upgrade 'gym[atari,accept-rom-license]'
  
 # To use super-mario-bros
 pip install gym-super-mario-bros
