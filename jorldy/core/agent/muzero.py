@@ -210,7 +210,10 @@ class Muzero(BaseAgent):
             # make target
             end = start + self.num_unroll + 1
             stack_len = self.num_stack + self.num_unroll
+            over = end - trajectory_len
             state, action = self.get_stacked_data(trajectory, end - 1, stack_len)
+            if over > 1 and self.use_over_rand_action:
+                action[-over + 1 :] = np.random.randint(self.action_size, size=over - 1)
 
             policy = trajectory["policies"][start:end]
             policy += [absorbing_policy] * (self.num_unroll - len(policy) + 1)
@@ -584,8 +587,10 @@ class MCTS:
                     u = (p * np.sqrt(total_n) / (n + 1)) * (
                         self.c1 + np.log((total_n + self.c2 + 1) / self.c2)
                     )
-                    UCB_list.append((q + self.c_ucb*u).cpu())
-                                    
+                    UCB_list.append((q + self.c_ucb * u).cpu())
+
+                    # UCB_list.append((q + u).cpu())
+
                 max_UCB = np.max(UCB_list)
                 max_list = [a for a, v in enumerate(UCB_list) if v == max_UCB]
                 a_UCB = np.random.choice(max_list)
@@ -656,7 +661,10 @@ class MCTS:
 
             G = discount_sum_r + ((self.gamma ** (n + 1)) * node_v)
 
-            # Update Q and N            
+            # Update Q and N
+            # if self.tree[node_id]["n"] == 0:
+            #     self.tree[node_id]["q"] = 0
+
             q = (self.tree[node_id]["n"] * self.tree[node_id]["q"] + G) / (
                 self.tree[node_id]["n"] + 1
             )
@@ -679,15 +687,22 @@ class MCTS:
         root_id = (0,)
 
         p_root, v_root = self.p_fn(root_state)
-        
+        # p_root = (
+        #     torch.full((1, self.action_size), 1 / self.action_size)
+        #     if self.use_uniform_policy
+        #     else torch.exp(p_root)
+        # )
+
         if self.use_uniform_policy:
             p_root = torch.full((1, self.action_size), 1 / self.action_size)
         else:
             p_root = torch.exp(p_root)
 
             if training:
-                noise_probs = np.random.dirichlet(self.alpha * np.ones(self.action_size))
-                p_root = p_root * 0.8 + noise_probs * 0.2
+                noise_probs = np.random.dirichlet(
+                    self.alpha * np.ones(self.action_size)
+                )
+                p_root = p_root * 0.75 + noise_probs * 0.25
                 p_root = p_root / torch.sum(p_root)
 
         v_root = torch.exp(v_root)
