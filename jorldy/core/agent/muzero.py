@@ -104,6 +104,7 @@ class Muzero(BaseAgent):
 
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
 
+        self.state_size = state_size
         self.action_size = action_size
         self.gamma = gamma
         self.batch_size = batch_size
@@ -113,7 +114,7 @@ class Muzero(BaseAgent):
         )
         self.value_loss_weight = value_loss_weight
 
-        self.max_trajectory_size = max_trajectory_size
+        self.max_trajectory_size = max_trajectory_size + num_unroll
         self.num_unroll = num_unroll
         self.num_td_step = num_td_step
         self.num_stack = num_stack
@@ -162,11 +163,11 @@ class Muzero(BaseAgent):
     @torch.no_grad()
     def act(self, state, training=True):
         self.target_network.eval()
-        
+
         if not self.trajectory:
             self.init_trajectory(state)
             self.update_target()
-            
+
         stacked_s, stacked_a = self.get_stacked_data(
             self.trajectory, self.trajectory_step_stamp, self.num_stack
         )
@@ -199,23 +200,21 @@ class Muzero(BaseAgent):
             # make target
             end = start + self.num_unroll + 1
             stack_len = self.num_stack + self.num_unroll
+            over = end - trajectory_len
             state, action = self.get_stacked_data(trajectory, end - 1, stack_len)
+            if over > 1 and self.use_over_rand_action:
+                action[-over + 1 :] = np.random.randint(self.action_size, size=over - 1)
 
             policy = trajectory["policies"][start:end]
-            reward = trajectory["rewards"][start:end]
+            absorbing_policy = (
+                np.full(self.action_size, 1 / self.action_size)
+                if self.use_uniform_policy
+                else np.zeros(self.action_size)
+            )
+            policy += [absorbing_policy for _ in range(over)]
+            reward = trajectory["rewards"][start : end - 1]
+            reward += [np.zeros((1, 1)) for _ in range(over - 1)]
             value = [self.get_bootstrap_value(trajectory, i) for i in range(start, end)]
-
-            for i in reversed(range(end - trajectory_len)):
-                reward.append(np.zeros((1, 1)))
-                policy.append(
-                    np.full(self.action_size, 1 / self.action_size)
-                    if self.use_uniform_policy
-                    else np.zeros(self.action_size)
-                )
-                if self.use_over_rand_action:
-                    action[stack_len - i - 1] = np.random.randint(
-                        self.action_size, size=(1, 1)
-                    )
 
             _transitions["state"].append(state)
             _transitions["action"].append(action)
@@ -225,7 +224,7 @@ class Muzero(BaseAgent):
 
         for key in _transitions.keys():
             value = np.stack(_transitions[key], axis=0)
-            if value.shape[-1] == 1:
+            if key in ("reward", "value"):
                 value = value.squeeze(axis=-1)
             _transitions[key] = self.as_tensor(value)
 
@@ -264,21 +263,21 @@ class Muzero(BaseAgent):
         value_loss = -(target_value[:, 0] * value).sum(1)
         reward_loss = torch.zeros(self.batch_size, device=self.device)
         ssc_loss = torch.zeros(self.batch_size, device=self.device)
-        
+
         # comput unroll step loss
         for end, i in enumerate(range(1, self.num_unroll + 1), self.num_stack + 1):
-            stack_s, stack_a = (
-                state[:, self.channel * i : self.channel * (end + 1)],
-                action[:, i:end],
-            )
-
             hidden_state, reward = self.network.dynamics(
                 hidden_state, selected_action[:, i - 1 : i]
             )
 
             if self.use_ssc_loss:
                 with torch.no_grad():
+                    stack_s, stack_a = (
+                        state[:, self.channel * i : self.channel * (end + 1)],
+                        action[:, i:end],
+                    )
                     y = self.network.representation(stack_s, stack_a)
+
                 ssc_loss -= F.cosine_similarity(y.flatten(1), hidden_state.flatten(1))
 
             pi, value = self.network.prediction(hidden_state)
@@ -286,11 +285,11 @@ class Muzero(BaseAgent):
 
             policy_loss += -(target_policy[:, i] * pi).sum(1)
             value_loss += -(target_value[:, i] * value).sum(1)
-            reward_loss += -(target_reward[:, i] * reward).sum(1)
+            reward_loss += -(target_reward[:, i - 1] * reward).sum(1)
 
             reward_s = self.network.converter.vector2scalar(torch.exp(reward))
             value_s = self.network.converter.vector2scalar(torch.exp(value))
-            
+
             max_V = max(max_V, torch.max(value_s).item())
             min_V = min(min_V, torch.min(value_s).item())
             max_R = max(max_R, torch.max(reward_s).item())
@@ -369,27 +368,30 @@ class Muzero(BaseAgent):
             self.trajectory_step_stamp = 0  # never self.trajectory_step_stamp -= period
 
             # TODO: if not terminal -> n-step calc
-            self.trajectory["values"].append(np.zeros((1, 1)))
-            self.trajectory["policies"].append(
-                np.full(self.action_size, 1 / self.action_size)
-                if self.use_uniform_policy
-                else np.zeros(self.action_size)
-            )
             priorities = np.zeros(len(self.trajectory["values"]) - 1)
             for i, v in enumerate(self.trajectory["values"][:-1]):
                 z = self.get_bootstrap_value(self.trajectory, i)
                 priorities[i] = abs(v - z) ** self.alpha
 
             _transition = {"trajectory": self.trajectory, "priorities": priorities}
-            self.trajectory = None
+            if self.trajectory_step_stamp >= self.max_trajectory_size:
+                self.trajectory = {
+                    "states": self.trajectory["states"][-self.trajectory - 1 :],
+                    "actions": self.trajectory["actions"][-self.trajectory :],
+                    "rewards": self.trajectory["rewards"][-self.trajectory :],
+                    "values": self.trajectory["values"][-self.trajectory :],
+                    "policies": [],
+                }
+            else:
+                self.trajectory = None
 
         return _transition
 
     def init_trajectory(self, state):
         self.trajectory = {
             "states": [state],
-            "actions": [np.zeros((1, 1), dtype=int)],
-            "rewards": [np.zeros((1, 1))],
+            "actions": [],
+            "rewards": [],
             "values": [],
             "policies": [],
         }
@@ -399,7 +401,7 @@ class Muzero(BaseAgent):
         values = trajectory["values"]
         value = values[end] if end < len(values) else np.zeros((1, 1))
 
-        for reward in reversed(trajectory["rewards"][start + 1 : end + 1]):
+        for reward in reversed(trajectory["rewards"][start:end]):
             value = reward + self.gamma * value
 
         return value
@@ -408,7 +410,7 @@ class Muzero(BaseAgent):
         cut = max(0, num_stack - cur_idx)
         start = max(0, cur_idx - num_stack)
         end = min(len(trajectory["states"]) - 1, cur_idx)
-        shape = trajectory["states"][start].shape[1:]
+        shape = self.state_size
         stacked_a = np.zeros(num_stack, int)
         stacked_s = np.zeros((num_stack + 1, *shape), np.float32)
 
@@ -416,12 +418,12 @@ class Muzero(BaseAgent):
             stacked_a[:cut] = np.random.randint(self.action_size, size=cut)
 
         for n, i in enumerate(range(start, end), start=cut):
-            stacked_a[n] = trajectory["actions"][i + 1]
+            stacked_a[n] = trajectory["actions"][i]
             stacked_s[n] = trajectory["states"][i]
 
         stacked_s[cut + end - start] = trajectory["states"][end]
         stacked_s = stacked_s.reshape(((num_stack + 1) * shape[0], *shape[1:]))
-        stacked_a = stacked_a.reshape((num_stack))
+        stacked_a = stacked_a.reshape(num_stack)
 
         return stacked_s, stacked_a
 
@@ -490,7 +492,7 @@ class MCTS:
         self.c1 = 1.25
         self.c2 = 19625
         self.alpha = 0.3
-        
+
         self.c_ucb = 1.0
 
         self.q_min = 0
@@ -499,7 +501,6 @@ class MCTS:
         self.root_id = (0,)
         self.tree = {}
 
-    @torch.no_grad()
     def run_mcts(self, root_state, num_mcts, training):
         self.tree = self.init_mcts(root_state, training)
 
@@ -512,22 +513,21 @@ class MCTS:
 
             # backup
             self.backup(leaf_id, leaf_v)
-        
+
         root_value = self.tree[self.root_id]["q"]
         root_action, pi = self.select_root_action()
-        
+
         return root_action, pi, root_value
 
-    @torch.no_grad()
     def selection(self, root_state):
         node_id = self.root_id
         node_state = root_state
-        
+
         while self.tree[node_id]["n"] > 0:
             if len(node_id) <= self.n_unroll:
                 UCB_list = []
                 total_n = self.tree[node_id]["n"]
-                
+
                 for action_index in self.tree[node_id]["child"]:
                     child_id = node_id + (action_index,)
                     n = self.tree[child_id]["n"]
@@ -541,14 +541,14 @@ class MCTS:
                     u = (p * np.sqrt(total_n) / (n + 1)) * (
                         self.c1 + np.log((total_n + self.c2 + 1) / self.c2)
                     )
-                    UCB_list.append((q + self.c_ucb*u).cpu())
-                    
+                    UCB_list.append((q + self.c_ucb * u).cpu())
+
                     # UCB_list.append((q + u).cpu())
-                
+
                 max_UCB = np.max(UCB_list)
                 max_list = [a for a, v in enumerate(UCB_list) if v == max_UCB]
                 a_UCB = np.random.choice(max_list)
-                
+
                 node_id += (a_UCB,)
                 node_state = self.tree[node_id]["s"]
             else:
@@ -556,7 +556,6 @@ class MCTS:
 
         return node_id, node_state
 
-    @torch.no_grad()
     def expansion(self, leaf_id, leaf_state):
         repeat_size = [1] * len(leaf_state.shape)
         repeat_size[0] = self.action_size
@@ -596,7 +595,6 @@ class MCTS:
 
         return leaf_v
 
-    @torch.no_grad()
     def backup(self, leaf_id, leaf_v):
         node_id = leaf_id
         node_v = leaf_v
@@ -615,7 +613,7 @@ class MCTS:
             # Update Q and N
             # if self.tree[node_id]["n"] == 0:
             #     self.tree[node_id]["q"] = 0
-            
+
             q = (self.tree[node_id]["n"] * self.tree[node_id]["q"] + G) / (
                 self.tree[node_id]["n"] + 1
             )
@@ -633,7 +631,6 @@ class MCTS:
 
             reward_list.append(self.tree[node_id]["r"])
 
-    @torch.no_grad()
     def init_mcts(self, root_state, training):
         tree = {}
         root_id = (0,)
@@ -644,17 +641,19 @@ class MCTS:
         #     if self.use_uniform_policy
         #     else torch.exp(p_root)
         # )
-        
+
         if self.use_uniform_policy:
             p_root = torch.full((1, self.action_size), 1 / self.action_size)
         else:
             p_root = torch.exp(p_root)
-            
+
             if training:
-                noise_probs = np.random.dirichlet(self.alpha * np.ones(self.action_size))
+                noise_probs = np.random.dirichlet(
+                    self.alpha * np.ones(self.action_size)
+                )
                 p_root = p_root * 0.75 + noise_probs * 0.25
                 p_root = p_root / torch.sum(p_root)
-            
+
         v_root = torch.exp(v_root)
         v_root_scalar = self.network.converter.vector2scalar(v_root).item()
 
@@ -671,7 +670,6 @@ class MCTS:
 
         return tree
 
-    @torch.no_grad()
     def select_root_action(self):
         child = self.tree[self.root_id]["child"]
 
