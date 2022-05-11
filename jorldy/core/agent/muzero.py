@@ -78,8 +78,6 @@ class Muzero(BaseAgent):
             else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         )
 
-        self.channel = state_size[0] if isinstance(state_size, Iterable) else state_size
-
         self.network = Network(
             network,
             state_size,
@@ -105,7 +103,12 @@ class Muzero(BaseAgent):
 
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
 
-        self.state_size = tuple(state_size)
+        if isinstance(state_size, Iterable):
+            self.channel = state_size[0]
+            self.state_size = tuple(state_size)
+        else:
+            self.channel = state_size
+            self.state_size = (state_size,)
         self.action_size = action_size
         self.gamma = gamma
         self.batch_size = batch_size
@@ -204,17 +207,17 @@ class Muzero(BaseAgent):
         )
 
         for trajectory, start in transitions:
-            trajectory_len = len(trajectory["values"])
-
             # make target
             end = start + self.num_unroll + 1
             stack_len = self.num_stack + self.num_unroll
-            over = end - trajectory_len
             state, action = self.get_stacked_data(trajectory, end - 1, stack_len)
+
             policy = trajectory["policies"][start:end]
-            policy += [absorbing_policy for _ in range(over)]
+            policy += [absorbing_policy] * (self.num_unroll - len(policy) + 1)
+
             reward = trajectory["rewards"][start : end - 1]
-            reward += [np.zeros((1, 1)) for _ in range(over - 1)]
+            reward += [np.zeros((1, 1))] * (self.num_unroll - len(reward) + 1)
+            
             value = [self.get_bootstrap_value(trajectory, i) for i in range(start, end)]
 
             _transitions["state"].append(state)
