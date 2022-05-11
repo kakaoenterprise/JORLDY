@@ -446,6 +446,8 @@ class Muzero(BaseAgent):
         self.mcts.alpha = self.mcts_alpha_min + id * (
             self.mcts_alpha_max - self.mcts_alpha_min
         ) / (self.num_workers - 1)
+        
+        # self.mcts.c_ucb = 1 + id * (1/(self.num_workers-1))
 
         return self
 
@@ -645,6 +647,7 @@ class MCTS:
         #     else torch.exp(p_root)
         # )
         
+        
         if self.use_uniform_policy:
             p_root = torch.full((1, self.action_size), 1 / self.action_size)
         else:
@@ -652,7 +655,7 @@ class MCTS:
             
             if training:
                 noise_probs = np.random.dirichlet(self.alpha * np.ones(self.action_size))
-                p_root = p_root * 0.75 + noise_probs * 0.25
+                p_root = p_root * 0.8 + noise_probs * 0.2
                 p_root = p_root / torch.sum(p_root)
             
         v_root = torch.exp(v_root)
@@ -685,10 +688,10 @@ class MCTS:
         pi_temp = np.asarray(n_list) ** (1 / self.temp_param)
         pi_temp = pi_temp / np.sum(pi_temp)
 
-        # noise_probs = self.alpha * np.random.dirichlet(np.ones(self.action_size))
-        # pi_noise = pi_temp + noise_probs
-        # pi_noise = pi_noise / np.sum(pi_noise)
+        noise_probs = np.random.dirichlet(self.alpha * np.ones(self.action_size))
+        pi_noise = pi_temp * 0.8 + noise_probs * 0.2
+        pi_noise = pi_noise / np.sum(pi_noise)
 
-        action_idx = np.random.choice(self.action_size, p=pi_temp)
+        action_idx = np.random.choice(self.action_size, p=pi_noise)
 
-        return action_idx, pi_temp
+        return action_idx, pi
