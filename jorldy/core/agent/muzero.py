@@ -692,17 +692,16 @@ class MCTS:
         #     if self.use_uniform_policy
         #     else torch.exp(p_root)
         # )
-
+        
+        
         if self.use_uniform_policy:
             p_root = torch.full((1, self.action_size), 1 / self.action_size)
         else:
             p_root = torch.exp(p_root)
 
             if training:
-                noise_probs = np.random.dirichlet(
-                    self.alpha * np.ones(self.action_size)
-                )
-                p_root = p_root * 0.75 + noise_probs * 0.25
+                noise_probs = np.random.dirichlet(self.alpha * np.ones(self.action_size))
+                p_root = p_root * 0.8 + noise_probs * 0.2
                 p_root = p_root / torch.sum(p_root)
 
         v_root = torch.exp(v_root)
