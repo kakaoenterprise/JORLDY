@@ -1,4 +1,5 @@
 import os
+from time import time
 import torch
 import numpy as np
 import torch.nn.functional as F
@@ -63,7 +64,7 @@ class Muzero(BaseAgent):
         num_mcts=50,
         num_eval_mcts=15,
         mcts_alpha_max=0.5,
-        mcts_alpha_min=0.0,
+        mcts_alpha_min=0.2,
         # Optional Feature
         use_prev_rand_action=True,
         use_over_rand_action=True,
@@ -104,7 +105,7 @@ class Muzero(BaseAgent):
 
         self.optimizer = Optimizer(**optim_config, params=self.network.parameters())
 
-        self.state_size = state_size
+        self.state_size = tuple(state_size)
         self.action_size = action_size
         self.gamma = gamma
         self.batch_size = batch_size
@@ -114,10 +115,12 @@ class Muzero(BaseAgent):
         )
         self.value_loss_weight = value_loss_weight
 
-        self.max_trajectory_size = max_trajectory_size + num_unroll
+        self.max_trajectory_size = max_trajectory_size
         self.num_unroll = num_unroll
         self.num_td_step = num_td_step
         self.num_stack = num_stack
+        self.extend_size = max_trajectory_size + num_unroll + num_td_step
+        self.max_step = self.extend_size
 
         self.time_t = 0
         self.trajectory_step_stamp = 0
@@ -194,6 +197,12 @@ class Muzero(BaseAgent):
         )
 
         _transitions = defaultdict(list)
+        absorbing_policy = (
+            np.full(self.action_size, 1 / self.action_size)
+            if self.use_uniform_policy
+            else np.zeros(self.action_size)
+        )
+
         for trajectory, start in transitions:
             trajectory_len = len(trajectory["values"])
 
@@ -202,15 +211,7 @@ class Muzero(BaseAgent):
             stack_len = self.num_stack + self.num_unroll
             over = end - trajectory_len
             state, action = self.get_stacked_data(trajectory, end - 1, stack_len)
-            if over > 1 and self.use_over_rand_action:
-                action[-over + 1 :] = np.random.randint(self.action_size, size=over - 1)
-
             policy = trajectory["policies"][start:end]
-            absorbing_policy = (
-                np.full(self.action_size, 1 / self.action_size)
-                if self.use_uniform_policy
-                else np.zeros(self.action_size)
-            )
             policy += [absorbing_policy for _ in range(over)]
             reward = trajectory["rewards"][start : end - 1]
             reward += [np.zeros((1, 1)) for _ in range(over - 1)]
@@ -364,30 +365,56 @@ class Muzero(BaseAgent):
         self.trajectory["values"].append(transition["value"])
         self.trajectory["policies"].append(transition["pi"])
 
-        if transition["done"] or self.trajectory_step_stamp >= self.max_trajectory_size:
-            self.trajectory_step_stamp = 0  # never self.trajectory_step_stamp -= period
-
+        if transition["done"] or self.trajectory_step_stamp >= self.max_step:
             # TODO: if not terminal -> n-step calc
-            priorities = np.zeros(len(self.trajectory["values"]) - 1)
-            for i, v in enumerate(self.trajectory["values"][:-1]):
-                z = self.get_bootstrap_value(self.trajectory, i)
+            trajectory_size = (
+                len(self.trajectory["values"]) - self.trajectory_start
+                if transition["done"]
+                else self.max_trajectory_size
+            )
+            priorities = np.zeros(trajectory_size)
+            for i, v in enumerate(
+                self.trajectory["values"][
+                    self.trajectory_start : trajectory_size + self.trajectory_start
+                ]
+            ):
+                z = self.get_bootstrap_value(self.trajectory, i + self.trajectory_start)
                 priorities[i] = abs(v - z) ** self.alpha
 
-            _transition = {"trajectory": self.trajectory, "priorities": priorities}
-            if self.trajectory_step_stamp >= self.max_trajectory_size:
+            _transition = {"priorities": priorities, "start": self.trajectory_start}
+
+            if not transition["done"]:
+                _transition["trajectory"] = {
+                    "states": self.trajectory["states"][: -self.num_td_step - 1],
+                    "actions": self.trajectory["actions"][: -self.num_td_step - 1],
+                    "rewards": self.trajectory["rewards"],
+                    "values": self.trajectory["values"],
+                    "policies": self.trajectory["policies"][: -self.num_td_step],
+                }
+
+                cut = self.num_stack + self.num_unroll + self.num_td_step
+                assert trajectory_size >= cut
+                self.trajectory_step_stamp = cut
+                self.trajectory_start = self.num_stack
                 self.trajectory = {
-                    "states": self.trajectory["states"][-self.trajectory - 1 :],
-                    "actions": self.trajectory["actions"][-self.trajectory :],
-                    "rewards": self.trajectory["rewards"][-self.trajectory :],
-                    "values": self.trajectory["values"][-self.trajectory :],
-                    "policies": [],
+                    "states": self.trajectory["states"][-cut - 1 :],
+                    "actions": self.trajectory["actions"][-cut:],
+                    "rewards": self.trajectory["rewards"][-cut:],
+                    "values": self.trajectory["values"][-cut:],
+                    "policies": self.trajectory["policies"][-cut:],
                 }
             else:
+                _transition["trajectory"] = self.trajectory
+                self.trajectory_start = 0
+                self.trajectory_step_stamp = 0
                 self.trajectory = None
+
+            self.max_step = self.extend_size + self.trajectory_start
 
         return _transition
 
     def init_trajectory(self, state):
+        self.trajectory_start = 0
         self.trajectory = {
             "states": [state],
             "actions": [],
@@ -407,23 +434,30 @@ class Muzero(BaseAgent):
         return value
 
     def get_stacked_data(self, trajectory, cur_idx, num_stack):
-        cut = max(0, num_stack - cur_idx)
+        prev = max(0, num_stack - cur_idx)
         start = max(0, cur_idx - num_stack)
-        end = min(len(trajectory["states"]) - 1, cur_idx)
-        shape = self.state_size
+        end = min(len(trajectory["actions"]), cur_idx)
+        over = num_stack - prev - end + start
+
         stacked_a = np.zeros(num_stack, int)
-        stacked_s = np.zeros((num_stack + 1, *shape), np.float32)
-
         if self.use_prev_rand_action:
-            stacked_a[:cut] = np.random.randint(self.action_size, size=cut)
+            stacked_a[:prev] = np.random.randint(self.action_size, size=prev)
 
-        for n, i in enumerate(range(start, end), start=cut):
+        for n, i in enumerate(range(start, end), start=prev):
             stacked_a[n] = trajectory["actions"][i]
+
+        if self.use_over_rand_action and over > 0:
+            stacked_a[n + 1 :] = np.random.randint(self.action_size, size=over)
+
+        stacked_a = stacked_a.reshape(num_stack)
+
+        stacked_s = np.zeros((num_stack + 1, *self.state_size), np.float32)
+        for n, i in enumerate(range(start, end + 1), start=prev):
             stacked_s[n] = trajectory["states"][i]
 
-        stacked_s[cut + end - start] = trajectory["states"][end]
-        stacked_s = stacked_s.reshape(((num_stack + 1) * shape[0], *shape[1:]))
-        stacked_a = stacked_a.reshape(num_stack)
+        stacked_s = stacked_s.reshape(
+            ((num_stack + 1) * self.state_size[0], *self.state_size[1:])
+        )
 
         return stacked_s, stacked_a
 
