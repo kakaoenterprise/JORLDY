@@ -210,10 +210,7 @@ class Muzero(BaseAgent):
             # make target
             end = start + self.num_unroll + 1
             stack_len = self.num_stack + self.num_unroll
-            over = end - trajectory_len
             state, action = self.get_stacked_data(trajectory, end - 1, stack_len)
-            if over > 1 and self.use_over_rand_action:
-                action[-over + 1 :] = np.random.randint(self.action_size, size=over - 1)
 
             policy = trajectory["policies"][start:end]
             policy += [absorbing_policy] * (self.num_unroll - len(policy) + 1)
