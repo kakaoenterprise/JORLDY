@@ -293,7 +293,7 @@ class Muzero(BaseAgent):
 
             reward_s = self.network.converter.vector2scalar(torch.exp(reward))
             value_s = self.network.converter.vector2scalar(torch.exp(value))
-
+    
             max_V = max(max_V, torch.max(value_s).item())
             min_V = min(min_V, torch.min(value_s).item())
             max_R = max(max_R, torch.max(reward_s).item())
@@ -572,25 +572,49 @@ class MCTS:
                 for action_index in self.tree[node_id]["child"]:
                     child_id = node_id + (action_index,)
                     n = self.tree[child_id]["n"]
-                    q = (
-                        self.tree[child_id]["q"]
-                        if n > 0
-                        else self.tree[child_id]["v"] * 0.8
-                    )
+                    q = self.tree[child_id]["q"]
+                    
+                    # q = (
+                    #     self.tree[child_id]["q"]
+                    #     if n > 0
+                    #     else self.tree[child_id]["v"] * 0.8
+                    # )
                     q = (q - self.q_min) / (self.q_max - self.q_min)
                     p = self.tree[node_id]["p"][0, action_index]
                     u = (p * np.sqrt(total_n) / (n + 1)) * (
                         self.c1 + np.log((total_n + self.c2 + 1) / self.c2)
                     )
-                    UCB_list.append((q + self.c_ucb * u).cpu())
-
-                    # UCB_list.append((q + u).cpu())
-
+                    UCB_list.append((q + self.c_ucb*u).cpu())
+                                    
                 max_UCB = np.max(UCB_list)
                 max_list = [a for a, v in enumerate(UCB_list) if v == max_UCB]
                 a_UCB = np.random.choice(max_list)
 
                 node_id += (a_UCB,)
+                
+                # If leaf id, add hidden state and r, p, v to node dict
+                if self.tree[node_id]["n"] == 0:
+                    hidden_parent = self.tree[node_id[:-1]]["s"]
+                    action_parent = np.ones((1, 1), dtype=int) * a_UCB
+                    s_leaf, r_leaf = self.d_fn(hidden_parent, torch.tensor(action_parent))
+                    r_leaf = torch.exp(r_leaf)
+                    r_leaf_scalar = self.network.converter.vector2scalar(r_leaf).item()
+            
+                    self.tree[node_id]["s"] = s_leaf
+                    self.tree[node_id]["r"] = r_leaf_scalar
+                    
+                    p_leaf, v_leaf = self.p_fn(s_leaf)
+                    p_leaf = (
+                        torch.full((self.action_size, self.action_size), 1 / self.action_size)
+                        if self.use_uniform_policy
+                        else torch.exp(p_leaf)
+                    )
+                    v_leaf = torch.exp(v_leaf)
+                    v_leaf_scalar = self.network.converter.vector2scalar(v_leaf).item()
+                    
+                    self.tree[node_id]["p"] = p_leaf
+                    self.tree[node_id]["v"] = v_leaf_scalar
+                    
                 node_state = self.tree[node_id]["s"]
             else:
                 break
@@ -598,36 +622,17 @@ class MCTS:
         return node_id, node_state
 
     def expansion(self, leaf_id, leaf_state):
-        repeat_size = [1] * len(leaf_state.shape)
-        repeat_size[0] = self.action_size
-
-        leaf_state_repeat = leaf_state.repeat(repeat_size)
-        action_child = torch.arange(0, self.action_size).unsqueeze(1)
-
-        s_child, r_child = self.d_fn(leaf_state_repeat, action_child)
-        r_child = torch.exp(r_child)
-        r_child_scalar = self.network.converter.vector2scalar(r_child)
-
-        p_child, v_child = self.p_fn(s_child)
-        p_child = (
-            torch.full((self.action_size, self.action_size), 1 / self.action_size)
-            if self.use_uniform_policy
-            else torch.exp(p_child)
-        )
-        v_child = torch.exp(v_child)
-        v_child_scalar = self.network.converter.vector2scalar(v_child)
-
         for action_idx in range(self.action_size):
             child_id = leaf_id + (action_idx,)
 
             self.tree[child_id] = {
                 "child": [],
-                "s": s_child[action_idx].unsqueeze(0),
+                "s": 0.0,
                 "n": 0.0,
                 "q": 0.0,
-                "p": p_child[action_idx].unsqueeze(0),
-                "v": v_child_scalar[action_idx].item(),
-                "r": r_child_scalar[action_idx].item(),
+                "p": 0.0,
+                "v": 0.0,
+                "r": 0.0,
             }
 
             self.tree[leaf_id]["child"].append(action_idx)
@@ -651,10 +656,7 @@ class MCTS:
 
             G = discount_sum_r + ((self.gamma ** (n + 1)) * node_v)
 
-            # Update Q and N
-            # if self.tree[node_id]["n"] == 0:
-            #     self.tree[node_id]["q"] = 0
-
+            # Update Q and N            
             q = (self.tree[node_id]["n"] * self.tree[node_id]["q"] + G) / (
                 self.tree[node_id]["n"] + 1
             )
@@ -677,12 +679,6 @@ class MCTS:
         root_id = (0,)
 
         p_root, v_root = self.p_fn(root_state)
-        # p_root = (
-        #     torch.full((1, self.action_size), 1 / self.action_size)
-        #     if self.use_uniform_policy
-        #     else torch.exp(p_root)
-        # )
-        
         
         if self.use_uniform_policy:
             p_root = torch.full((1, self.action_size), 1 / self.action_size)
