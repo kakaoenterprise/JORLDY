@@ -28,7 +28,7 @@ agent = {
     "num_mcts": 30,
     "num_eval_mcts": 15,
     "mcts_alpha_max": 1.0,
-    "mcts_alpha_min": 0.0,
+    "mcts_alpha_min": 0.1,
     # Optional Feature
     "use_prev_rand_action": True,
     "use_over_rand_action": True,
