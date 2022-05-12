@@ -589,12 +589,12 @@ class MCTS:
 
             self.tree[child_id] = {
                 "child": [],
-                "s": 0.0,
+                "s": None,
                 "n": 0.0,
                 "q": 0.0,
-                "p": 0.0,
-                "v": 0.0,
-                "r": 0.0,
+                "p": None,
+                "v": None,
+                "r": None,
             }
 
             self.tree[leaf_id]["child"].append(action_idx)
