@@ -40,7 +40,18 @@ class Muzero(BaseAgent):
         value_loss_weight=1.0,
         num_unroll=5,
         num_td_step=10,
-        num_support=300,
+        v_boundary={
+            'min': -10.0,
+            'max': 10.0,
+        },
+        r_boundary={
+            'min': -1.0,
+            'max': 1.0,
+        },
+        num_support={
+            'v_support': 51,
+            'r_support': 21,
+        },
         num_stack=32,
         num_rb=16,
         buffer_size=125000,
@@ -84,6 +95,8 @@ class Muzero(BaseAgent):
             state_size,
             action_size,
             num_stack,
+            v_boundary,
+            r_boundary,
             num_support,
             num_rb=num_rb,
             D_hidden=hidden_size,
@@ -95,6 +108,8 @@ class Muzero(BaseAgent):
             state_size,
             action_size,
             num_stack,
+            v_boundary,
+            r_boundary,
             num_support,
             num_rb=num_rb,
             D_hidden=hidden_size,
@@ -236,19 +251,19 @@ class Muzero(BaseAgent):
         target_reward_s = _transitions["reward"]
         target_value_s = _transitions["value"]
 
-        target_reward = self.network.converter.scalar2vector(target_reward_s)
-        target_value = self.network.converter.scalar2vector(target_value_s)
+        target_reward = self.network.r_converter.scalar2vector(target_reward_s)
+        target_value = self.network.v_converter.scalar2vector(target_value_s)
 
         stack_s, stack_a = (
             state[:, : self.channel * (self.num_stack + 1)],
             action[:, : self.num_stack],
         )
 
-        # comput start step loss
+        # compute start step loss
         hidden_state = self.network.representation(stack_s, stack_a)
         pi, value = self.network.prediction(hidden_state)
 
-        value_s = self.network.converter.vector2scalar(torch.exp(value))
+        value_s = self.network.v_converter.vector2scalar(torch.exp(value))
         max_V = torch.max(value_s).item()
         min_V = torch.min(value_s).item()
         max_R = float("-inf")
@@ -265,7 +280,7 @@ class Muzero(BaseAgent):
         reward_loss = torch.zeros(self.batch_size, device=self.device)
         ssc_loss = torch.zeros(self.batch_size, device=self.device)
         
-        # comput unroll step loss
+        # compute unroll step loss
         for end, i in enumerate(range(1, self.num_unroll + 1), self.num_stack + 1):
             stack_s, stack_a = (
                 state[:, self.channel * i : self.channel * (end + 1)],
@@ -288,8 +303,8 @@ class Muzero(BaseAgent):
             value_loss += -(target_value[:, i] * value).sum(1)
             reward_loss += -(target_reward[:, i] * reward).sum(1)
 
-            reward_s = self.network.converter.vector2scalar(torch.exp(reward))
-            value_s = self.network.converter.vector2scalar(torch.exp(value))
+            reward_s = self.network.r_converter.vector2scalar(torch.exp(reward))
+            value_s = self.network.v_converter.vector2scalar(torch.exp(value))
             
             max_V = max(max_V, torch.max(value_s).item())
             min_V = min(min_V, torch.min(value_s).item())
@@ -568,7 +583,7 @@ class MCTS:
 
         s_child, r_child = self.d_fn(leaf_state_repeat, action_child)
         r_child = torch.exp(r_child)
-        r_child_scalar = self.network.converter.vector2scalar(r_child)
+        r_child_scalar = self.network.r_converter.vector2scalar(r_child)
 
         p_child, v_child = self.p_fn(s_child)
         p_child = (
@@ -577,7 +592,7 @@ class MCTS:
             else torch.exp(p_child)
         )
         v_child = torch.exp(v_child)
-        v_child_scalar = self.network.converter.vector2scalar(v_child)
+        v_child_scalar = self.network.v_converter.vector2scalar(v_child)
 
         for action_idx in range(self.action_size):
             child_id = leaf_id + (action_idx,)
@@ -659,7 +674,7 @@ class MCTS:
                 p_root = p_root / torch.sum(p_root)
             
         v_root = torch.exp(v_root)
-        v_root_scalar = self.network.converter.vector2scalar(v_root).item()
+        v_root_scalar = self.network.v_converter.vector2scalar(v_root).item()
 
         # init root node
         tree[root_id] = {

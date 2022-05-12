@@ -125,15 +125,19 @@ def orthogonal_init(layer, nonlinearity="relu"):
 
 
 class Converter:
-    def __init__(self, support):
-        self.support = support
+    def __init__(self, support, minimum, maximum):
+        self.minimum = minimum
+        self.maximum = maximum
+        self.num_support = support
+        self.support_data = torch.linspace(self.minimum, self.maximum, self.num_support)
+        self.interval = (maximum - minimum) / (self.num_support - 1)
 
     # codes modified from https://github.com/werner-duvaud/muzero-general
     def vector2scalar(self, prob):
         """prediction value & dynamics reward output(vector:distribution) -> output(scalar:value)"""
         # get supports
         support = (
-            torch.tensor([x for x in range(-self.support, self.support + 1)])
+            self.support_data
             .expand(prob.shape)
             .float()
             .to(device=prob.device)
@@ -159,20 +163,44 @@ class Converter:
         scalar = (
             torch.sign(scalar) * (torch.sqrt(torch.abs(scalar) + 1) - 1) + eps * scalar
         )
-        scalar = torch.clamp(scalar, -self.support, self.support)
+        scalar = torch.clamp(scalar, self.minimum, self.maximum)
 
         # target distribution projection(distribute probability for lower support)
-        floor = scalar.floor()
-        prob = scalar - floor
+        floor, floor_idx = self.floor(scalar)
+        prob = abs(scalar - floor) / self.interval
+
         dist = torch.zeros(
-            scalar.shape[0], scalar.shape[1], (self.support << 1) + 1
+            scalar.shape[0], scalar.shape[1], self.num_support
         ).to(scalar.device)
-        dist.scatter_(-1, (floor + self.support).long(), (1 - prob))
+        dist.scatter_(-1, floor_idx, (1 - prob))
 
         # target distribution projection(distribute probability for higher support)
-        idx = (floor + 1) + self.support
-        prob = prob.masked_fill_((self.support << 1) < idx, 0.0)
-        idx = idx.masked_fill_((self.support << 1) < idx, 0.0)
-        dist.scatter_(-1, idx.long(), prob)
+        idx = floor_idx + 1
+        prob = prob.masked_fill_(self.num_support < idx, 0.0)
+        idx = idx.masked_fill_(self.num_support < idx, 0.0)
+        dist.scatter_(-1, idx, prob)
 
         return dist
+
+    # TODO: function optimization required(no loop)
+    def floor(self, scalar):
+        shape = scalar.size()
+        scalar = scalar.flatten()
+
+        result_idx = []
+        result = []
+        for s in scalar:
+            save_p_idx = None
+            save_p = None
+            for i, p in enumerate(self.support_data):
+                if p < s:
+                    save_p_idx = i
+                    save_p = p
+                else:
+                    result_idx.append(save_p_idx)
+                    result.append(save_p)
+                    break
+
+        result = torch.tensor(result).reshape(shape)
+        result_idx = torch.tensor(result_idx).reshape(shape)
+        return result, result_idx

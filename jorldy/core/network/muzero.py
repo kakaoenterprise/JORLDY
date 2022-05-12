@@ -17,7 +17,7 @@ class Muzero_mlp(BaseNetwork):
         support,
         num_rb=10,
         D_hidden=256,
-        head="mlp_residualblock",
+        head="mlp",
     ):
         super(Muzero_mlp, self).__init__(D_hidden, D_hidden, head)
         
@@ -121,10 +121,12 @@ class Muzero_Resnet(BaseNetwork):
         D_in,
         D_out,
         num_stack,
-        support,
+        v_boundary,
+        r_boundary,
+        num_support,
         num_rb=16,
         D_hidden=256,
-        head="residualblock",
+        head="mlp",
     ):
         super(Muzero_Resnet, self).__init__(D_hidden, D_hidden, head)
         
@@ -132,7 +134,16 @@ class Muzero_Resnet(BaseNetwork):
         
         self.D_in = D_in
         self.D_out = D_out
-        self.converter = Converter(support)
+        self.v_converter = Converter(
+            minimum=v_boundary['min'],
+            maximum=v_boundary['max'],
+            support=num_support['v_support'],
+        )
+        self.r_converter = Converter(
+            minimum=r_boundary['min'],
+            maximum=r_boundary['max'],
+            support=num_support['r_support'],
+        )
         self.state_channel = D_in[0]
         self.action_channel = 1
 
@@ -200,7 +211,7 @@ class Muzero_Resnet(BaseNetwork):
             in_features=D_hidden * (self.down_size[0] * self.down_size[1]),
             out_features=D_hidden,
         )
-        self.pred_vd_2 = torch.nn.Linear(in_features=D_hidden, out_features=(support << 1) + 1)
+        self.pred_vd_2 = torch.nn.Linear(in_features=D_hidden, out_features=num_support['v_support'])
         # self.pred_vd_3 = torch.nn.Linear(
         #     in_features=D_hidden, out_features=(support << 1) + 1
         # )
@@ -233,7 +244,7 @@ class Muzero_Resnet(BaseNetwork):
             in_features=D_hidden * (self.down_size[0] * self.down_size[1]),
             out_features=D_hidden,
         )
-        self.dy_rd_2 = torch.nn.Linear(in_features=D_hidden, out_features=(support << 1) + 1)
+        self.dy_rd_2 = torch.nn.Linear(in_features=D_hidden, out_features=num_support['r_support'])
         # self.dy_rd_3 = torch.nn.Linear(
         #     in_features=D_hidden, out_features=(support << 1) + 1
         # )

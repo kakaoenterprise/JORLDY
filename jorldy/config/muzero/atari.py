@@ -21,7 +21,18 @@ agent = {
     "gamma": 0.997,
     "buffer_size": 300000,
     "batch_size": 32,
-    "num_support": 10,
+    "v_boundary": {
+        'min': -10.0,
+        'max': 10.0,
+    },
+    "r_boundary": {
+        'min': -1.0,
+        'max': 1.0,
+    },
+    "num_support": {
+        "v_support": 51,
+        "r_support": 21,
+    },
     "start_train_step": 3000,
     "policy_train_delay": 20000,
     "max_trajectory_size": 200,
