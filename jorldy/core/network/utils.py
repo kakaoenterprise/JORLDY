@@ -184,6 +184,7 @@ class Converter:
 
     # TODO: function optimization required(no loop)
     def floor(self, scalar):
+        device = scalar.device
         shape = scalar.size()
         scalar = scalar.flatten()
 
@@ -192,7 +193,7 @@ class Converter:
         for s in scalar:
             save_p_idx = None
             save_p = None
-            for i, p in enumerate(self.support_data):
+            for i, p in enumerate(self.support_data.to(device)):
                 if p < s:
                     save_p_idx = i
                     save_p = p
@@ -201,6 +202,7 @@ class Converter:
                     result.append(save_p)
                     break
 
-        result = torch.tensor(result).reshape(shape)
-        result_idx = torch.tensor(result_idx).reshape(shape)
+        result = torch.tensor(result).reshape(shape).to(device)
+        result_idx = torch.tensor(result_idx).reshape(shape).to(device)
+        
         return result, result_idx
