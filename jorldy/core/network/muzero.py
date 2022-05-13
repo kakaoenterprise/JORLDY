@@ -14,7 +14,9 @@ class Muzero_mlp(BaseNetwork):
         D_in,
         D_out,
         num_stack,
-        support,
+        v_boundary,
+        r_boundary,
+        num_support,
         num_rb=10,
         D_hidden=256,
         head="mlp",
@@ -24,7 +26,16 @@ class Muzero_mlp(BaseNetwork):
         self.D_in = D_in
         self.D_out = D_out
         self.D_hidden = D_hidden
-        self.converter = Converter(support)
+        self.v_converter = Converter(
+            minimum=v_boundary['min'],
+            maximum=v_boundary['max'],
+            support=num_support['v_support'],
+        )
+        self.r_converter = Converter(
+            minimum=r_boundary['min'],
+            maximum=r_boundary['max'],
+            support=num_support['r_support'],
+        )
 
         D_stack = D_in * (num_stack + 1) + num_stack
 
@@ -42,7 +53,7 @@ class Muzero_mlp(BaseNetwork):
         self.pi_l3 = torch.nn.Linear(D_hidden, D_out)
         self.vd_l1 = torch.nn.Linear(D_hidden, D_hidden)
         self.vd_l2 = torch.nn.Linear(D_hidden, D_hidden)
-        self.vd_l3 = torch.nn.Linear(D_hidden, (support << 1) + 1)
+        self.vd_l3 = torch.nn.Linear(D_hidden, num_support['v_support'])
 
         orthogonal_init(self.pi_l1, "policy")
         orthogonal_init(self.pi_l2, "policy")
@@ -56,7 +67,7 @@ class Muzero_mlp(BaseNetwork):
         self.dy_res = torch.nn.Sequential(*[MLP_Residualblock(D_hidden, D_hidden) for _ in range(num_rb)])
 
         self.rd_l1 = torch.nn.Linear(D_hidden, D_hidden)
-        self.rd_l2 = torch.nn.Linear(D_hidden, (support << 1) + 1)
+        self.rd_l2 = torch.nn.Linear(D_hidden, num_support['r_support'])
 
         orthogonal_init(self.dy_l1, "linear")
         orthogonal_init(self.rd_l1, "linear")
