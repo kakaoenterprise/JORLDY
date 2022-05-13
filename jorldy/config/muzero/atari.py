@@ -22,12 +22,12 @@ agent = {
     "buffer_size": 300000,
     "batch_size": 32,
     "v_boundary": {
-        'min': -10.0,
-        'max': 10.0,
+        "min": -10.0,
+        "max": 10.0,
     },
     "r_boundary": {
-        'min': -1.0,
-        'max': 1.0,
+        "min": -1.0,
+        "max": 1.0,
     },
     "num_support": {
         "v_support": 51,
