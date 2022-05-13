@@ -10,7 +10,7 @@ agent = {
     "name": "muzero",
     "network": "muzero_mlp",
     "head": "mlp",
-    "hidden_size": 32,
+    "hidden_size": 64,
     "gamma": 0.99,
     "buffer_size": 50000,
     "batch_size": 32,
@@ -32,7 +32,7 @@ agent = {
     "num_mcts": 30,
     "num_eval_mcts": 15,
     "mcts_alpha_max": 1.0,
-    "mcts_alpha_min": 0.3,
+    "mcts_alpha_min": 0.1,
     # Optional Feature
     "use_prev_rand_action": True,
     "use_over_rand_action": True,

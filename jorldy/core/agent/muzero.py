@@ -1,5 +1,4 @@
 import os
-from time import time
 import torch
 import numpy as np
 import torch.nn.functional as F
@@ -293,7 +292,7 @@ class Muzero(BaseAgent):
 
             reward_s = self.network.converter.vector2scalar(torch.exp(reward))
             value_s = self.network.converter.vector2scalar(torch.exp(value))
-            
+
             max_V = max(max_V, torch.max(value_s).item())
             min_V = min(min_V, torch.min(value_s).item())
             max_R = max(max_R, torch.max(reward_s).item())
@@ -485,8 +484,6 @@ class Muzero(BaseAgent):
         self.mcts.alpha = self.mcts_alpha_min + id * (
             self.mcts_alpha_max - self.mcts_alpha_min
         ) / (self.num_workers - 1)
-        
-        # self.mcts.c_ucb = 1 + id * (1/(self.num_workers-1))
 
         # self.mcts.c_ucb = 1 + id * (1/(self.num_workers-1))
 
@@ -584,13 +581,13 @@ class MCTS:
                         self.c1 + np.log((total_n + self.c2 + 1) / self.c2)
                     )
                     UCB_list.append((q + self.c_ucb * u).cpu())
-                    
+
                 max_UCB = np.max(UCB_list)
                 max_list = [a for a, v in enumerate(UCB_list) if v == max_UCB]
                 a_UCB = np.random.choice(max_list)
 
                 node_id += (a_UCB,)
-                
+
                 # If leaf id, add hidden state and r, p, v to node dict
                 if self.tree[node_id]["n"] == 0:
                     hidden_parent = self.tree[node_id[:-1]]["s"]
@@ -656,7 +653,7 @@ class MCTS:
                 discount_sum_r += (self.gamma ** (n - i)) * reward_list[i]
 
             G = discount_sum_r + ((self.gamma ** (n + 1)) * node_v)
-            
+
             # Update Q and N
             q = (self.tree[node_id]["n"] * self.tree[node_id]["q"] + G) / (
                 self.tree[node_id]["n"] + 1
@@ -680,7 +677,7 @@ class MCTS:
         root_id = (0,)
 
         p_root, v_root = self.p_fn(root_state)
-        
+
         if self.use_uniform_policy:
             p_root = torch.full((1, self.action_size), 1 / self.action_size)
         else:
