@@ -118,7 +118,7 @@ class Muzero(BaseAgent):
         )
         self.value_loss_weight = value_loss_weight
 
-        self.max_trajectory_size = max_trajectory_size + num_unroll
+        self.max_trajectory_size = max_trajectory_size
         self.num_unroll = num_unroll
         self.num_td_step = num_td_step
         self.num_stack = num_stack
@@ -485,8 +485,6 @@ class Muzero(BaseAgent):
         self.mcts.alpha = self.mcts_alpha_min + id * (
             self.mcts_alpha_max - self.mcts_alpha_min
         ) / (self.num_workers - 1)
-
-        # self.mcts.c_ucb = 1 + id * (1/(self.num_workers-1))
 
         # self.mcts.c_ucb = 1 + id * (1/(self.num_workers-1))
 
