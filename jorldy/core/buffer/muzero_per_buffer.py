@@ -30,15 +30,17 @@ class MuzeroPERBuffer(BaseBuffer):
         for transition in transitions:
             # TODO: if priority is None
 
-            num = len(transition["priorities"])
-            assert num < self.buffer_size
+            n = len(transition["priorities"])
+            assert n < self.buffer_size
 
-            for i, new_priority in enumerate(transition["priorities"]):
-                self.add_tree_data(new_priority, i)
+            for pos, new_priority in enumerate(
+                transition["priorities"], start=transition["start"]
+            ):
+                self.add_tree_data(new_priority, pos)
 
-            self.trajectories.append(transition["trajectory"])
+            self.trajectories.append((transition["trajectory"], n, transition["start"]))
             self.traj_index += 1
-            self.buffer_counter = min(self.buffer_counter + num, self.buffer_size)
+            self.buffer_counter = min(self.buffer_counter + n, self.buffer_size)
 
         self.remove_to_fit()
 
@@ -70,9 +72,9 @@ class MuzeroPERBuffer(BaseBuffer):
 
         self.tree_start = self.tree_end
         new_offset, pos = self.look_up[self.tree_end - self.first_leaf_index]
-        if pos > 0:
-            n_traj = len(self.trajectories[new_offset - self.traj_offset]["rewards"])
-            new_start = self.tree_end + n_traj - pos - 1
+        _, n_traj, start = self.trajectories[new_offset - self.traj_offset]
+        if pos > start:
+            new_start = self.tree_end + n_traj - pos + start
             if new_start >= self.tree_size:
                 self.remove_priorites(self.tree_start, self.tree_size)
                 self.tree_start = self.first_leaf_index
@@ -135,7 +137,7 @@ class MuzeroPERBuffer(BaseBuffer):
         weights /= np.max(weights)
 
         transitions = [
-            (self.trajectories[traj_idx - self.traj_offset], start)
+            (self.trajectories[traj_idx - self.traj_offset][0], start)
             for traj_idx, start in self.look_up[indices - self.first_leaf_index]
         ]
 

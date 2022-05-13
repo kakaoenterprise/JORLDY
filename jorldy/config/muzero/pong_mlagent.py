@@ -5,13 +5,13 @@ env = {"name": "pong_mlagent", "time_scale": 12.0}
 agent = {
     "name": "muzero",
     "network": "muzero_mlp",
-    "head": "mlp_residualblock",
+    "head": "mlp",
     "hidden_size": 64,
     "gamma": 0.997,
     "buffer_size": 100000,
     "batch_size": 32,
     "num_support": 10,
-    "start_train_step": 5000,
+    "start_train_step": 3000,
     "policy_train_delay": 5000,
     "max_trajectory_size": 1000,
     "value_loss_weight": 1.0,
@@ -51,6 +51,6 @@ train = {
     "eval_iteration": 3,
     # distributed setting
     "distributed_batch_size": 128,
-    "update_period": 500,
+    "update_period": 200,
     "num_workers": 32,
 }
