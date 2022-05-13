@@ -448,4 +448,3 @@ class CONV_Residualblock(torch.nn.Module):
         x_res += x
         x = F.relu(x_res)
         return x
-        
