@@ -25,8 +25,8 @@ agent = {
     "num_rb": 1,
     "lr_decay": False,
     # PER
-    "alpha": 0.8,
-    "beta": 0.7,
+    "alpha": 0.6,
+    "beta": 0.4,
     "uniform_sample_prob": 1e-3,
     # MCTS
     "num_mcts": 30,
