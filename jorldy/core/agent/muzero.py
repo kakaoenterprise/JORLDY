@@ -125,6 +125,7 @@ class Muzero(BaseAgent):
         self.max_step = self.extend_size
 
         self.time_t = 0
+        self.episode_len = 0
         self.trajectory_step_stamp = 0
         self.run_step = run_step
         self.lr_decay = lr_decay
@@ -193,9 +194,14 @@ class Muzero(BaseAgent):
         return {"action": action, "value": np.array(value, dtype=np.float32), "pi": pi}
 
     def learn(self):
-        transitions, weights, indices, sampled_p, mean_p = self.memory.sample(
-            self.beta, self.batch_size
-        )
+        (
+            transitions,
+            weights,
+            indices,
+            sampled_p,
+            mean_p,
+            mean_top_episode_len,
+        ) = self.memory.sample(self.beta, self.batch_size)
 
         _transitions = defaultdict(list)
         absorbing_policy = (
@@ -326,6 +332,7 @@ class Muzero(BaseAgent):
             "min_R": min_R,
             "sampled_p": sampled_p,
             "mean_p": mean_p,
+            "mean_top_episode_len": mean_top_episode_len,
             "num_learn": self.num_learn,
             "num_transitions": self.num_transitions,
         }
@@ -336,7 +343,7 @@ class Muzero(BaseAgent):
 
     def process(self, transitions, step):
         result = {}
-        self.num_transitions += len(transitions)
+        self.num_transitions += sum([t["episode_len"] for t in transitions])
 
         # Process per step
         delta_t = step - self.time_t
@@ -362,6 +369,7 @@ class Muzero(BaseAgent):
 
     def interact_callback(self, transition):
         _transition = None
+        self.episode_len += 1
         self.trajectory_step_stamp += 1
 
         self.trajectory["states"].append(transition["next_state"])
@@ -386,7 +394,11 @@ class Muzero(BaseAgent):
                 z = self.get_bootstrap_value(self.trajectory, i + self.trajectory_start)
                 priorities[i] = abs(v - z) ** self.alpha
 
-            _transition = {"priorities": priorities, "start": self.trajectory_start}
+            _transition = {
+                "priorities": priorities,
+                "start": self.trajectory_start,
+                "episode_len": self.episode_len if transition["done"] else 0,
+            }
 
             if not transition["done"]:
                 _transition["trajectory"] = {
@@ -420,6 +432,7 @@ class Muzero(BaseAgent):
 
     def init_trajectory(self, state):
         self.trajectory_start = 0
+        self.episode_len = 0
         self.trajectory = {
             "states": [state],
             "actions": [],

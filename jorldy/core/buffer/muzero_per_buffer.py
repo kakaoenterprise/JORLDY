@@ -1,3 +1,6 @@
+import heapq
+from math import ceil
+from readline import remove_history_item
 import numpy as np
 
 from .base import BaseBuffer
@@ -20,6 +23,10 @@ class MuzeroPERBuffer(BaseBuffer):
         self.traj_index = 0
         self.traj_offset = 0
 
+        self.episode_lens = []
+        self.cutline = 0.0
+        self.num_top = 0
+
         self.max_priority = 1.0
         self.uniform_sample_prob = uniform_sample_prob
 
@@ -30,17 +37,27 @@ class MuzeroPERBuffer(BaseBuffer):
         for transition in transitions:
             # TODO: if priority is None
 
-            n = len(transition["priorities"])
-            assert n < self.buffer_size
+            num = len(transition["priorities"])
+            assert num < self.buffer_size
 
             for pos, new_priority in enumerate(
                 transition["priorities"], start=transition["start"]
             ):
                 self.add_tree_data(new_priority, pos)
 
-            self.trajectories.append((transition["trajectory"], n, transition["start"]))
+            self.trajectories.append(
+                (
+                    transition["trajectory"],
+                    num,
+                    transition["start"],
+                    transition["episode_len"],
+                )
+            )
             self.traj_index += 1
-            self.buffer_counter = min(self.buffer_counter + n, self.buffer_size)
+            self.buffer_counter = min(self.buffer_counter + num, self.buffer_size)
+            if transition["episode_len"] > 0:
+                heapq.heappush(self.episode_lens, transition["episode_len"])
+                self.update_episode_len(transition["episode_len"])
 
         self.remove_to_fit()
 
@@ -66,13 +83,33 @@ class MuzeroPERBuffer(BaseBuffer):
             index = (index - 1) // 2  # parent node index.
             self.sum_tree[index] += delta_priority
 
+    def update_episode_len(self, episode_len=0):
+        # TODO: 0.1 scalar value to variable
+        num_top = ceil(len(self.episode_lens) * 0.1)
+        if self.cutline < episode_len or self.num_top != num_top:
+            self.num_top = num_top
+            tops = heapq.nlargest(num_top, self.episode_lens)
+            self.cutline = tops[-1]
+            self.mean_episode_len = sum(tops) / num_top
+
+    def remove_episode_len(self, val):
+        i = self.episode_lens.index(val)
+
+        if i < len(self.episode_lens) - 1:
+            self.episode_lens[i] = self.episode_lens[-1]
+
+        self.episode_lens.pop()
+        if i < len(self.episode_lens):
+            heapq._siftup(self.episode_lens, i)
+            heapq._siftdown(self.episode_lens, 0, i)
+
     def remove_to_fit(self):
         if self.buffer_counter < self.buffer_size:
             return
 
         self.tree_start = self.tree_end
         new_offset, pos = self.look_up[self.tree_end - self.first_leaf_index]
-        _, n_traj, start = self.trajectories[new_offset - self.traj_offset]
+        _, n_traj, start, _ = self.trajectories[new_offset - self.traj_offset]
         if pos > start:
             new_start = self.tree_end + n_traj - pos + start
             if new_start >= self.tree_size:
@@ -84,6 +121,10 @@ class MuzeroPERBuffer(BaseBuffer):
             self.tree_start = new_start
             new_offset += 1
 
+        for _, _, _, episode_len in self.trajectories[: new_offset - self.traj_offset]:
+            if episode_len > 0:
+                self.remove_episode_len(episode_len)
+                self.update_episode_len()
         del self.trajectories[: new_offset - self.traj_offset]
         self.traj_offset = new_offset
 
@@ -143,7 +184,7 @@ class MuzeroPERBuffer(BaseBuffer):
 
         sampled_p = np.mean(priorities)
         mean_p = self.sum_tree[0] / self.buffer_counter
-        return transitions, weights, indices, sampled_p, mean_p
+        return transitions, weights, indices, sampled_p, mean_p, self.mean_episode_len
 
     def check_dim(self, transition):
         print("########################################")
