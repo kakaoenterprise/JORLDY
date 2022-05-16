@@ -189,9 +189,8 @@ class Muzero(BaseAgent):
             self.mcts.use_uniform_policy = False
             n_mcts = self.num_eval_mcts
         action, pi, value = self.mcts.run_mcts(root_state, n_mcts, training)
-        action = np.array(action if training else np.argmax(pi), ndmin=2)
 
-        return {"action": action, "value": np.array(value), "pi": pi}
+        return {"action": action, "value": np.array(value, dtype=np.float32), "pi": pi}
 
     def learn(self):
         transitions, weights, indices, sampled_p, mean_p = self.memory.sample(
@@ -200,9 +199,9 @@ class Muzero(BaseAgent):
 
         _transitions = defaultdict(list)
         absorbing_policy = (
-            np.full(self.action_size, 1 / self.action_size)
+            np.full(self.action_size, 1 / self.action_size, dtype=np.float32)
             if self.use_uniform_policy
-            else np.zeros(self.action_size)
+            else np.zeros(self.action_size, dtype=np.float32)
         )
 
         for trajectory, start in transitions:
@@ -215,7 +214,9 @@ class Muzero(BaseAgent):
             policy += [absorbing_policy] * (self.num_unroll - len(policy) + 1)
 
             reward = trajectory["rewards"][start : end - 1]
-            reward += [np.zeros((1, 1))] * (self.num_unroll - len(reward) + 1)
+            reward += [np.zeros((1, 1), dtype=np.float32)] * (
+                self.num_unroll - len(reward) + 1
+            )
 
             value = [self.get_bootstrap_value(trajectory, i) for i in range(start, end)]
 
@@ -264,8 +265,10 @@ class Muzero(BaseAgent):
 
         policy_loss = -(target_policy[:, 0] * pi).sum(1)
         value_loss = -(target_value[:, 0] * value).sum(1)
-        reward_loss = torch.zeros(self.batch_size, device=self.device)
-        ssc_loss = torch.zeros(self.batch_size, device=self.device)
+        reward_loss = torch.zeros(
+            self.batch_size, device=self.device, dtype=torch.float32
+        )
+        ssc_loss = torch.zeros(self.batch_size, device=self.device, dtype=torch.float32)
 
         # comput unroll step loss
         for end, i in enumerate(range(1, self.num_unroll + 1), self.num_stack + 1):
@@ -298,7 +301,7 @@ class Muzero(BaseAgent):
             max_R = max(max_R, torch.max(reward_s).item())
             min_R = min(min_R, torch.min(reward_s).item())
 
-        weights = torch.unsqueeze(torch.FloatTensor(weights).to(self.device), -1)
+        weights = torch.unsqueeze(self.as_tensor(weights), -1)
         loss = self.value_loss_weight * value_loss + policy_loss + reward_loss
         weighted_loss = (weights * (loss.mean(-1) + ssc_loss)).mean()
 
@@ -374,7 +377,7 @@ class Muzero(BaseAgent):
                 if transition["done"]
                 else self.max_trajectory_size
             )
-            priorities = np.zeros(trajectory_size)
+            priorities = np.zeros(trajectory_size, dtype=np.float32)
             for i, v in enumerate(
                 self.trajectory["values"][
                     self.trajectory_start : trajectory_size + self.trajectory_start
@@ -428,7 +431,7 @@ class Muzero(BaseAgent):
     def get_bootstrap_value(self, trajectory, start):
         end = start + self.num_td_step
         values = trajectory["values"]
-        value = values[end] if end < len(values) else np.zeros((1, 1))
+        value = values[end] if end < len(values) else np.zeros((1, 1), dtype=np.float32)
 
         for reward in reversed(trajectory["rewards"][start:end]):
             value = reward + self.gamma * value
@@ -453,7 +456,7 @@ class Muzero(BaseAgent):
 
         stacked_a = stacked_a.reshape(num_stack)
 
-        stacked_s = np.zeros((num_stack + 1, *self.state_size), np.float32)
+        stacked_s = np.zeros((num_stack + 1, *self.state_size), dtype=np.float32)
         for n, i in enumerate(range(start, end + 1), start=prev):
             stacked_s[n] = trajectory["states"][i]
 
@@ -553,7 +556,7 @@ class MCTS:
             self.backup(leaf_id, leaf_v)
 
         root_value = self.tree[self.root_id]["q"]
-        root_action, pi = self.select_root_action()
+        root_action, pi = self.select_root_action(training)
 
         return root_action, pi, root_value
 
@@ -593,7 +596,7 @@ class MCTS:
                     hidden_parent = self.tree[node_id[:-1]]["s"]
                     action_parent = np.ones((1, 1), dtype=int) * a_UCB
                     s_leaf, r_leaf = self.d_fn(
-                        hidden_parent, torch.tensor(action_parent)
+                        hidden_parent, torch.tensor(action_parent, dtype=torch.float32)
                     )
                     r_leaf = torch.exp(r_leaf)
                     r_leaf_scalar = self.network.converter.vector2scalar(r_leaf).item()
@@ -604,7 +607,9 @@ class MCTS:
                     p_leaf, v_leaf = self.p_fn(s_leaf)
                     p_leaf = (
                         torch.full(
-                            (self.action_size, self.action_size), 1 / self.action_size
+                            (self.action_size, self.action_size),
+                            1 / self.action_size,
+                            dtype=torch.float32,
                         )
                         if self.use_uniform_policy
                         else torch.exp(p_leaf)
@@ -679,7 +684,9 @@ class MCTS:
         p_root, v_root = self.p_fn(root_state)
 
         if self.use_uniform_policy:
-            p_root = torch.full((1, self.action_size), 1 / self.action_size)
+            p_root = torch.full(
+                (1, self.action_size), 1 / self.action_size, dtype=torch.float32
+            )
         else:
             p_root = torch.exp(p_root)
 
@@ -688,7 +695,7 @@ class MCTS:
                     self.alpha * np.ones(self.action_size)
                 )
                 p_root = p_root * 0.8 + noise_probs * 0.2
-                p_root = p_root / torch.sum(p_root)
+                p_root = p_root / torch.sum(p_root, dtype=torch.float32)
 
         v_root = torch.exp(v_root)
         v_root_scalar = self.network.converter.vector2scalar(v_root).item()
@@ -706,7 +713,7 @@ class MCTS:
 
         return tree
 
-    def select_root_action(self):
+    def select_root_action(self, training):
         child = self.tree[self.root_id]["child"]
 
         n_list = []
@@ -715,14 +722,17 @@ class MCTS:
             child_idx = self.root_id + (child_num,)
             n_list.append(self.tree[child_idx]["n"])
 
-        pi = np.asarray(n_list) / np.sum(n_list)
-        pi_temp = np.asarray(n_list) ** (1 / self.temp_param)
-        pi_temp = pi_temp / np.sum(pi_temp)
+        pi = np.asarray(n_list, dtype=np.float32) / np.sum(n_list, dtype=np.float32)
+        if training:
+            pi_temp = np.asarray(n_list, dtype=np.float32) ** (1 / self.temp_param)
+            pi_temp = pi_temp / np.sum(pi_temp, dtype=np.float32)
 
-        noise_probs = np.random.dirichlet(self.alpha * np.ones(self.action_size))
-        pi_noise = pi_temp * 0.8 + noise_probs * 0.2
-        pi_noise = pi_noise / np.sum(pi_noise)
+            noise_probs = np.random.dirichlet(self.alpha * np.ones(self.action_size))
+            pi_noise = pi_temp * 0.8 + noise_probs * 0.2
+            pi_noise = pi_noise / np.sum(pi_noise)
 
-        action_idx = np.random.choice(self.action_size, p=pi_noise)
+            action_idx = np.random.choice(self.action_size, p=pi_noise, size=(1, 1))
+        else:
+            action_idx = np.argmax(pi).reshape((1, 1))
 
         return action_idx, pi
