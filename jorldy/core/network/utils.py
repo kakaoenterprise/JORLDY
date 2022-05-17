@@ -126,11 +126,11 @@ def orthogonal_init(layer, nonlinearity="relu"):
 
 class Converter:
     def __init__(self, support, minimum, maximum):
-        self.minimum = minimum
-        self.maximum = maximum
-        self.num_support = support
-        self.support_data = torch.linspace(self.minimum, self.maximum, self.num_support)
-        self.interval = (maximum - minimum) / (self.num_support - 1)
+        self.support = support
+        self.scale_ratio = (maximum - minimum) / (self.support - 1)
+        self.minimum = minimum / self.scale_ratio
+        self.maximum = maximum / self.scale_ratio
+        self.support_data = torch.linspace(self.minimum, self.maximum, support)
 
     # codes modified from https://github.com/werner-duvaud/muzero-general
     def vector2scalar(self, prob):
@@ -166,43 +166,17 @@ class Converter:
         scalar = torch.clamp(scalar, self.minimum, self.maximum)
 
         # target distribution projection(distribute probability for lower support)
-        floor, floor_idx = self.floor(scalar)
-        prob = abs(scalar - floor) / self.interval
-
+        floor = scalar.floor()
+        prob = scalar - floor
         dist = torch.zeros(
-            scalar.shape[0], scalar.shape[1], self.num_support
+            scalar.shape[0], scalar.shape[1], self.support
         ).to(scalar.device)
-        dist.scatter_(-1, floor_idx, (1 - prob))
+        dist.scatter_(-1, ((floor - 1) + self.support + self.minimum).long(), (1 - prob))
 
         # target distribution projection(distribute probability for higher support)
-        idx = floor_idx + 1
-        prob = prob.masked_fill_(self.num_support < idx, 0.0)
-        idx = idx.masked_fill_(self.num_support < idx, 0.0)
-        dist.scatter_(-1, idx, prob)
+        idx = floor + self.support + self.minimum
+        prob = prob.masked_fill_(self.support < idx, 0.0)
+        idx = idx.masked_fill_(self.support < idx, 0.0)
+        dist.scatter_(-1, idx.long(), prob)
 
         return dist
-
-    # TODO: function optimization required(no loop)
-    def floor(self, scalar):
-        device = scalar.device
-        shape = scalar.size()
-        scalar = scalar.flatten()
-
-        result_idx = []
-        result = []
-        for s in scalar:
-            save_p_idx = None
-            save_p = None
-            for i, p in enumerate(self.support_data.to(device)):
-                if p < s:
-                    save_p_idx = i
-                    save_p = p
-                else:
-                    result_idx.append(save_p_idx)
-                    result.append(save_p)
-                    break
-
-        result = torch.tensor(result).reshape(shape).to(device)
-        result_idx = torch.tensor(result_idx).reshape(shape).to(device)
-        
-        return result, result_idx
