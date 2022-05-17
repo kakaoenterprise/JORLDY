@@ -135,6 +135,7 @@ class Converter:
         self.support_data = torch.linspace(self.minimum, self.maximum, support) + self.shift
         self.minimum = self.support_data[0].item()
         self.maximum = self.support_data[-1].item()
+        self.eps = 1e-4
 
         print(self.__dict__)
 
@@ -172,7 +173,7 @@ class Converter:
         scalar = torch.clamp(scalar, self.minimum, self.maximum)
 
         # target distribution projection(distribute probability for lower support)
-        floor = scalar.floor()
+        floor = (scalar - self.eps).floor()
         prob = scalar - floor
         pre_idx = abs(self.minimum) + scalar.floor()
         dist = torch.zeros(
