@@ -128,27 +128,22 @@ class Converter:
     def __init__(self, support, minimum, maximum):
         self.support = support
         self.scale_ratio = (maximum - minimum) / (self.support - 1)
-        self.minimum = minimum / self.scale_ratio
-        self.maximum = maximum / self.scale_ratio
-        self.pre_shift = self.maximum - int(self.maximum)
-        self.shift = 1 - self.pre_shift if abs(self.pre_shift) > abs(1 - self.pre_shift) else - self.pre_shift
-        self.support_data = torch.linspace(self.minimum, self.maximum, support) + self.shift
-        self.minimum = self.support_data[0].item()
-        self.maximum = self.support_data[-1].item()
+        self.pre_shift = maximum / self.scale_ratio - int(maximum / self.scale_ratio)
+        self.shift = (
+            1 - self.pre_shift
+            if abs(self.pre_shift) > abs(1 - self.pre_shift)
+            else -self.pre_shift
+        )
+        self.minimum = minimum / self.scale_ratio + self.shift
+        self.maximum = maximum / self.scale_ratio + self.shift
+        self.support_data = torch.linspace(self.minimum, self.maximum, support)
         self.eps = 1e-4
-
-        print(self.__dict__)
 
     # codes modified from https://github.com/werner-duvaud/muzero-general
     def vector2scalar(self, prob):
         """prediction value & dynamics reward output(vector:distribution) -> output(scalar:value)"""
         # get supports
-        support = (
-            self.support_data
-            .expand(prob.shape)
-            .float()
-            .to(device=prob.device)
-        )
+        support = self.support_data.expand(prob.shape).float().to(device=prob.device)
 
         # convert to scalar
         scalar = torch.sum(support * prob, dim=-1, keepdim=True)
@@ -176,9 +171,9 @@ class Converter:
         floor = (scalar - self.eps).floor()
         prob = scalar - floor
         pre_idx = abs(self.minimum) + scalar.floor()
-        dist = torch.zeros(
-            scalar.shape[0], scalar.shape[1], self.support
-        ).to(scalar.device)
+        dist = torch.zeros(scalar.shape[0], scalar.shape[1], self.support).to(
+            scalar.device
+        )
         dist.scatter_(-1, pre_idx.long(), (1 - prob))
 
         # target distribution projection(distribute probability for higher support)
