@@ -130,7 +130,13 @@ class Converter:
         self.scale_ratio = (maximum - minimum) / (self.support - 1)
         self.minimum = minimum / self.scale_ratio
         self.maximum = maximum / self.scale_ratio
-        self.support_data = torch.linspace(self.minimum, self.maximum, support)
+        self.pre_shift = self.maximum - int(self.maximum)
+        self.shift = 1 - self.pre_shift if abs(self.pre_shift) > abs(1 - self.pre_shift) else - self.pre_shift
+        self.support_data = torch.linspace(self.minimum, self.maximum, support) + self.shift
+        self.minimum = self.support_data[0].item()
+        self.maximum = self.support_data[-1].item()
+
+        print(self.__dict__)
 
     # codes modified from https://github.com/werner-duvaud/muzero-general
     def vector2scalar(self, prob):
@@ -168,15 +174,16 @@ class Converter:
         # target distribution projection(distribute probability for lower support)
         floor = scalar.floor()
         prob = scalar - floor
+        pre_idx = abs(self.minimum) + scalar.floor()
         dist = torch.zeros(
             scalar.shape[0], scalar.shape[1], self.support
         ).to(scalar.device)
-        dist.scatter_(-1, ((floor - 1) + self.support + self.minimum).long(), (1 - prob))
+        dist.scatter_(-1, pre_idx.long(), (1 - prob))
 
         # target distribution projection(distribute probability for higher support)
-        idx = floor + self.support + self.minimum
-        prob = prob.masked_fill_(self.support < idx, 0.0)
-        idx = idx.masked_fill_(self.support < idx, 0.0)
-        dist.scatter_(-1, idx.long(), prob)
+        post_idx = abs(self.minimum) + scalar.ceil()
+        prob = prob.masked_fill_(self.support < post_idx, 0.0)
+        post_idx = post_idx.masked_fill_(self.support < post_idx, 0.0)
+        dist.scatter_(-1, post_idx.long(), prob)
 
         return dist
