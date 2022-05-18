@@ -136,18 +136,22 @@ class Converter:
         )
         self.inner_minimum = minimum / self.scale_ratio + self.shift
         self.inner_maximum = maximum / self.scale_ratio + self.shift
-        self.inner_support_data = torch.linspace(self.inner_minimum, self.inner_maximum, support)
+        self.inner_support_data = torch.linspace(
+            self.inner_minimum, self.inner_maximum, support
+        )
         self.eps = 1e-4
 
     # codes modified from https://github.com/werner-duvaud/muzero-general
     def vector2scalar(self, prob):
         """prediction value & dynamics reward output(vector:distribution) -> output(scalar:value)"""
         # get supports
-        support = self.inner_support_data.expand(prob.shape).float().to(device=prob.device)
+        support = (
+            self.inner_support_data.expand(prob.shape).float().to(device=prob.device)
+        )
 
         # convert to scalar
         scalar = torch.sum(support * prob, dim=-1, keepdim=True)
-        
+
         # relative scale
         scalar = (scalar - self.shift) * self.scale_ratio
         # paper scale
