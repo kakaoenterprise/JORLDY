@@ -134,21 +134,23 @@ class Converter:
             if abs(self.pre_shift) > abs(1 - self.pre_shift)
             else -self.pre_shift
         )
-        self.minimum = minimum / self.scale_ratio + self.shift
-        self.maximum = maximum / self.scale_ratio + self.shift
-        self.support_data = torch.linspace(self.minimum, self.maximum, support)
+        self.inner_minimum = minimum / self.scale_ratio + self.shift
+        self.inner_maximum = maximum / self.scale_ratio + self.shift
+        self.inner_support_data = torch.linspace(self.inner_minimum, self.inner_maximum, support)
         self.eps = 1e-4
 
     # codes modified from https://github.com/werner-duvaud/muzero-general
     def vector2scalar(self, prob):
         """prediction value & dynamics reward output(vector:distribution) -> output(scalar:value)"""
         # get supports
-        support = self.support_data.expand(prob.shape).float().to(device=prob.device)
+        support = self.inner_support_data.expand(prob.shape).float().to(device=prob.device)
 
         # convert to scalar
         scalar = torch.sum(support * prob, dim=-1, keepdim=True)
-
-        # Invertible scaling
+        
+        # relative scale
+        scalar = (scalar - self.shift) * self.scale_ratio
+        # paper scale
         eps = 0.001
         scalar = torch.sign(scalar) * (
             ((torch.sqrt(1 + 4 * eps * (torch.abs(scalar) + 1 + eps)) - 1) / (2 * eps))
@@ -160,24 +162,27 @@ class Converter:
     # codes modified from https://github.com/werner-duvaud/muzero-general
     def scalar2vector(self, scalar):
         """initiate target distribution from scalar(batch-2D) & project to learn batch-data"""
-        # reduce scale
+        # paper scale
         eps = 0.001
         scalar = (
             torch.sign(scalar) * (torch.sqrt(torch.abs(scalar) + 1) - 1) + eps * scalar
         )
-        scalar = torch.clamp(scalar, self.minimum, self.maximum)
+        # relative scale
+        scalar = scalar / self.scale_ratio + self.shift
+        # truncate domain
+        scalar = torch.clamp(scalar, self.inner_minimum, self.inner_maximum)
 
         # target distribution projection(distribute probability for lower support)
         floor = (scalar - self.eps).floor()
         prob = scalar - floor
-        pre_idx = abs(self.minimum) + scalar.floor()
+        pre_idx = abs(self.inner_minimum) + scalar.floor()
         dist = torch.zeros(scalar.shape[0], scalar.shape[1], self.support).to(
             scalar.device
         )
         dist.scatter_(-1, pre_idx.long(), (1 - prob))
 
         # target distribution projection(distribute probability for higher support)
-        post_idx = abs(self.minimum) + scalar.ceil()
+        post_idx = abs(self.inner_minimum) + scalar.ceil()
         prob = prob.masked_fill_(self.support < post_idx, 0.0)
         post_idx = post_idx.masked_fill_(self.support < post_idx, 0.0)
         dist.scatter_(-1, post_idx.long(), prob)
