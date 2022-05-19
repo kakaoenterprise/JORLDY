@@ -17,7 +17,7 @@ class Muzero_mlp(BaseNetwork):
         support,
         num_rb=10,
         D_hidden=256,
-        head="mlp_residualblock",
+        head="mlp",
     ):
         super(Muzero_mlp, self).__init__(D_hidden, D_hidden, head)
         
@@ -61,6 +61,17 @@ class Muzero_mlp(BaseNetwork):
         orthogonal_init(self.dy_l1, "linear")
         orthogonal_init(self.rd_l1, "linear")
         orthogonal_init(self.rd_l2, "linear")
+
+        # self supervised consistency(SSC) -> calculate consistency on next hidden state
+        self.ssc_proj_1 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
+        self.ssc_proj_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
+        self.ssc_pred_1 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
+        self.ssc_pred_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
+
+        orthogonal_init(self.ssc_proj_1, "linear")
+        orthogonal_init(self.ssc_proj_2, "linear")
+        orthogonal_init(self.ssc_pred_1, "linear")
+        orthogonal_init(self.ssc_pred_2, "linear")
 
     def representation(self, obs, a):
         obs_a = torch.cat([obs, a], dim=-1)
@@ -112,6 +123,39 @@ class Muzero_mlp(BaseNetwork):
 
         return next_hs, rd
 
+    def ssc_loss(self, obs_s, obs_a, hs, a, i, end):
+        # calculate y(search)
+        with torch.no_grad():
+            obs_s, obs_a = (
+                obs_s[:, self.D_in * i: self.D_in * (end + 1)],
+                obs_a[:, i: end],
+            )
+            nhs = self.representation(obs_s, obs_a)
+            y = self.ssc_projector(nhs)
+
+        # calculate y_hat(prediction)
+        pred_nhs, _ = self.dynamics(hs, a)
+        pred_nhs = self.ssc_projector(pred_nhs)
+        y_hat = self.ssc_predictor(pred_nhs)
+
+        # calculate loss
+        ssc_loss = F.cosine_similarity(y, y_hat)
+        return ssc_loss
+
+    def ssc_projector(self, hs):
+        hs = self.ssc_proj_1(hs)
+        hs = F.leaky_relu(hs)
+        hs = self.ssc_proj_2(hs)
+        hs = F.leaky_relu(hs)
+        return hs
+
+    def ssc_predictor(self, hs):
+        hs = self.ssc_pred_1(hs)
+        hs = F.relu(hs)
+        hs = self.ssc_pred_2(hs)
+        hs = F.relu(hs)
+        return hs
+
 
 class Muzero_Resnet(BaseNetwork):
     """residual network"""
@@ -124,7 +168,7 @@ class Muzero_Resnet(BaseNetwork):
         support,
         num_rb=16,
         D_hidden=256,
-        head="residualblock",
+        head="mlp",
     ):
         super(Muzero_Resnet, self).__init__(D_hidden, D_hidden, head)
         
@@ -244,6 +288,36 @@ class Muzero_Resnet(BaseNetwork):
         orthogonal_init(self.dy_rd_2, "linear")
         # orthogonal_init(self.dy_rd_3, "linear")
 
+        # self supervised consistency(SSC) -> calculate consistency on next hidden state
+        self.ssc_conv_1 = torch.nn.Conv2d(
+            in_channels=D_hidden,
+            out_channels=D_hidden,
+            kernel_size=kernel,
+            padding=padding,
+            stride=stride,
+        )
+        self.ssc_conv_2 = torch.nn.Conv2d(
+            in_channels=D_hidden,
+            out_channels=D_hidden,
+            kernel_size=kernel,
+            padding=padding,
+            stride=stride,
+        )
+        self.ssc_proj_1 = torch.nn.Linear(
+            in_features=D_hidden * (self.down_size[0] * self.down_size[1]),
+            out_features=D_hidden,
+        )
+        self.ssc_proj_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
+        self.ssc_pred_1 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
+        self.ssc_pred_2 = torch.nn.Linear(in_features=D_hidden, out_features=D_hidden)
+
+        orthogonal_init(self.ssc_conv_1, "conv2d")
+        orthogonal_init(self.ssc_conv_2, "conv2d")
+        orthogonal_init(self.ssc_proj_1, "linear")
+        orthogonal_init(self.ssc_proj_2, "linear")
+        orthogonal_init(self.ssc_pred_1, "linear")
+        orthogonal_init(self.ssc_pred_2, "linear")
+
     def representation(self, obs, a):
         # observation, action : normalize -> concatenate -> input
         obs = torch.div(obs, 255.0)
@@ -327,6 +401,43 @@ class Muzero_Resnet(BaseNetwork):
         rd = F.log_softmax(rd, dim=-1)
 
         return next_hs_norm, rd
+
+    def ssc_loss(self, obs_s, obs_a, hs, a, i, end):
+        # calculate y(search)
+        with torch.no_grad():
+            obs_s, obs_a = (
+                obs_s[:, self.state_channel * i: self.state_channel * (end + 1)],
+                obs_a[:, self.action_channel * i: self.action_channel * end],
+            )
+            nhs = self.representation(obs_s, obs_a)
+            y = self.ssc_projector(nhs)
+
+        # calculate y_hat(prediction)
+        pred_nhs, _ = self.dynamics(hs, a)
+        pred_nhs = self.ssc_projector(pred_nhs)
+        y_hat = self.ssc_predictor(pred_nhs)
+
+        # calculate loss
+        ssc_loss = F.cosine_similarity(y, y_hat)
+        return ssc_loss
+
+    def ssc_projector(self, hs):
+        hs = self.ssc_conv_1(hs)
+        hs = F.leaky_relu(hs)
+        hs = self.ssc_conv_2(hs)
+        hs = F.leaky_relu(hs)
+        hs = self.ssc_proj_1(hs.flatten(1))
+        hs = F.leaky_relu(hs)
+        hs = self.ssc_proj_2(hs)
+        hs = F.leaky_relu(hs)
+        return hs
+
+    def ssc_predictor(self, hs):
+        hs = self.ssc_pred_1(hs)
+        hs = F.relu(hs)
+        hs = self.ssc_pred_2(hs)
+        hs = F.relu(hs)
+        return hs
 
 
 class Downsample(torch.nn.Module):

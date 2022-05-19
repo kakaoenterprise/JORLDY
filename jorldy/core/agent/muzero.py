@@ -274,14 +274,11 @@ class Muzero(BaseAgent):
             )
 
             if self.use_ssc_loss:
-                with torch.no_grad():
-                    stack_s, stack_a = (
-                        state[:, self.channel * i : self.channel * (end + 1)],
-                        action[:, i:end],
-                    )
-                    y = self.network.representation(stack_s, stack_a)
-
-                ssc_loss -= F.cosine_similarity(y.flatten(1), hidden_state.flatten(1))
+                # TODO List: MCTS train mode? eval mode?
+                ssc_a = torch.as_tensor(
+                    [self.mcts.run_mcts(hs.view([1, *hs.size()]), self.num_mcts, True)[0] for hs in hidden_state]
+                ).view(-1, 1)
+                ssc_loss -= self.network.ssc_loss(state, action, hidden_state, ssc_a, i, end)
 
             pi, value = self.network.prediction(hidden_state)
             hidden_state.register_hook(lambda x: x * 0.5)
