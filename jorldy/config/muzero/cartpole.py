@@ -37,7 +37,7 @@ agent = {
     "use_prev_rand_action": True,
     "use_over_rand_action": True,
     "use_uniform_policy": False,
-    "use_ssc_loss": True,
+    "use_ssc_loss": False,
 }
 
 optim = {

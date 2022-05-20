@@ -274,11 +274,12 @@ class Muzero(BaseAgent):
             )
 
             if self.use_ssc_loss:
-                # TODO List: MCTS train mode? eval mode?
-                ssc_a = torch.as_tensor(
-                    [self.mcts.run_mcts(hs.view([1, *hs.size()]), self.num_mcts, True)[0] for hs in hidden_state.to('cpu')]
-                ).view(-1, 1).to(self.device)
-                ssc_loss -= self.network.ssc_loss(state, action, hidden_state, ssc_a, i, end)
+                with torch.no_grad():
+                    stack_s, stack_a = (
+                        state[:, self.channel * i: self.channel * (end + 1)],
+                        action[:, i: end],
+                    )
+                ssc_loss -= self.network.ssc_loss(stack_s, stack_a, hidden_state)
 
             pi, value = self.network.prediction(hidden_state)
             hidden_state.register_hook(lambda x: x * 0.5)

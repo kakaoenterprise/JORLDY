@@ -123,18 +123,13 @@ class Muzero_mlp(BaseNetwork):
 
         return next_hs, rd
 
-    def ssc_loss(self, obs_s, obs_a, hs, a, i, end):
+    def ssc_loss(self, obs_s, obs_a, pred_nhs):
         # calculate y(search)
         with torch.no_grad():
-            obs_s, obs_a = (
-                obs_s[:, self.D_in * i: self.D_in * (end + 1)],
-                obs_a[:, i: end],
-            )
             nhs = self.representation(obs_s, obs_a)
             y = self.ssc_projector(nhs)
 
         # calculate y_hat(prediction)
-        pred_nhs, _ = self.dynamics(hs, a)
         pred_nhs = self.ssc_projector(pred_nhs)
         y_hat = self.ssc_predictor(pred_nhs)
 
@@ -402,18 +397,13 @@ class Muzero_Resnet(BaseNetwork):
 
         return next_hs_norm, rd
 
-    def ssc_loss(self, obs_s, obs_a, hs, a, i, end):
+    def ssc_loss(self, obs_s, obs_a, pred_nhs):
         # calculate y(search)
         with torch.no_grad():
-            obs_s, obs_a = (
-                obs_s[:, self.state_channel * i: self.state_channel * (end + 1)],
-                obs_a[:, self.action_channel * i: self.action_channel * end],
-            )
             nhs = self.representation(obs_s, obs_a)
             y = self.ssc_projector(nhs)
 
         # calculate y_hat(prediction)
-        pred_nhs, _ = self.dynamics(hs, a)
         pred_nhs = self.ssc_projector(pred_nhs)
         y_hat = self.ssc_predictor(pred_nhs)
 
