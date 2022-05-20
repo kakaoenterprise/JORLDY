@@ -643,17 +643,17 @@ class MCTS:
         node_id = leaf_id
         node_v = leaf_v
         reward_list = []
-        
+
         while True:
             # Calculate G
             discount_sum_r = 0
-            n = len(reward_list) - 1 
+            n = len(reward_list) - 1
 
             for i in range(len(reward_list)):
                 discount_sum_r += (self.gamma ** (n - i)) * reward_list[i]
 
             G = discount_sum_r + ((self.gamma ** (n + 1)) * node_v)
-            
+
             # Update Q and N
             q = (self.tree[node_id]["n"] * self.tree[node_id]["q"] + G) / (
                 self.tree[node_id]["n"] + 1
@@ -664,9 +664,9 @@ class MCTS:
             # Update max q and min q
             self.q_max = max(q, self.q_max)
             self.q_min = min(q, self.q_min)
-            
+
             reward_list.append(self.tree[node_id]["r"])
-            
+
             node_id = node_id[:-1]
 
             if node_id == ():
