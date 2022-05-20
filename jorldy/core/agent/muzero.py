@@ -641,19 +641,9 @@ class MCTS:
 
     def backup(self, leaf_id, leaf_v):
         node_id = leaf_id
-        node_v = leaf_v
-        reward_list = []
+        G = leaf_v
 
         while True:
-            # Calculate G
-            discount_sum_r = 0
-            n = len(reward_list) - 1
-
-            for i in range(len(reward_list)):
-                discount_sum_r += (self.gamma ** (n - i)) * reward_list[i]
-
-            G = discount_sum_r + ((self.gamma ** (n + 1)) * node_v)
-
             # Update Q and N
             q = (self.tree[node_id]["n"] * self.tree[node_id]["q"] + G) / (
                 self.tree[node_id]["n"] + 1
@@ -665,8 +655,10 @@ class MCTS:
             self.q_max = max(q, self.q_max)
             self.q_min = min(q, self.q_min)
 
-            reward_list.append(self.tree[node_id]["r"])
+            # Upate G
+            G = self.tree[node_id]["r"] + self.gamma * G
 
+            # Update node id and break if root node
             node_id = node_id[:-1]
 
             if node_id == ():
