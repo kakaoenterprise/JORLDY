@@ -639,19 +639,9 @@ class MCTS:
 
     def backup(self, leaf_id, leaf_v):
         node_id = leaf_id
-        node_v = leaf_v
-        reward_list = [self.tree[node_id]["r"]]
+        G = leaf_v
 
         while True:
-            # Calculate G
-            discount_sum_r = 0
-            n = len(reward_list) - 1
-
-            for i in range(len(reward_list)):
-                discount_sum_r += (self.gamma ** (n - i)) * reward_list[i]
-
-            G = discount_sum_r + ((self.gamma ** (n + 1)) * node_v)
-
             # Update Q and N
             q = (self.tree[node_id]["n"] * self.tree[node_id]["q"] + G) / (
                 self.tree[node_id]["n"] + 1
@@ -663,12 +653,14 @@ class MCTS:
             self.q_max = max(q, self.q_max)
             self.q_min = min(q, self.q_min)
 
+            # Upate G
+            G = self.tree[node_id]["r"] + self.gamma * G
+
+            # Update node id and break if root node
             node_id = node_id[:-1]
 
             if node_id == ():
                 break
-
-            reward_list.append(self.tree[node_id]["r"])
 
     def init_mcts(self, root_state, training):
         tree = {}
@@ -718,7 +710,7 @@ class MCTS:
         pi_temp = pi_temp / np.sum(pi_temp)
 
         noise_probs = np.random.dirichlet(self.alpha * np.ones(self.action_size))
-        pi_noise = pi_temp * 0.8 + noise_probs * 0.2
+        pi_noise = pi * 0.8 + noise_probs * 0.2
         pi_noise = pi_noise / np.sum(pi_noise)
 
         action_idx = np.random.choice(self.action_size, p=pi_noise)
