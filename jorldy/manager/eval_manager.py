@@ -13,6 +13,8 @@ class EvalManager:
         time_limit=None,
     ):
         self.env = Env(**env_config, train_mode=False)
+        self.env_class = Env
+        self.env_config = env_config
         self.iteration = iteration if iteration else 10
         assert iteration > 0
         self.record = record and self.env.recordable()
@@ -31,14 +33,22 @@ class EvalManager:
         for i in range(self.iteration):
             done = False
             state = self.env.reset()
-            prev_time = time.time()
-            prev_score = self.env.score
+            start_time = time.time()
             while not done:
                 # record first iteration
                 if record and i == 0:
                     frames.append(self.env.get_frame())
                 action_dict = agent.act(state, training=False)
                 next_state, reward, done = self.env.step(action_dict["action"])
+                
+                # check time limit
+                if self.time_limit is not None and time.time() - start_time > self.time_limit:
+                    print(
+                        f"### The evaluation time for one episode exceeded the limit. {self.time_limit} Sec ###"
+                    )
+                    self.env = self.env_class(**self.env_config, train_mode=False)
+                    done = True
+                    
                 transition = {
                     "state": state,
                     "next_state": next_state,
@@ -48,15 +58,6 @@ class EvalManager:
                 transition.update(action_dict)
                 agent.interact_callback(transition)
                 state = next_state
-                if self.time_limit is not None:
-                    if self.env.score != prev_score:
-                        prev_time = time.time()
-                    elif time.time() - prev_time > self.time_limit:
-                        print(
-                            f"### The evaluation time for one episode exceeded the limit. {self.time_limit} Sec ###"
-                        )
-                        self.env = Env(**env_config, train_mode=False)
-                        break
             scores.append(self.env.score)
 
         if record:
