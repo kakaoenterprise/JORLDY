@@ -8,7 +8,7 @@
 - [Double DQN](https://arxiv.org/abs/1509.06461)
 - [Dueling DQN](https://arxiv.org/abs/1511.06581)
 - Multistep DQN
-- [Munchausen RL (M-DQN, M-IQN)](https://arxiv.org/abs/2007.14430)
+- [Munchausen RL (M-DQN, M-IQN)](https://arxiv.org/abs/2007.14430) :rotating_light: [Issue #172](https://github.com/kakaoenterprise/JORLDY/issues/172)
 
 **Replay Buffer**
 
@@ -18,7 +18,7 @@
 
 - [C51](https://arxiv.org/abs/1707.06887)
 - [Quantile Regression DQN (QRDQN)](https://arxiv.org/abs/1710.10044)
-- [Implicit Quantile Network (IQN)](https://arxiv.org/abs/1806.06923)
+- [Implicit Quantile Network (IQN)](https://arxiv.org/abs/1806.06923) :rotating_light: [Issue #172](https://github.com/kakaoenterprise/JORLDY/issues/172)
 
 **Exploration**
 
@@ -28,12 +28,13 @@
 
 **Combination**
 
-- [Rainbow [DQN, IQN]](https://arxiv.org/abs/1710.02298)
+- [Rainbow [DQN, IQN]](https://arxiv.org/abs/1710.02298) :rotating_light: [Issue #172](https://github.com/kakaoenterprise/JORLDY/issues/172)
+- [MuZero](https://arxiv.org/abs/1911.08265) :rotating_light: [Issue #209](https://github.com/kakaoenterprise/JORLDY/issues/209)
 
 **Distributed**
 
 - [Distributed Prioritized Experience Replay (APE-X)](https://arxiv.org/pdf/1803.00933.pdf)
-- [Recurrent Experience Replay in Distributed RL (R2D2)](https://openreview.net/pdf?id=r1lyTjAqYX)
+- [Recurrent Experience Replay in Distributed RL (R2D2)](https://openreview.net/pdf?id=r1lyTjAqYX) :rotating_light: [Issue #212](https://github.com/kakaoenterprise/JORLDY/issues/212)
 
 **Policy Optimization, Actor-Critic**
 
@@ -42,8 +43,8 @@
 - [TD3](https://arxiv.org/pdf/1802.09477.pdf)
 - [Proximal Policy Optimization (PPO) [Discrete, Continuous]](https://arxiv.org/abs/1707.06347)
 - [Soft Actor Critic (SAC) [Continuous]](https://arxiv.org/abs/1801.01290)
-- [Maximum a posteriori Policy Optimization(MPO) [Discrete, Continuous]](https://arxiv.org/abs/1806.06920) 
-- [V-MPO [Discrete, Continuous]](https://arxiv.org/abs/1909.12238)
+- [Maximum a posteriori Policy Optimization(MPO) [Discrete, Continuous]](https://arxiv.org/abs/1806.06920) :rotating_light: [Issue #174](https://github.com/kakaoenterprise/JORLDY/issues/174)
+- [V-MPO [Discrete, Continuous]](https://arxiv.org/abs/1909.12238) :rotating_light: [Issue #164](https://github.com/kakaoenterprise/JORLDY/issues/164)
 
 ---
 
