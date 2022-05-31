@@ -18,7 +18,7 @@ agent = {
     "network": "r2d2",
     "head": "cnn",
     "gamma": 0.997,
-    "buffer_size": 2000000,
+    "buffer_size": 500000,
     "batch_size": 64,
     "clip_grad_norm": 40.0,
     "start_train_step": 100000,
@@ -31,8 +31,8 @@ agent = {
     "beta": 0.6,
     "uniform_sample_prob": 1e-3,
     # R2D2
-    "seq_len": 2,
-    "n_burn_in": 1,
+    "seq_len": 20,
+    "n_burn_in": 10,
     "zero_padding": True,
 }
 
