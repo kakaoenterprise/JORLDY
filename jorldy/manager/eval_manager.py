@@ -40,9 +40,12 @@ class EvalManager:
                     frames.append(self.env.get_frame())
                 action_dict = agent.act(state, training=False)
                 next_state, reward, done = self.env.step(action_dict["action"])
-                
+
                 # check time limit
-                if self.time_limit is not None and time.time() - start_time > self.time_limit:
+                if (
+                    self.time_limit is not None
+                    and time.time() - start_time > self.time_limit
+                ):
                     print(
                         f"### The evaluation time for one episode exceeded the limit. {self.time_limit} Sec ###"
                     )
@@ -50,7 +53,7 @@ class EvalManager:
                     self.env = self.env_class(**self.env_config, train_mode=False)
                     self.env.score = score
                     done = True
-                    
+
                 transition = {
                     "state": state,
                     "next_state": next_state,
