@@ -246,7 +246,7 @@ class Muzero(BaseAgent):
             action[:, : self.num_stack],
         )
 
-        # comput start step loss
+        # compute start step loss
         hidden_state = self.network.representation(stack_s, stack_a)
         pi, value = self.network.prediction(hidden_state)
 
@@ -267,7 +267,7 @@ class Muzero(BaseAgent):
         reward_loss = torch.zeros(self.batch_size, device=self.device)
         ssc_loss = torch.zeros(self.batch_size, device=self.device)
 
-        # comput unroll step loss
+        # compute unroll step loss
         for end, i in enumerate(range(1, self.num_unroll + 1), self.num_stack + 1):
             hidden_state, reward = self.network.dynamics(
                 hidden_state, selected_action[:, i - 1 : i]
@@ -276,8 +276,8 @@ class Muzero(BaseAgent):
             if self.use_ssc_loss:
                 with torch.no_grad():
                     stack_s, stack_a = (
-                        state[:, self.channel * i: self.channel * (end + 1)],
-                        action[:, i: end],
+                        state[:, self.channel * i : self.channel * (end + 1)],
+                        action[:, i:end],
                     )
                 ssc_loss -= self.network.ssc_loss(stack_s, stack_a, hidden_state)
 
