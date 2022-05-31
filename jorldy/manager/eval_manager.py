@@ -46,7 +46,9 @@ class EvalManager:
                     print(
                         f"### The evaluation time for one episode exceeded the limit. {self.time_limit} Sec ###"
                     )
+                    score = self.env.score
                     self.env = self.env_class(**self.env_config, train_mode=False)
+                    self.env.score = score
                     done = True
                     
                 transition = {
