@@ -18,11 +18,11 @@ agent = {
     "network": "muzero_resnet",
     "head": "mlp",
     "hidden_size": 128,
-    "gamma": 0.997,
-    "buffer_size": 300000,
+    "gamma": 0.99,
+    "buffer_size": 1000000,
     "batch_size": 32,
     "num_support": 10,
-    "start_train_step": 3000,
+    "start_train_step": 10000,
     "policy_train_delay": 20000,
     "max_trajectory_size": 200,
     "value_loss_weight": 1.0,
@@ -31,19 +31,19 @@ agent = {
     "num_stack": 4,
     "num_rb": 2,
     # PER
-    "alpha": 1.0,
-    "beta": 1.0,
+    "alpha": 0.6,
+    "beta": 0.4,
     "uniform_sample_prob": 1e-3,
     # MCTS
     "num_mcts": 50,
     "num_eval_mcts": 30,
     "mcts_alpha_max": 1.0,
-    "mcts_alpha_min": 0.3,
+    "mcts_alpha_min": 0.1,
     # Optional Feature
     "use_prev_rand_action": True,
     "use_over_rand_action": True,
     "use_uniform_policy": False,
-    "use_ssc_loss": False,
+    "use_ssc_loss": True,
 }
 
 optim = {
