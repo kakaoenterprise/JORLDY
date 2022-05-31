@@ -17,7 +17,7 @@ def test_muzero(MockEnv):
     alpha, beta = 0.6, 0.4
     learn_period, uniform_sample_prob = 4, 1e-3
 
-    agent = MuZero(
+    agent = Muzero(
         state_size=state_size,
         hidden_state_channel=hidden_state_channel,
         action_size=action_size,
