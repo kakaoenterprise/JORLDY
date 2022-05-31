@@ -1,4 +1,4 @@
-from core.agent.muzero import MuZero
+from core.agent.muzero import Muzero
 from .utils import check_interact, check_save_load, check_sync_in_out
 
 
