@@ -7,8 +7,7 @@ def test_muzero(MockEnv):
     episode_len = 10
     env = MockEnv(state_size, action_size, action_type, episode_len)
 
-    hidden_size, hidden_state_channel = 4, 4
-    buffer_size, batch_size, start_train_step = 100, 4, 8
+    hidden_size, buffer_size, batch_size, start_train_step = 4, 100, 4, 8
     run_step = 20
     # MuZero
     num_stack, num_unroll, num_td_step = 4, 3, 2
@@ -19,11 +18,11 @@ def test_muzero(MockEnv):
 
     agent = Muzero(
         state_size=state_size,
-        hidden_state_channel=hidden_state_channel,
+        hidden_size=hidden_size,
         action_size=action_size,
         batch_size=batch_size,
         start_train_step=start_train_step,
-        trajectory_size=trajectory_size,
+        max_trajectory_size=trajectory_size,
         value_loss_weight=value_loss_weight,
         num_simulation=num_simulation,
         num_unroll=num_unroll,
