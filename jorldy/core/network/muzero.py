@@ -17,7 +17,7 @@ class Muzero_mlp(BaseNetwork):
         support,
         num_rb=10,
         D_hidden=256,
-        head="mlp_residualblock",
+        head="mlp",
     ):
         super(Muzero_mlp, self).__init__(D_hidden, D_hidden, head)
 
@@ -130,7 +130,7 @@ class Muzero_Resnet(BaseNetwork):
         support,
         num_rb=16,
         D_hidden=256,
-        head="residualblock",
+        head="mlp",
     ):
         super(Muzero_Resnet, self).__init__(D_hidden, D_hidden, head)
 
