@@ -29,7 +29,7 @@ class Muzero(BaseAgent):
         # MuZero
         state_size,
         action_size,
-        network="muzero_resnet",
+        network="muzero_mlp",
         head="mlp",
         hidden_size=256,
         gamma=0.997,
