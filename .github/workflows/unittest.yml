@@ -61,7 +61,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install pytest
         pip install -r requirements.txt
-        pip install --upgrade gym[atari,accept-rom-license]
+        pip install --upgrade gym[atari,accept-rom-license]==0.23.0
         pip install gym-super-mario-bros
         pip install pygame
 
