@@ -56,10 +56,10 @@ atari and super-mario-bros need to be installed manually due to licensing issues
 
 ```
 # To use atari(bash)
-pip install --upgrade gym[atari,accept-rom-license]
+pip install --upgrade gym[atari,accept-rom-license]==0.23.0
 
 # To use atari(zsh)
-pip install --upgrade 'gym[atari,accept-rom-license]'
+pip install --upgrade 'gym[atari,accept-rom-license]'==0.23.0
  
 # To use super-mario-bros
 pip install gym-super-mario-bros
