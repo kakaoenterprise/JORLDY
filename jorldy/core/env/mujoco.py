@@ -3,7 +3,7 @@ import gym
 import numpy as np
 import cv2
 
-from .base import BaseEnv
+from core.env.base import BaseEnv
 
 
 class _Mujoco(BaseEnv):
