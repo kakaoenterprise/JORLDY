@@ -346,7 +346,7 @@ class Muzero(BaseAgent):
 
         if (
             self.learn_period_stamp >= self.learn_period
-            and self.memory.buffer_counter >= self.batch_size
+            and self.memory.size >= self.batch_size
             and self.time_t >= self.start_train_step
         ):
             result = self.learn()
