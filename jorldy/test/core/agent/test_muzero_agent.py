@@ -48,7 +48,6 @@ def test_muzero(MockEnv):
     )
 
     assert agent.time_t == run_step
-    assert agent.memory.size == run_step // trajectory_size
 
     # test save and load
     check_save_load(agent, "./tmp_test_muzero")
