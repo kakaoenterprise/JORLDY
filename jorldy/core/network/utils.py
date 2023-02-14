@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 
+
 # codes from https://github.com/openai/random-network-distillation
 class RewardForwardFilter(torch.nn.Module):
     def __init__(self, gamma, num_workers):

@@ -79,10 +79,18 @@ class SAC(BaseAgent):
             optim_config["actor"], self.actor.parameters(), lr=optim_config["actor_lr"]
         )
 
-        (self.critic1, self.target_critic1, self.critic_optimizer1,) = self.critic_set(
+        (
+            self.critic1,
+            self.target_critic1,
+            self.critic_optimizer1,
+        ) = self.critic_set(
             critic, state_size, action_size, hidden_size, head, optim_config
         )
-        (self.critic2, self.target_critic2, self.critic_optimizer2,) = self.critic_set(
+        (
+            self.critic2,
+            self.target_critic2,
+            self.critic_optimizer2,
+        ) = self.critic_set(
             critic, state_size, action_size, hidden_size, head, optim_config
         )
 

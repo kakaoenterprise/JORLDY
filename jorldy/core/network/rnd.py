@@ -3,6 +3,7 @@ import torch.nn.functional as F
 
 from .utils import RewardForwardFilter, RunningMeanStd, orthogonal_init
 
+
 # normalize observation
 # assumed state shape: (batch_size, dim_state)
 def normalize_obs(obs, m, v):

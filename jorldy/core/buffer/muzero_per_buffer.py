@@ -2,6 +2,7 @@ import numpy as np
 
 from .base import BaseBuffer
 
+
 # Reference: https://github.com/LeejwUniverse/following_deepmid/tree/master/jungwoolee_pytorch/100%20Algorithm_For_RL/01%20sum_tree
 class MuzeroPERBuffer(BaseBuffer):
     def __init__(self, buffer_size, uniform_sample_prob=1e-3):

@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+
 # OU noise class
 class OU_Noise:
     def __init__(self, action_size, mu, theta, sigma):

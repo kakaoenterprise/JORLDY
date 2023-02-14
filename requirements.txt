@@ -1,4 +1,4 @@
-black==22.1.0
+black==23.1.0
 gym[classic_control]==0.23.0
 mlagents-envs==0.28.0
 opencv-python==4.5.5.64

@@ -186,7 +186,6 @@ class R2D2(ApeX):
                 not self.zero_padding and len(self.tmp_buffer) == self.tmp_buffer.maxlen
             )
         ):
-
             _transition["hidden_h"] = self.tmp_buffer[0]["hidden_h"]
             _transition["hidden_c"] = self.tmp_buffer[0]["hidden_c"]
             _transition["next_hidden_h"] = self.tmp_buffer[self.n_step]["hidden_h"]

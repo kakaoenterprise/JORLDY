@@ -2,6 +2,7 @@ import numpy as np
 
 from .replay_buffer import ReplayBuffer
 
+
 # Reference: https://github.com/LeejwUniverse/following_deepmid/tree/master/jungwoolee_pytorch/100%20Algorithm_For_RL/01%20sum_tree
 class PERBuffer(ReplayBuffer):
     def __init__(self, buffer_size, uniform_sample_prob=1e-3):

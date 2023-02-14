@@ -28,7 +28,6 @@ def check_record(env):
 
 
 def check_env(env, agent, run_step=10):
-
     # test interact
     check_interact(env, agent, run_step)
 
